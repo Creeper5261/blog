@@ -1,0 +1,37 @@
+{
+  "name": "creeper5261-blog-recovered",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "scripts": {
+    "build": "hexo clean && hexo generate",
+    "generate": "hexo generate",
+    "clean": "hexo clean",
+    "server": "hexo server",
+    "deploy": "hexo deploy",
+    "check": "pnpm run check:maintainability",
+    "check:maintainability": "node tools/check-maintainability.mjs",
+    "recovery:note": "node -e \"console.log('Recovery harness lives outside this repo at ../tools in the original workspace.')\""
+  },
+  "dependencies": {
+    "hexo": "6.3.0",
+    "hexo-generator-archive": "^2.0.0",
+    "hexo-generator-category": "^2.0.0",
+    "hexo-generator-index": "^3.0.0",
+    "hexo-generator-tag": "^2.0.0",
+    "hexo-renderer-ejs": "^2.0.0",
+    "hexo-renderer-marked": "^5.0.0",
+    "hexo-renderer-pug": "^3.0.0",
+    "hexo-renderer-stylus": "^3.0.1",
+    "hexo-server": "^3.0.0",
+    "hexo-theme-butterfly": "4.10.0",
+    "hexo-wordcount": "^6.0.1"
+  },
+  "devDependencies": {
+    "cheerio": "^1.0.0",
+    "turndown": "^7.2.0"
+  },
+  "hexo": {
+    "version": "6.3.0"
+  }
+}

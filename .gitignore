@@ -1,0 +1,26 @@
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+
+# Hexo generated/cache files
+db.json
+public/
+.deploy*/
+_multiconfig.yml
+
+# Local runtime logs and process files
+*.log
+*.pid
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Recovery scratch output, when this repo is opened from the original workspace
+.recovery-*/
+recovery-*.json
+recovery-*.html
+tmp-*.html
