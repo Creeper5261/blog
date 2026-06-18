@@ -41,15 +41,18 @@ pnpm run build
 ## External Keys And Services
 
 - Do not paste private credentials or real app keys into source.
-- Public browser keys are still configured through `.env` or platform environment variables, then injected into generated output.
+- Browser-safe public config is configured through `.env` or platform environment variables, then injected into generated output.
+- Tencent Map and QWeather keys are server-only for the public-output workflow. Keep them in Vercel/project env; `api/location.mjs` and `api/weather.mjs` read them at request time.
 - Use `.env.example` as the variable template.
-- Tencent Map requires `PUBLIC_TENCENT_MAP_KEY`.
+- Tencent Map requires `PUBLIC_TENCENT_MAP_KEY` or `TENCENT_MAP_KEY` on Vercel.
+- QWeather requires `PUBLIC_QWEATHER_KEY` or `QWEATHER_KEY` on Vercel.
 - Giscus uses public IDs for `Creeper5261/Creeper5261.github.io`: repo id `R_kgDOJjHleA`, category id `DIC_kwDOJjHleM4C_aiF`, mapping `pathname`.
 - Busuanzi counters and old Twikoo comments are external data. Source edits cannot restore historical UV/PV or old comments without the original service data.
 - The old Twikoo frontend is replaced by `source/js/comments-runtime.js`; do not reintroduce Twikoo unless explicitly requested.
 - GitCalendar is replaced by `tools/prepare-github-calendar.mjs` and `source/js/github-calendar.js`; do not load `gitcalendar.fomal.cc`.
 - Runtime widget fallbacks live in `source/js/service-fallbacks.js`. Keep them lightweight and idempotent for normal load and `pjax:complete`.
 - Vercel currently has `PUBLIC_SITE_URL`, Algolia, Tencent Map, QWeather, and Gaode variables configured. `PUBLIC_BAIDU_MAP_AK` was not recovered.
+- Generated public HTML must not contain real Tencent/QWeather/Gaode/Baidu key values.
 - Do not store recovered key strings in source or tests. `tools/check-maintainability.mjs` uses hashed fingerprints for known old browser keys.
 
 ## Git

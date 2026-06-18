@@ -28,6 +28,13 @@ const DEFAULT_SERVICES = {
   tencentMapKey: ''
 }
 
+const SERVER_ONLY_SERVICES = new Set([
+  'qweatherKey',
+  'gaudMapKey',
+  'baiduMapAk',
+  'tencentMapKey'
+])
+
 const RUNTIME_SCRIPTS = [
   '/js/github-calendar.js',
   '/js/comments-runtime.js',
@@ -41,7 +48,7 @@ function normalizeServices(services = getPublicServices()) {
   return Object.fromEntries(
     Object.keys(DEFAULT_SERVICES).map((key) => [
       key,
-      services[key] ?? DEFAULT_SERVICES[key] ?? ''
+      SERVER_ONLY_SERVICES.has(key) ? '' : services[key] ?? DEFAULT_SERVICES[key] ?? ''
     ])
   )
 }
@@ -122,17 +129,12 @@ export function sanitizeLegacyHtml(html) {
 }
 
 export function sanitizeLegacyScript(script) {
-  const bootstrap = [
-    'window.DAT_PUBLIC_SERVICES = window.DAT_PUBLIC_SERVICES || {};'
-  ].join('\n')
-
-  const rewritten = script.replace(/key:\s*['"][^'"]*['"]/g, 'key: window.DAT_PUBLIC_SERVICES.tencentMapKey')
-  return `${bootstrap}\n${rewritten}`
+  return script.replace(/key:\s*['"][^'"]*['"]/g, "key: ''")
 }
 
 export function applyPublicServices(html, services = getPublicServices()) {
   const rendered = Object.entries(PLACEHOLDERS).reduce((result, [key, placeholder]) => {
-    const value = services[key] ?? DEFAULT_SERVICES[key] ?? ''
+    const value = SERVER_ONLY_SERVICES.has(key) ? '' : services[key] ?? DEFAULT_SERVICES[key] ?? ''
     return result.replaceAll(placeholder, value)
   }, html)
 

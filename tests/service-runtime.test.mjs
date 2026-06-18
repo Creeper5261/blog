@@ -6,8 +6,10 @@ test('txmap welcome script guards missing Tencent location data', async () => {
   const script = await readFile('source/js/txmap.js', 'utf8')
 
   assert.match(script, /renderWelcomeFallback/)
-  assert.match(script, /hasTencentMapKey/)
+  assert.match(script, /\/api\/location/)
   assert.match(script, /ipLoacation.*result.*location/s)
+  assert.doesNotMatch(script, /apis\.map\.qq\.com/)
+  assert.doesNotMatch(script, /tencentMapKey/)
 })
 
 test('service fallback script covers recovered external widgets', async () => {
@@ -17,6 +19,7 @@ test('service fallback script covers recovered external widgets', async () => {
   assert.match(script, /#busuanzi_value_site_uv/)
   assert.match(script, /#busuanzi_value_site_pv/)
   assert.match(script, /\.card-clock/)
+  assert.match(script, /\/api\/weather/)
   assert.match(script, /#twikoo-wrap/)
   assert.match(script, /#gitZone/)
 })

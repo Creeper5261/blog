@@ -55,7 +55,7 @@ test('sanitizeLegacyHtml removes dead GitCalendar and legacy Twikoo bootstraps',
   assert.doesNotMatch(sanitized, /twikoo\.godboy\.cc/)
 })
 
-test('sanitizeLegacyScript replaces Tencent map key literals with runtime config', () => {
+test('sanitizeLegacyScript removes Tencent map key literals from copied scripts', () => {
   const script = `
     $.ajax({
       data: {
@@ -68,8 +68,8 @@ test('sanitizeLegacyScript replaces Tencent map key literals with runtime config
   const sanitized = sanitizeLegacyScript(script)
 
   assert.doesNotMatch(sanitized, /OLD_TENCENT_MAP/)
-  assert.match(sanitized, /DAT_PUBLIC_SERVICES/)
-  assert.match(sanitized, /tencentMapKey/)
+  assert.match(sanitized, /key: ''/)
+  assert.doesNotMatch(sanitized, /DAT_PUBLIC_SERVICES/)
   assert.doesNotMatch(sanitized, /__DAT_PUBLIC_TENCENT_MAP_KEY__/)
 })
 
@@ -101,8 +101,20 @@ test('applyPublicServices injects environment-backed values into placeholders', 
   assert.doesNotMatch(rendered, /__DAT_PUBLIC_/)
 })
 
-test('applyPublicServices injects browser runtime config and service fallback loader', () => {
-  const rendered = applyPublicServices('<html><body><main>DAT</main></body></html>', {
+test('applyPublicServices injects browser-safe runtime config and service fallback loader', () => {
+  const rendered = applyPublicServices(`
+    <html>
+      <head></head>
+      <body>
+        <script>
+          var qweather_key = '__DAT_PUBLIC_QWEATHER_KEY__';
+          var gaud_map_key = '__DAT_PUBLIC_GAUD_MAP_KEY__';
+          var baidu_ak_key = '__DAT_PUBLIC_BAIDU_MAP_AK__';
+        </script>
+        <main>DAT</main>
+      </body>
+    </html>
+  `, {
     algoliaAppId: 'APP_FROM_ENV',
     algoliaSearchKey: 'SEARCH_FROM_ENV',
     algoliaIndexName: 'INDEX_FROM_ENV',
@@ -118,7 +130,10 @@ test('applyPublicServices injects browser runtime config and service fallback lo
   })
 
   assert.match(rendered, /window\.DAT_PUBLIC_SERVICES/)
-  assert.match(rendered, /"tencentMapKey":"TENCENT_FROM_ENV"/)
+  assert.doesNotMatch(rendered, /QWEATHER_FROM_ENV|GAUD_FROM_ENV|BAIDU_FROM_ENV|TENCENT_FROM_ENV/)
+  assert.match(rendered, /var qweather_key = ''/)
+  assert.match(rendered, /var gaud_map_key = ''/)
+  assert.match(rendered, /var baidu_ak_key = ''/)
   assert.match(rendered, /\/js\/github-calendar\.js/)
   assert.match(rendered, /\/js\/comments-runtime\.js/)
   assert.match(rendered, /\/js\/service-fallbacks\.js/)

@@ -90,6 +90,8 @@ The normal `pnpm run build` path does not read from `public/`; `src/legacy/pages
 
 Real service values must be configured through `.env`, Vercel Environment Variables, or another deployment platform. Use `.env.example` as the template.
 
+The location and weather keys are server-only in the current Vercel deployment model. They are read by Vercel Functions under `/api/location` and `/api/weather`; generated public HTML intentionally leaves the old browser placeholders empty so keys do not get committed to `Creeper5261/Creeper5261.github.io`.
+
 ```text
 PUBLIC_ALGOLIA_APP_ID
 PUBLIC_ALGOLIA_SEARCH_KEY
@@ -103,6 +105,8 @@ PUBLIC_TENCENT_MAP_KEY
 PUBLIC_QWEATHER_KEY
 PUBLIC_GAUD_MAP_KEY
 PUBLIC_BAIDU_MAP_AK
+TENCENT_MAP_KEY
+QWEATHER_KEY
 ```
 
 Do not commit real app keys, tokens, private endpoints, `.vercel/`, or files under `secrets/`.
@@ -134,11 +138,13 @@ PUBLIC_GISCUS_MAPPING=pathname
 - `source/js/comments-runtime.js` replaces the old Twikoo bootstrap with Giscus. It mounts into the recovered `#twikoo-wrap` container for visual compatibility.
 - `tools/prepare-github-calendar.mjs` fetches GitHub's public contribution calendar during build and writes `.astro-static/data/github-calendar.json`, which Astro publishes as `/data/github-calendar.json`.
 - `source/js/github-calendar.js` renders that local JSON into `#gitZone`, replacing the dead `gitcalendar.fomal.cc` API.
+- `api/location.mjs` proxies Tencent Map IP location through Vercel Functions so the Tencent key stays in platform env.
+- `api/weather.mjs` proxies QWeather now data through Vercel Functions so the weather key stays in platform env.
 - `source/js/service-fallbacks.js` remains a defensive layer so widgets do not stay blank forever.
 
-- welcome/location falls back when Tencent Map has no key or no response;
+- welcome/location falls back only when `/api/location` has no key or no response;
 - Busuanzi PV/UV counters fall back to `--` if the service stalls;
-- the weather clock falls back to a local time card;
+- the weather clock first tries `/api/weather`, then falls back to a local time card;
 - Giscus renders a clear setup/loading status only if the script cannot load;
 - GitHub contribution calendar renders a clear status only if local data is unavailable.
 
