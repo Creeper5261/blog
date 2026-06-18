@@ -4,12 +4,21 @@
   "private": true,
   "packageManager": "pnpm@10.20.0",
   "scripts": {
-    "build": "hexo clean && hexo generate",
-    "generate": "hexo generate",
-    "clean": "hexo clean",
-    "server": "hexo server",
-    "deploy": "hexo deploy",
-    "check": "pnpm run check:maintainability",
+    "build": "pnpm run prepare:astro && astro build",
+    "generate": "pnpm run build",
+    "clean": "node -e \"const fs=require('node:fs');fs.rmSync('dist',{recursive:true,force:true});fs.rmSync('.astro',{recursive:true,force:true});fs.rmSync('.astro-static',{recursive:true,force:true})\"",
+    "server": "pnpm run prepare:astro && astro dev --host 127.0.0.1",
+    "preview": "astro preview --host 127.0.0.1",
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "check": "pnpm run test && pnpm run check:maintainability",
+    "prepare:astro": "node tools/prepare-astro-assets.mjs && node tools/prepare-astro-legacy-pages.mjs",
+    "visual:report": "node tools/visual-compare.mjs",
+    "legacy:build": "hexo clean && hexo generate",
+    "legacy:generate": "hexo generate",
+    "legacy:clean": "hexo clean",
+    "legacy:server": "hexo server",
+    "legacy:deploy": "hexo deploy",
+    "deploy": "astro build",
     "check:maintainability": "node tools/check-maintainability.mjs",
     "recovery:note": "node -e \"console.log('Recovery harness lives outside this repo at ../tools in the original workspace.')\""
   },
@@ -28,6 +37,7 @@
     "hexo-wordcount": "^6.0.1"
   },
   "devDependencies": {
+    "astro": "^6.4.8",
     "cheerio": "^1.0.0",
     "turndown": "^7.2.0"
   },

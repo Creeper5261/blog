@@ -1,17 +1,16 @@
-# DAT Blog Recovered Hexo Source
+# DAT Blog
 
-This repository is the recovered source for DAT's Hexo + Butterfly blog. The original source was lost, then reconstructed from the Vercel/GitHub static output and the existing Markdown/config fragments.
+This repository contains DAT's recovered blog and the new Astro-based static build. The original Hexo + Butterfly source was lost, reconstructed, and then used as the visual baseline for the modern build path.
 
 ## Current Status
 
-- Source root: `recovered-hexo`
-- Framework: Hexo `6.3.0`
-- Theme: `hexo-theme-butterfly` `4.10.0`
+- Default framework: Astro
+- Legacy baseline: Hexo `6.3.0` + `hexo-theme-butterfly` `4.10.0`
 - Package manager: `pnpm@10.20.0`
 - Default public URL: `https://creeper5261-github-io.vercel.app`
-- Private source remote: `git@github.com:Creeper5261/Hexo-Blog.git`
+- Private source remote: `git@github.com:Creeper5261/blog.git`
 
-The earlier recovery stage reached byte-level parity with the static recovery snapshot. This repository is now the maintainable source fork: generated output is expected to differ from the original snapshot where dead domains/CDNs were replaced.
+The current `feature/astro-rewrite` branch serves sanitized legacy HTML through Astro to preserve the existing visual style while replacing the default Hexo build chain. Hexo remains available under `legacy:*` scripts as the visual baseline and rollback path.
 
 ## URL Policy
 
@@ -43,19 +42,48 @@ Run maintainability checks:
 pnpm run check
 ```
 
-Generate the site:
+Generate the Astro site:
 
 ```bash
 pnpm run build
 ```
 
-Start a local Hexo server:
+Start local Astro dev server:
 
 ```bash
 pnpm run server
 ```
 
+Run the old Hexo baseline:
+
+```bash
+pnpm run legacy:server
+```
+
+Create a visual report from screenshots already captured in `.local/visual-compare`:
+
+```bash
+pnpm run visual:report
+```
+
 Recovery-only tools from the original workspace live outside this repo in `../tools` and are not part of the normal build path.
+
+## Environment Variables
+
+Real service values must be configured through `.env`, Vercel Environment Variables, or another deployment platform. Use `.env.example` as the template.
+
+```text
+PUBLIC_ALGOLIA_APP_ID
+PUBLIC_ALGOLIA_SEARCH_KEY
+PUBLIC_ALGOLIA_INDEX_NAME
+PUBLIC_TWIKOO_ENV_ID
+PUBLIC_TENCENT_MAP_KEY
+PUBLIC_QWEATHER_KEY
+PUBLIC_GAUD_MAP_KEY
+PUBLIC_BAIDU_MAP_AK
+```
+
+Do not commit real app keys, tokens, private endpoints, `.vercel/`, or files under `secrets/`.
 
 ## Asset Hosting
 
@@ -80,11 +108,11 @@ Spot checks on 2026-06-18 confirmed image, PDF, font, and background paths under
 | Picbed images/PDF/font | Markdown, CSS, recovered injectors | Fixed to jsDelivr GitHub CDN | Keep `Creeper5261/picbed` paths stable. |
 | jsDelivr npm CDN | Butterfly injected scripts | Fixed for APlayer, Vue, Element UI, SweetAlert2, WinBox, typed.js, Meting | No action now. |
 | Busuanzi PV/UV | Butterfly `busuanzi` | Frontend script reachable | Historical UV/PV cannot be restored from source; only the live Busuanzi service can provide current counters. |
-| Twikoo comments | `_config.butterfly.yml`, recovered shell snippets | Frontend library reachable, backend `https://twikoo.godboy.cc/` fails TLS | Redeploy Twikoo and replace `twikoo.envId`. Old comments require the original backend database backup. |
+| Twikoo comments | Astro env / recovered shell placeholders | Frontend library reachable, old backend fails TLS | Redeploy Twikoo and set `PUBLIC_TWIKOO_ENV_ID`. Old comments require the original backend database backup. |
 | GitCalendar | `source/_data/recovered-injector.json` | API returns server error | Replace service or implement a GitHub API based calendar if needed. |
 | QWeather widget / clock weather | `source/_data/recovered-injector.json` | Widget script fails TLS | Recreate the QWeather widget/key and update the injected snippet. |
-| Tencent Map IP location | `source/js/txmap.js` | Existing key returned `status:0` on 2026-06-18 | Keep working key or create a new domain-restricted browser key. |
-| Algolia search | `_config.yml` | Existing frontend search keys preserved | Verify index ownership before production use. |
+| Tencent Map IP location | `PUBLIC_TENCENT_MAP_KEY` | Old browser key removed from source | Create a new domain-restricted browser key. |
+| Algolia search | Astro env / recovered placeholders | Old frontend keys removed from source | Set `PUBLIC_ALGOLIA_*` after verifying index ownership. |
 | QQ avatar API | `_config.butterfly.yml` social link | Previously failed during checks | Replace with a stable profile URL if it remains unavailable. |
 
 ## Notes On Lost Data
@@ -100,10 +128,15 @@ Do not commit generated or local files:
 
 - `node_modules/`
 - `public/`
+- `dist/`
+- `.astro/`
+- `.astro-static/`
 - `db.json`
 - `_multiconfig.yml`
 - `*.log`
 - `*.pid`
 - `.env*`
+- `.vercel/`
+- `secrets/`
 
-The source of truth is `_config.yml`, `_config.butterfly.yml`, `source/`, `scripts/`, `tools/`, `package.json`, and `pnpm-lock.yaml`.
+The modern build source of truth is `astro.config.mjs`, `src/`, `source/`, `tools/`, `package.json`, and `pnpm-lock.yaml`. `_config.yml` and `_config.butterfly.yml` remain for the legacy Hexo baseline.

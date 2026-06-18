@@ -10,7 +10,13 @@ public/
 .deploy*/
 _multiconfig.yml
 
+# Astro generated/cache files
+.astro/
+.astro-static/
+dist/
+
 # Local runtime logs and process files
+.local/
 *.log
 *.pid
 

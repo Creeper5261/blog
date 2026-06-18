@@ -50,14 +50,34 @@ const forbidden = [
   {
     pattern: 'https://lf9-cdn-tos.bytecdntp.com/',
     reason: 'stale ByteDance CDN mirror; use a current npm CDN'
+  },
+  {
+    pattern: '6QHN7ALEUI',
+    reason: 'Algolia app id must be provided through PUBLIC_ALGOLIA_APP_ID'
+  },
+  {
+    pattern: '0dd4d63f2499f1ec4c39623ae043db47',
+    reason: 'Algolia search key must be provided through PUBLIC_ALGOLIA_SEARCH_KEY'
+  },
+  {
+    pattern: '2GNBZ-5ZRWQ-SQX5M-BPRJB-IHGN2-7XFAI',
+    reason: 'Tencent Map browser key must be provided through PUBLIC_TENCENT_MAP_KEY'
+  },
+  {
+    pattern: '1b6840ff85f84a10b0fa606bbad97795',
+    reason: 'QWeather key must be provided through PUBLIC_QWEATHER_KEY'
+  },
+  {
+    pattern: '63abd0fe09da126a0b5cade207cde899',
+    reason: 'Gaode Map key must be provided through PUBLIC_GAUD_MAP_KEY'
+  },
+  {
+    pattern: 'https://twikoo.godboy.cc/',
+    reason: 'Twikoo envId must be provided through PUBLIC_TWIKOO_ENV_ID'
   }
 ];
 
 const manualAction = [
-  {
-    pattern: 'https://twikoo.godboy.cc/',
-    reason: 'Twikoo backend is tied to the expired custom domain and needs redeployment or a new envId'
-  },
   {
     pattern: 'https://gitcalendar.fomal.cc/api?Creeper5261',
     reason: 'GitCalendar API is an external service and may need replacement if it stays unavailable'
