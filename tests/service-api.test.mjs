@@ -68,7 +68,7 @@ test('weather API normalizes QWeather now endpoint data', async () => {
     env: { PUBLIC_QWEATHER_KEY: 'QWEATHER_KEY' },
     fetchImpl: async (url) => {
       assert.equal(url.searchParams.get('key'), 'QWEATHER_KEY')
-      assert.equal(url.searchParams.get('location'), '125.28845,43.83327')
+      assert.equal(url.searchParams.get('location'), '116.290663,40.158009')
       return Response.json({
         code: '200',
         now: {
@@ -93,7 +93,54 @@ test('weather API normalizes QWeather now endpoint data', async () => {
       windDir: '西北风',
       humidity: '44',
       updateTime: '2026-06-18T22:00+08:00',
-      location: '长春'
+      location: '北邮沙河'
+    }
+  })
+})
+
+test('weather API prefers visitor location from Tencent IP lookup', async () => {
+  const request = new Request('https://example.test/api/weather', {
+    headers: {
+      'x-forwarded-for': '203.0.113.20, 10.0.0.1'
+    }
+  })
+
+  const response = await handleWeatherRequest(request, {
+    env: {
+      PUBLIC_QWEATHER_KEY: 'QWEATHER_KEY',
+      PUBLIC_TENCENT_MAP_KEY: 'TENCENT_KEY'
+    },
+    fetchImpl: async (url) => {
+      if (url.hostname === 'apis.map.qq.com') {
+        assert.equal(url.searchParams.get('ip'), '203.0.113.20')
+        return Response.json({
+          status: 0,
+          result: {
+            location: { lat: 40.158009, lng: 116.290663 },
+            ad_info: { nation: '中国', province: '北京市', city: '北京市', district: '昌平区' }
+          }
+        })
+      }
+
+      assert.equal(url.hostname, 'devapi.qweather.com')
+      assert.equal(url.searchParams.get('location'), '116.290663,40.158009')
+      return Response.json({
+        code: '200',
+        now: { temp: '27', text: '晴', icon: '100', windDir: '南风', humidity: '38' }
+      })
+    }
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    weather: {
+      temp: '27',
+      text: '晴',
+      icon: '100',
+      windDir: '南风',
+      humidity: '38',
+      updateTime: '',
+      location: '北京市 昌平区'
     }
   })
 })
@@ -116,7 +163,7 @@ test('weather API returns a compact browser payload', async () => {
       windDir: '东风',
       humidity: '31',
       updateTime: '',
-      location: '长春'
+      location: '北邮沙河'
     }
   })
 })
