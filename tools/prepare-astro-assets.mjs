@@ -6,6 +6,7 @@ import { sanitizeLegacyScript } from '../src/legacy/html-transform.mjs'
 
 const DEFAULT_ASSET_DIRS = [
   'css',
+  'data',
   'font',
   'img',
   'js',

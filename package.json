@@ -11,7 +11,7 @@
     "preview": "astro preview --host 127.0.0.1",
     "test": "node --test \"tests/**/*.test.mjs\"",
     "check": "pnpm run test && pnpm run check:maintainability",
-    "prepare:astro": "node tools/prepare-astro-assets.mjs && node tools/prepare-astro-legacy-pages.mjs",
+    "prepare:astro": "node tools/prepare-astro-assets.mjs && node tools/prepare-github-calendar.mjs",
     "visual:report": "node tools/visual-compare.mjs",
     "legacy:build": "hexo clean && hexo generate",
     "legacy:generate": "hexo generate",
@@ -20,6 +20,7 @@
     "legacy:deploy": "hexo deploy",
     "deploy": "astro build",
     "check:maintainability": "node tools/check-maintainability.mjs",
+    "recovery:prepare-legacy-pages": "node tools/prepare-astro-legacy-pages.mjs",
     "recovery:note": "node -e \"console.log('Recovery harness lives outside this repo at ../tools in the original workspace.')\""
   },
   "dependencies": {

@@ -47,3 +47,15 @@ test('prepareAstroAssets sanitizes copied Tencent map script', async () => {
   assert.match(copied, /DAT_PUBLIC_SERVICES/)
   assert.match(copied, /tencentMapKey/)
 })
+
+test('prepareAstroAssets copies generated data files', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'astro-assets-data-'))
+  const sourceRoot = path.join(root, 'source')
+  const targetRoot = path.join(root, '.astro-static')
+  await mkdir(path.join(sourceRoot, 'data'), { recursive: true })
+  await writeFile(path.join(sourceRoot, 'data', 'github-calendar.json'), '{"days":[]}')
+
+  await prepareAstroAssets({ sourceRoot, targetRoot })
+
+  assert.equal(await exists(path.join(targetRoot, 'data', 'github-calendar.json')), true)
+})

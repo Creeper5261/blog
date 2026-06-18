@@ -2,7 +2,11 @@ const PLACEHOLDERS = {
   algoliaAppId: '__DAT_PUBLIC_ALGOLIA_APP_ID__',
   algoliaSearchKey: '__DAT_PUBLIC_ALGOLIA_SEARCH_KEY__',
   algoliaIndexName: '__DAT_PUBLIC_ALGOLIA_INDEX_NAME__',
-  twikooEnvId: '__DAT_PUBLIC_TWIKOO_ENV_ID__',
+  giscusRepo: '__DAT_PUBLIC_GISCUS_REPO__',
+  giscusRepoId: '__DAT_PUBLIC_GISCUS_REPO_ID__',
+  giscusCategory: '__DAT_PUBLIC_GISCUS_CATEGORY__',
+  giscusCategoryId: '__DAT_PUBLIC_GISCUS_CATEGORY_ID__',
+  giscusMapping: '__DAT_PUBLIC_GISCUS_MAPPING__',
   qweatherKey: '__DAT_PUBLIC_QWEATHER_KEY__',
   gaudMapKey: '__DAT_PUBLIC_GAUD_MAP_KEY__',
   baiduMapAk: '__DAT_PUBLIC_BAIDU_MAP_AK__',
@@ -13,11 +17,68 @@ const DEFAULT_SERVICES = {
   algoliaAppId: '',
   algoliaSearchKey: '',
   algoliaIndexName: 'blog',
-  twikooEnvId: '',
+  giscusRepo: 'Creeper5261/Creeper5261.github.io',
+  giscusRepoId: 'R_kgDOJjHleA',
+  giscusCategory: 'Announcements',
+  giscusCategoryId: 'DIC_kwDOJjHleM4C_aiF',
+  giscusMapping: 'pathname',
   qweatherKey: '',
   gaudMapKey: '',
   baiduMapAk: '',
   tencentMapKey: ''
+}
+
+const RUNTIME_SCRIPTS = [
+  '/js/github-calendar.js',
+  '/js/comments-runtime.js',
+  '/js/service-fallbacks.js'
+]
+
+const SINGLE_SCRIPT_WITH_GITCALENDAR = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:GitCalendarInit|gitcalendar_injector_config)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
+const SINGLE_SCRIPT_WITH_LEGACY_TWIKOO = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:twikoo\.init|twikoo@1\.6\.8)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
+
+function normalizeServices(services = getPublicServices()) {
+  return Object.fromEntries(
+    Object.keys(DEFAULT_SERVICES).map((key) => [
+      key,
+      services[key] ?? DEFAULT_SERVICES[key] ?? ''
+    ])
+  )
+}
+
+function serializeForInlineScript(value) {
+  return JSON.stringify(value).replaceAll('<', '\\u003c')
+}
+
+export function renderPublicServicesScript(services = getPublicServices()) {
+  const payload = serializeForInlineScript(normalizeServices(services))
+
+  return `<script>window.DAT_PUBLIC_SERVICES=Object.assign(window.DAT_PUBLIC_SERVICES||{},${payload});</script>`
+}
+
+function injectBeforeClosingTag(html, tagName, content) {
+  const closingTag = new RegExp(`</${tagName}>`, 'i')
+  if (closingTag.test(html)) {
+    return html.replace(closingTag, `${content}</${tagName}>`)
+  }
+
+  return `${content}${html}`
+}
+
+export function injectRuntimeSupport(html, services = getPublicServices()) {
+  let result = html
+
+  if (!result.includes('window.DAT_PUBLIC_SERVICES')) {
+    result = injectBeforeClosingTag(result, 'head', renderPublicServicesScript(services))
+  }
+
+  for (const script of RUNTIME_SCRIPTS) {
+    if (!result.includes(script)) {
+      result = injectBeforeClosingTag(result, 'body', `<script defer src="${script}"></script>`)
+    }
+  }
+
+  return result
 }
 
 export function getPublicServices(env = process.env) {
@@ -25,7 +86,11 @@ export function getPublicServices(env = process.env) {
     algoliaAppId: env.PUBLIC_ALGOLIA_APP_ID ?? DEFAULT_SERVICES.algoliaAppId,
     algoliaSearchKey: env.PUBLIC_ALGOLIA_SEARCH_KEY ?? DEFAULT_SERVICES.algoliaSearchKey,
     algoliaIndexName: env.PUBLIC_ALGOLIA_INDEX_NAME ?? DEFAULT_SERVICES.algoliaIndexName,
-    twikooEnvId: env.PUBLIC_TWIKOO_ENV_ID ?? DEFAULT_SERVICES.twikooEnvId,
+    giscusRepo: env.PUBLIC_GISCUS_REPO ?? DEFAULT_SERVICES.giscusRepo,
+    giscusRepoId: env.PUBLIC_GISCUS_REPO_ID ?? DEFAULT_SERVICES.giscusRepoId,
+    giscusCategory: env.PUBLIC_GISCUS_CATEGORY ?? DEFAULT_SERVICES.giscusCategory,
+    giscusCategoryId: env.PUBLIC_GISCUS_CATEGORY_ID ?? DEFAULT_SERVICES.giscusCategoryId,
+    giscusMapping: env.PUBLIC_GISCUS_MAPPING ?? DEFAULT_SERVICES.giscusMapping,
     qweatherKey: env.PUBLIC_QWEATHER_KEY ?? DEFAULT_SERVICES.qweatherKey,
     gaudMapKey: env.PUBLIC_GAUD_MAP_KEY ?? DEFAULT_SERVICES.gaudMapKey,
     baiduMapAk: env.PUBLIC_BAIDU_MAP_AK ?? DEFAULT_SERVICES.baiduMapAk,
@@ -33,13 +98,24 @@ export function getPublicServices(env = process.env) {
   }
 }
 
-export function sanitizeLegacyHtml(html) {
+function removeDeadGitCalendar(html) {
   return html
+    .replace(/<link\b[^>]*hexo-filter-gitcalendar\/lib\/gitcalendar\.css[^>]*>/gi, '')
+    .replace(/<script\b[^>]*hexo-filter-gitcalendar\/lib\/gitcalendar\.js[^>]*><\/script>/gi, '')
+    .replace(SINGLE_SCRIPT_WITH_GITCALENDAR, '')
+}
+
+function removeLegacyTwikoo(html) {
+  return html
+    .replace(/^\s*twikoo\.init\(\{[^}]*\}\)\s*;?\s*$/gim, '')
+    .replace(SINGLE_SCRIPT_WITH_LEGACY_TWIKOO, '')
+}
+
+export function sanitizeLegacyHtml(html) {
+  return removeLegacyTwikoo(removeDeadGitCalendar(html))
     .replace(/"appId":"[^"]*"/g, `"appId":"${PLACEHOLDERS.algoliaAppId}"`)
     .replace(/"apiKey":"[^"]*"/g, `"apiKey":"${PLACEHOLDERS.algoliaSearchKey}"`)
     .replace(/"indexName":"[^"]*"/g, `"indexName":"${PLACEHOLDERS.algoliaIndexName}"`)
-    .replace(/envId:\s*(['"])[^'"]*\1/g, `envId: '${PLACEHOLDERS.twikooEnvId}'`)
-    .replace(/envId:\s*'https:\/\/twikoo\.godboy\.cc\/'/g, `envId: '${PLACEHOLDERS.twikooEnvId}'`)
     .replace(/var qweather_key = '[^']*'/g, `var qweather_key = '${PLACEHOLDERS.qweatherKey}'`)
     .replace(/var gaud_map_key = '[^']*'/g, `var gaud_map_key = '${PLACEHOLDERS.gaudMapKey}'`)
     .replace(/var baidu_ak_key = '[^']*'/g, `var baidu_ak_key = '${PLACEHOLDERS.baiduMapAk}'`)
@@ -47,8 +123,7 @@ export function sanitizeLegacyHtml(html) {
 
 export function sanitizeLegacyScript(script) {
   const bootstrap = [
-    'window.DAT_PUBLIC_SERVICES = window.DAT_PUBLIC_SERVICES || {};',
-    `window.DAT_PUBLIC_SERVICES.tencentMapKey = window.DAT_PUBLIC_SERVICES.tencentMapKey || '${PLACEHOLDERS.tencentMapKey}';`
+    'window.DAT_PUBLIC_SERVICES = window.DAT_PUBLIC_SERVICES || {};'
   ].join('\n')
 
   const rewritten = script.replace(/key:\s*['"][^'"]*['"]/g, 'key: window.DAT_PUBLIC_SERVICES.tencentMapKey')
@@ -56,8 +131,10 @@ export function sanitizeLegacyScript(script) {
 }
 
 export function applyPublicServices(html, services = getPublicServices()) {
-  return Object.entries(PLACEHOLDERS).reduce((result, [key, placeholder]) => {
+  const rendered = Object.entries(PLACEHOLDERS).reduce((result, [key, placeholder]) => {
     const value = services[key] ?? DEFAULT_SERVICES[key] ?? ''
     return result.replaceAll(placeholder, value)
   }, html)
+
+  return injectRuntimeSupport(rendered, services)
 }

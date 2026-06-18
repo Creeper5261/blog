@@ -24,8 +24,35 @@ test('sanitizeLegacyHtml replaces browser service values with placeholders', () 
 
   assert.doesNotMatch(sanitized, /OLD_APP|OLD_SEARCH|old_index|old-comment|OLD_QWEATHER|OLD_GAUD|OLD_BAIDU/)
   assert.match(sanitized, /__DAT_PUBLIC_ALGOLIA_APP_ID__/)
-  assert.match(sanitized, /__DAT_PUBLIC_TWIKOO_ENV_ID__/)
+  assert.doesNotMatch(sanitized, /twikoo\.init/)
+  assert.doesNotMatch(sanitized, /__DAT_PUBLIC_TWIKOO_ENV_ID__/)
   assert.match(sanitized, /__DAT_PUBLIC_QWEATHER_KEY__/)
+})
+
+test('sanitizeLegacyHtml removes dead GitCalendar and legacy Twikoo bootstraps', () => {
+  const html = `
+    <link rel="stylesheet" href="https://npm.elemecdn.com/hexo-filter-gitcalendar/lib/gitcalendar.css">
+    <div id="gitZone"></div>
+    <div id="twikoo-wrap"></div>
+    <script data-pjax src="https://npm.elemecdn.com/hexo-filter-gitcalendar/lib/gitcalendar.js"></script>
+    <script data-pjax>
+      GitCalendarInit("https://gitcalendar.fomal.cc/api?Creeper5261", [], 'Creeper5261')
+    </script>
+    <script>
+      const loadTwikoo = () => getScript('https://cdn.jsdelivr.net/npm/twikoo@1.6.8/dist/twikoo.all.min.js')
+      twikoo.init({ envId: 'https://twikoo.godboy.cc/' })
+    </script>
+  `
+
+  const sanitized = sanitizeLegacyHtml(html)
+
+  assert.match(sanitized, /id="gitZone"/)
+  assert.match(sanitized, /id="twikoo-wrap"/)
+  assert.doesNotMatch(sanitized, /gitcalendar\.fomal\.cc/)
+  assert.doesNotMatch(sanitized, /hexo-filter-gitcalendar/)
+  assert.doesNotMatch(sanitized, /twikoo@1\.6\.8/)
+  assert.doesNotMatch(sanitized, /twikoo\.init/)
+  assert.doesNotMatch(sanitized, /twikoo\.godboy\.cc/)
 })
 
 test('sanitizeLegacyScript replaces Tencent map key literals with runtime config', () => {
@@ -43,6 +70,7 @@ test('sanitizeLegacyScript replaces Tencent map key literals with runtime config
   assert.doesNotMatch(sanitized, /OLD_TENCENT_MAP/)
   assert.match(sanitized, /DAT_PUBLIC_SERVICES/)
   assert.match(sanitized, /tencentMapKey/)
+  assert.doesNotMatch(sanitized, /__DAT_PUBLIC_TENCENT_MAP_KEY__/)
 })
 
 test('applyPublicServices injects environment-backed values into placeholders', () => {
@@ -51,7 +79,7 @@ test('applyPublicServices injects environment-backed values into placeholders', 
       const GLOBAL_CONFIG = {
         algolia: {"appId":"__DAT_PUBLIC_ALGOLIA_APP_ID__","apiKey":"__DAT_PUBLIC_ALGOLIA_SEARCH_KEY__","indexName":"__DAT_PUBLIC_ALGOLIA_INDEX_NAME__"}
       }
-      twikoo.init({ envId: '__DAT_PUBLIC_TWIKOO_ENV_ID__' })
+      <div id="twikoo-wrap"></div>
     </script>
   `
 
@@ -59,12 +87,43 @@ test('applyPublicServices injects environment-backed values into placeholders', 
     algoliaAppId: 'APP_FROM_ENV',
     algoliaSearchKey: 'SEARCH_FROM_ENV',
     algoliaIndexName: 'INDEX_FROM_ENV',
-    twikooEnvId: 'https://comment.example/'
+    giscusRepo: 'Creeper5261/Creeper5261.github.io',
+    giscusRepoId: 'R_repo',
+    giscusCategory: 'Announcements',
+    giscusCategoryId: 'DIC_category'
   })
 
   assert.match(rendered, /APP_FROM_ENV/)
   assert.match(rendered, /SEARCH_FROM_ENV/)
   assert.match(rendered, /INDEX_FROM_ENV/)
-  assert.match(rendered, /https:\/\/comment\.example\//)
+  assert.match(rendered, /R_repo/)
+  assert.match(rendered, /DIC_category/)
   assert.doesNotMatch(rendered, /__DAT_PUBLIC_/)
+})
+
+test('applyPublicServices injects browser runtime config and service fallback loader', () => {
+  const rendered = applyPublicServices('<html><body><main>DAT</main></body></html>', {
+    algoliaAppId: 'APP_FROM_ENV',
+    algoliaSearchKey: 'SEARCH_FROM_ENV',
+    algoliaIndexName: 'INDEX_FROM_ENV',
+    giscusRepo: 'Creeper5261/Creeper5261.github.io',
+    giscusRepoId: 'R_repo',
+    giscusCategory: 'Announcements',
+    giscusCategoryId: 'DIC_category',
+    giscusMapping: 'pathname',
+    qweatherKey: 'QWEATHER_FROM_ENV',
+    gaudMapKey: 'GAUD_FROM_ENV',
+    baiduMapAk: 'BAIDU_FROM_ENV',
+    tencentMapKey: 'TENCENT_FROM_ENV'
+  })
+
+  assert.match(rendered, /window\.DAT_PUBLIC_SERVICES/)
+  assert.match(rendered, /"tencentMapKey":"TENCENT_FROM_ENV"/)
+  assert.match(rendered, /\/js\/github-calendar\.js/)
+  assert.match(rendered, /\/js\/comments-runtime\.js/)
+  assert.match(rendered, /\/js\/service-fallbacks\.js/)
+  assert.ok(
+    rendered.indexOf('window.DAT_PUBLIC_SERVICES') < rendered.indexOf('/js/github-calendar.js'),
+    'service config should be available before service runtime scripts load'
+  )
 })

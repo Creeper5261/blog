@@ -6,6 +6,15 @@ const path = require('path')
 const shellPath = path.join(hexo.base_dir, 'source', '_data', 'recovered-shell.json')
 let shell = null
 
+const singleScriptWithLegacyTwikoo = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:twikoo\.init|twikoo@1\.6\.8)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
+
+function sanitizeRecoveredSnippet(html) {
+  if (!html) return html
+  return html
+    .replace(/^\s*twikoo\.init\(\{[^}]*\}\)\s*;?\s*$/gim, '')
+    .replace(singleScriptWithLegacyTwikoo, '')
+}
+
 function loadShell() {
   if (shell) return shell
   if (!fs.existsSync(shellPath)) {
@@ -134,6 +143,7 @@ function findElementByClassAfter(html, tag, className, afterIndex) {
 
 function replaceBottomJsPjax(html, replacement) {
   if (!replacement) return html
+  replacement = sanitizeRecoveredSnippet(replacement)
   const marker = "document.addEventListener('DOMContentLoaded', panguInit)</script>"
   const markerIndex = html.indexOf(marker)
   if (markerIndex === -1) return html
