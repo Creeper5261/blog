@@ -59,3 +59,15 @@ test('prepareAstroAssets copies generated data files', async () => {
 
   assert.equal(await exists(path.join(targetRoot, 'data', 'github-calendar.json')), true)
 })
+
+test('prepareAstroAssets writes static host metadata', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'astro-assets-metadata-'))
+  const sourceRoot = path.join(root, 'source')
+  const targetRoot = path.join(root, '.astro-static')
+
+  await prepareAstroAssets({ sourceRoot, targetRoot })
+
+  const packageJson = JSON.parse(await readFile(path.join(targetRoot, 'package.json'), 'utf8'))
+  assert.equal(await exists(path.join(targetRoot, '.nojekyll')), true)
+  assert.equal(packageJson.engines.node, '24.x')
+})

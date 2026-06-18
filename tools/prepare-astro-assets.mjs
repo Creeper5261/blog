@@ -16,6 +16,12 @@ const DEFAULT_ASSET_DIRS = [
 ]
 
 const EXCLUDED_EXTENSIONS = new Set(['.apk'])
+const STATIC_HOST_PACKAGE = {
+  private: true,
+  engines: {
+    node: '24.x'
+  }
+}
 
 async function copyDir({ sourceDir, targetDir, skipped, relativeBase = '' }) {
   let entries
@@ -67,6 +73,7 @@ export async function prepareAstroAssets({
 } = {}) {
   const skipped = []
   await rm(targetRoot, { recursive: true, force: true })
+  await mkdir(targetRoot, { recursive: true })
 
   for (const dir of assetDirs) {
     await copyDir({
@@ -76,6 +83,9 @@ export async function prepareAstroAssets({
       relativeBase: dir
     })
   }
+
+  await writeFile(path.join(targetRoot, '.nojekyll'), '')
+  await writeFile(path.join(targetRoot, 'package.json'), `${JSON.stringify(STATIC_HOST_PACKAGE, null, 2)}\n`)
 
   return { skipped }
 }
