@@ -63,6 +63,29 @@ test('location API reports missing Tencent key without leaking details', async (
   assert.equal(response.reason, 'missing_tencent_map_key')
 })
 
+test('location API corrects obvious proxy geolocation for China browser timezone', async () => {
+  const response = await handleLocationRequest(new Request('https://example.test/api/location?tz=Asia%2FShanghai'), {
+    env: { PUBLIC_TENCENT_MAP_KEY: 'TENCENT_KEY' },
+    fetchImpl: async () => Response.json({
+      status: 0,
+      result: {
+        ip: '141.11.146.59',
+        location: { lat: 38.8833, lng: -77 },
+        ad_info: { nation: '美国', province: '', city: '', district: '' }
+      }
+    })
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    result: {
+      ip: '',
+      location: { lat: 40.158009, lng: 116.290663 },
+      ad_info: { nation: '中国', province: '北京市', city: '北京市', district: '昌平区' }
+    }
+  })
+})
+
 test('weather API normalizes QWeather now endpoint data', async () => {
   const response = await getWeather({
     env: { PUBLIC_QWEATHER_KEY: 'QWEATHER_KEY' },
@@ -93,7 +116,7 @@ test('weather API normalizes QWeather now endpoint data', async () => {
       windDir: '西北风',
       humidity: '44',
       updateTime: '2026-06-18T22:00+08:00',
-      location: '北邮沙河'
+      location: '北京'
     }
   })
 })
@@ -145,6 +168,46 @@ test('weather API prefers visitor location from Tencent IP lookup', async () => 
   })
 })
 
+test('weather API corrects proxy geolocation with China browser timezone', async () => {
+  const response = await handleWeatherRequest(new Request('https://example.test/api/weather?tz=Asia%2FShanghai'), {
+    env: {
+      PUBLIC_QWEATHER_KEY: 'QWEATHER_KEY',
+      PUBLIC_TENCENT_MAP_KEY: 'TENCENT_KEY'
+    },
+    fetchImpl: async (url) => {
+      if (url.hostname === 'apis.map.qq.com') {
+        return Response.json({
+          status: 0,
+          result: {
+            ip: '141.11.146.59',
+            location: { lat: 38.8833, lng: -77 },
+            ad_info: { nation: '美国', province: '', city: '', district: '' }
+          }
+        })
+      }
+
+      assert.equal(url.searchParams.get('location'), '116.290663,40.158009')
+      return Response.json({
+        code: '200',
+        now: { temp: '24', text: '多云', icon: '101', windDir: '北风', humidity: '45' }
+      })
+    }
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    weather: {
+      temp: '24',
+      text: '多云',
+      icon: '101',
+      windDir: '北风',
+      humidity: '45',
+      updateTime: '',
+      location: '北京'
+    }
+  })
+})
+
 test('weather API returns a compact browser payload', async () => {
   const response = await handleWeatherRequest(new Request('https://example.test/api/weather'), {
     env: { PUBLIC_QWEATHER_KEY: 'QWEATHER_KEY' },
@@ -155,6 +218,7 @@ test('weather API returns a compact browser payload', async () => {
   })
 
   assert.equal(response.status, 200)
+  assert.equal(response.headers.get('cache-control'), 'no-store')
   assert.deepEqual(await response.json(), {
     weather: {
       temp: '22',
@@ -163,7 +227,7 @@ test('weather API returns a compact browser payload', async () => {
       windDir: '东风',
       humidity: '31',
       updateTime: '',
-      location: '北邮沙河'
+      location: '北京'
     }
   })
 })

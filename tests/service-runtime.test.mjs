@@ -7,6 +7,8 @@ test('txmap welcome script guards missing Tencent location data', async () => {
 
   assert.match(script, /renderWelcomeFallback/)
   assert.match(script, /\/api\/location/)
+  assert.match(script, /resolvedOptions\(\)\.timeZone/)
+  assert.match(script, /encodeURIComponent\(timeZone\)/)
   assert.match(script, /ipLoacation.*result.*location/s)
   assert.match(script, /getDistance\(116\.290663,40\.158009/)
   assert.match(script, /和站长在同一个城市/)
@@ -23,6 +25,8 @@ test('service fallback script covers recovered external widgets', async () => {
   assert.match(script, /#busuanzi_value_site_pv/)
   assert.match(script, /\.card-clock/)
   assert.match(script, /\/api\/weather/)
+  assert.match(script, /resolvedOptions\(\)\.timeZone/)
+  assert.match(script, /encodeURIComponent\(timeZone\)/)
   assert.match(script, /#twikoo-wrap/)
   assert.match(script, /#gitZone/)
 })
