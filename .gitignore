@@ -19,6 +19,16 @@ _multiconfig.yml
 .env.*
 !.env.example
 
+# Local platform state and private secret material
+.vercel/
+.netlify/
+.wrangler/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+
 # Recovery scratch output, when this repo is opened from the original workspace
 .recovery-*/
 recovery-*.json
