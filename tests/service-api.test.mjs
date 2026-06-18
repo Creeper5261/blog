@@ -79,11 +79,31 @@ test('location API corrects obvious proxy geolocation for China browser timezone
   assert.equal(response.status, 200)
   assert.deepEqual(await response.json(), {
     result: {
-      ip: '',
+      ip: '141.11.146.59',
       location: { lat: 40.158009, lng: 116.290663 },
       ad_info: { nation: '中国', province: '北京市', city: '北京市', district: '昌平区' }
     }
   })
+})
+
+test('location API keeps a forwarded IP when proxy correction replaces only the place', async () => {
+  const response = await handleLocationRequest(new Request('https://example.test/api/location?tz=Asia%2FShanghai', {
+    headers: {
+      'x-forwarded-for': '203.0.113.20, 10.0.0.1'
+    }
+  }), {
+    env: { PUBLIC_TENCENT_MAP_KEY: 'TENCENT_KEY' },
+    fetchImpl: async () => Response.json({
+      status: 0,
+      result: {
+        location: { lat: 38.8833, lng: -77 },
+        ad_info: { nation: '美国', province: '', city: '', district: '' }
+      }
+    })
+  })
+
+  assert.equal(response.status, 200)
+  assert.equal((await response.json()).result.ip, '203.0.113.20')
 })
 
 test('weather API normalizes QWeather now endpoint data', async () => {
