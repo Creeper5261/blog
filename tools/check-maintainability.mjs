@@ -61,6 +61,14 @@ const forbidden = [
   {
     pattern: 'https://gitcalendar.fomal.cc/api?Creeper5261',
     reason: 'GitCalendar has been replaced by the local GitHub contribution calendar data'
+  },
+  {
+    pattern: 'https://widget.qweather.net/simple/static/js/he-simple-common.js?v=2.0',
+    reason: 'legacy QWeather widget script is replaced by the same-origin weather API'
+  },
+  {
+    pattern: 'https://cdn.cbd.int/hexo-butterfly-clock-anzhiyu/lib/clock.min.js',
+    reason: 'legacy clock script performs stale IP lookup; use the local service fallback clock'
   }
 ];
 
@@ -92,12 +100,7 @@ const forbiddenFingerprints = [
   }
 ];
 
-const manualAction = [
-  {
-    pattern: 'https://widget.qweather.net/simple/static/js/he-simple-common.js?v=2.0',
-    reason: 'QWeather widget script is external and may need a new widget/key setup'
-  }
-];
+const manualAction = [];
 
 async function walk(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true });

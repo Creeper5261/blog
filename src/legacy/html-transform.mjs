@@ -118,8 +118,18 @@ function removeLegacyTwikoo(html) {
     .replace(SINGLE_SCRIPT_WITH_LEGACY_TWIKOO, '')
 }
 
+function removeLegacyWeatherBootstraps(html) {
+  return html
+    .replace(/<script\b[^>]*widget\.qweather\.net\/simple\/static\/js\/he-simple-common\.js[^>]*><\/script>/gi, '')
+    .replace(/<script\b[^>]*hexo-butterfly-clock-anzhiyu\/lib\/clock\.min\.js[^>]*><\/script>/gi, '')
+}
+
+function removeDeadRuntimeBootstraps(html) {
+  return removeLegacyWeatherBootstraps(removeLegacyTwikoo(removeDeadGitCalendar(html)))
+}
+
 export function sanitizeLegacyHtml(html) {
-  return removeLegacyTwikoo(removeDeadGitCalendar(html))
+  return removeDeadRuntimeBootstraps(html)
     .replace(/"appId":"[^"]*"/g, `"appId":"${PLACEHOLDERS.algoliaAppId}"`)
     .replace(/"apiKey":"[^"]*"/g, `"apiKey":"${PLACEHOLDERS.algoliaSearchKey}"`)
     .replace(/"indexName":"[^"]*"/g, `"indexName":"${PLACEHOLDERS.algoliaIndexName}"`)
@@ -133,10 +143,11 @@ export function sanitizeLegacyScript(script) {
 }
 
 export function applyPublicServices(html, services = getPublicServices()) {
+  const cleanedHtml = removeDeadRuntimeBootstraps(html)
   const rendered = Object.entries(PLACEHOLDERS).reduce((result, [key, placeholder]) => {
     const value = SERVER_ONLY_SERVICES.has(key) ? '' : services[key] ?? DEFAULT_SERVICES[key] ?? ''
     return result.replaceAll(placeholder, value)
-  }, html)
+  }, cleanedHtml)
 
   return injectRuntimeSupport(rendered, services)
 }

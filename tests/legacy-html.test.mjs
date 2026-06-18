@@ -55,6 +55,20 @@ test('sanitizeLegacyHtml removes dead GitCalendar and legacy Twikoo bootstraps',
   assert.doesNotMatch(sanitized, /twikoo\.godboy\.cc/)
 })
 
+test('sanitizeLegacyHtml removes legacy weather IP lookup bootstraps', () => {
+  const html = `
+    <div id="hexo_electric_clock"></div>
+    <script src="https://widget.qweather.net/simple/static/js/he-simple-common.js?v=2.0"></script>
+    <script data-pjax src="https://cdn.cbd.int/hexo-butterfly-clock-anzhiyu/lib/clock.min.js"></script>
+  `
+
+  const sanitized = sanitizeLegacyHtml(html)
+
+  assert.match(sanitized, /id="hexo_electric_clock"/)
+  assert.doesNotMatch(sanitized, /widget\.qweather\.net/)
+  assert.doesNotMatch(sanitized, /hexo-butterfly-clock-anzhiyu\/lib\/clock\.min\.js/)
+})
+
 test('sanitizeLegacyScript removes Tencent map key literals from copied scripts', () => {
   const script = `
     $.ajax({
@@ -141,4 +155,22 @@ test('applyPublicServices injects browser-safe runtime config and service fallba
     rendered.indexOf('window.DAT_PUBLIC_SERVICES') < rendered.indexOf('/js/github-calendar.js'),
     'service config should be available before service runtime scripts load'
   )
+})
+
+test('applyPublicServices removes legacy weather IP lookup bootstraps from rendered pages', () => {
+  const rendered = applyPublicServices(`
+    <html>
+      <head></head>
+      <body>
+        <div id="hexo_electric_clock"></div>
+        <script src="https://widget.qweather.net/simple/static/js/he-simple-common.js?v=2.0"></script>
+        <script data-pjax src="https://cdn.cbd.int/hexo-butterfly-clock-anzhiyu/lib/clock.min.js"></script>
+      </body>
+    </html>
+  `)
+
+  assert.match(rendered, /id="hexo_electric_clock"/)
+  assert.doesNotMatch(rendered, /widget\.qweather\.net/)
+  assert.doesNotMatch(rendered, /hexo-butterfly-clock-anzhiyu\/lib\/clock\.min\.js/)
+  assert.match(rendered, /\/js\/service-fallbacks\.js/)
 })
