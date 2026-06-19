@@ -11,6 +11,11 @@ import {
   handleWeatherRequest,
   normalizeWeather
 } from '../api/weather.mjs'
+import {
+  createVisitorHash,
+  handleStatsRequest,
+  normalizePathname
+} from '../api/stats.mjs'
 
 test('location API extracts the visitor IP from Vercel proxy headers', () => {
   const request = new Request('https://example.test/api/location', {
@@ -254,4 +259,220 @@ test('weather API returns a compact browser payload', async () => {
 
 test('weather normalization rejects non-success QWeather payloads', () => {
   assert.equal(normalizeWeather({ code: '401' }), null)
+})
+
+function createMockRedis(initial = {}) {
+  const state = new Map(Object.entries(initial))
+  const calls = []
+
+  return {
+    calls,
+    async command(command, ...args) {
+      calls.push([command, ...args])
+
+      if (command === 'GET') return state.get(args[0]) ?? null
+      if (command === 'SET') {
+        state.set(args[0], args[1])
+        return 'OK'
+      }
+      if (command === 'INCR') {
+        const next = Number(state.get(args[0]) || 0) + 1
+        state.set(args[0], String(next))
+        return next
+      }
+      if (command === 'SADD') {
+        const key = args[0]
+        const members = new Set(JSON.parse(state.get(key) || '[]'))
+        const before = members.size
+        for (const member of args.slice(1)) members.add(member)
+        state.set(key, JSON.stringify([...members].sort()))
+        return members.size - before
+      }
+      if (command === 'SCARD') {
+        return JSON.parse(state.get(args[0]) || '[]').length
+      }
+      if (command === 'KEYS') {
+        const pattern = String(args[0]).replaceAll('*', '.*')
+        const re = new RegExp(`^${pattern}$`)
+        return [...state.keys()].filter(key => re.test(key)).sort()
+      }
+      if (command === 'MGET') {
+        return args.map(key => state.get(key) ?? null)
+      }
+
+      throw new Error(`unexpected redis command: ${command}`)
+    }
+  }
+}
+
+test('stats API normalizes page paths without query strings or hashes', () => {
+  assert.equal(normalizePathname('/2023/05/16/Arcaea/?utm=1#comments'), '/2023/05/16/Arcaea/')
+  assert.equal(normalizePathname('https://example.test/about/?x=1'), '/about/')
+  assert.equal(normalizePathname('not a url'), '/')
+})
+
+test('stats API hashes visitor inputs with a private salt', async () => {
+  const request = new Request('https://example.test/api/stats', {
+    headers: {
+      'x-forwarded-for': '203.0.113.10',
+      'user-agent': 'Test Browser'
+    }
+  })
+
+  const first = await createVisitorHash(request, { env: { STATS_HASH_SALT: 'salt-one' }, visitorId: 'visitor-a' })
+  const second = await createVisitorHash(request, { env: { STATS_HASH_SALT: 'salt-two' }, visitorId: 'visitor-a' })
+
+  assert.match(first, /^[a-f0-9]{64}$/)
+  assert.notEqual(first, second)
+})
+
+test('stats API records a visit and returns Busuanzi-compatible counters', async () => {
+  const redis = createMockRedis()
+  const request = new Request('https://example.test/api/stats', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-forwarded-for': '203.0.113.10',
+      'user-agent': 'Test Browser'
+    },
+    body: JSON.stringify({
+      path: '/about/?from=test',
+      visitorId: 'visitor-a'
+    })
+  })
+
+  const response = await handleStatsRequest(request, {
+    env: { STATS_HASH_SALT: 'salt-one' },
+    redis
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    site_uv: 1,
+    site_pv: 1,
+    page_pv: 1,
+    path: '/about/',
+    ok: true
+  })
+  assert.deepEqual(redis.calls.map(call => call[0]), ['SADD', 'INCR', 'INCR', 'SCARD', 'GET', 'GET'])
+})
+
+test('stats API does not count the same visitor twice for site UV', async () => {
+  const redis = createMockRedis()
+  const options = { env: { STATS_HASH_SALT: 'salt-one' }, redis }
+
+  for (let i = 0; i < 2; i += 1) {
+    await handleStatsRequest(new Request('https://example.test/api/stats', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': '203.0.113.10',
+        'user-agent': 'Test Browser'
+      },
+      body: JSON.stringify({ path: '/', visitorId: 'same-visitor' })
+    }), options)
+  }
+
+  const response = await handleStatsRequest(new Request('https://example.test/api/stats'), options)
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    site_uv: 1,
+    site_pv: 2,
+    page_pv: 2,
+    path: '/',
+    ok: true
+  })
+})
+
+test('stats API export requires a backup token and includes page counters', async () => {
+  const redis = createMockRedis({
+    'stats:site:pv': '7',
+    'stats:site:uv': JSON.stringify(['a', 'b', 'c']),
+    'stats:page:/': '5',
+    'stats:page:/about/': '2'
+  })
+
+  const denied = await handleStatsRequest(new Request('https://example.test/api/stats?export=1'), {
+    env: { STATS_BACKUP_TOKEN: 'secret' },
+    redis
+  })
+  assert.equal(denied.status, 401)
+
+  const allowed = await handleStatsRequest(new Request('https://example.test/api/stats?export=1&token=secret'), {
+    env: { STATS_BACKUP_TOKEN: 'secret' },
+    redis
+  })
+
+  assert.equal(allowed.status, 200)
+  const exported = await allowed.json()
+  assert.match(exported.exportedAt, /\d{4}-\d{2}-\d{2}T/)
+  assert.deepEqual(exported, {
+    exportedAt: exported.exportedAt,
+    site: {
+      uv: 3,
+      pv: 7
+    },
+    pages: {
+      '/': 5,
+      '/about/': 2
+    }
+  })
+})
+
+test('stats API reports unavailable storage without counting locally', async () => {
+  const response = await handleStatsRequest(new Request('https://example.test/api/stats', { method: 'POST' }), {
+    env: {}
+  })
+
+  assert.equal(response.status, 503)
+  assert.deepEqual(await response.json(), {
+    ok: false,
+    error: 'stats_storage_unconfigured'
+  })
+})
+
+test('stats API can use Upstash REST storage from environment variables', async () => {
+  const commands = []
+  const response = await handleStatsRequest(new Request('https://example.test/api/stats', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-forwarded-for': '203.0.113.10',
+      'user-agent': 'Test Browser'
+    },
+    body: JSON.stringify({ path: '/about/', visitorId: 'visitor-a' })
+  }), {
+    env: {
+      KV_REST_API_URL: 'https://redis.example',
+      KV_REST_API_TOKEN: 'token',
+      STATS_HASH_SALT: 'salt-one'
+    },
+    fetchImpl: async (url, options) => {
+      assert.equal(String(url), 'https://redis.example/pipeline')
+      assert.equal(options.headers.authorization, 'Bearer token')
+
+      const [[command, key]] = JSON.parse(options.body)
+      commands.push(command)
+
+      if (command === 'SADD') return Response.json([{ result: 1 }])
+      if (command === 'INCR') return Response.json([{ result: 1 }])
+      if (command === 'SCARD') return Response.json([{ result: 1 }])
+      if (command === 'GET') {
+        assert.match(key, /^stats:(site:pv|page:\/about\/)$/)
+        return Response.json([{ result: '1' }])
+      }
+
+      throw new Error(`unexpected redis command: ${command}`)
+    }
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    site_uv: 1,
+    site_pv: 1,
+    page_pv: 1,
+    path: '/about/',
+    ok: true
+  })
+  assert.deepEqual(commands, ['SADD', 'INCR', 'INCR', 'SCARD', 'GET', 'GET'])
 })

@@ -150,6 +150,7 @@ test('applyPublicServices injects browser-safe runtime config and service fallba
   assert.match(rendered, /var baidu_ak_key = ''/)
   assert.match(rendered, /\/js\/github-calendar\.js/)
   assert.match(rendered, /\/js\/comments-runtime\.js/)
+  assert.match(rendered, /\/js\/stats-runtime\.js/)
   assert.match(rendered, /\/js\/service-fallbacks\.js/)
   assert.ok(
     rendered.indexOf('window.DAT_PUBLIC_SERVICES') < rendered.indexOf('/js/github-calendar.js'),

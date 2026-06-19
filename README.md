@@ -105,9 +105,17 @@ PUBLIC_TENCENT_MAP_KEY
 PUBLIC_QWEATHER_KEY
 PUBLIC_GAUD_MAP_KEY
 PUBLIC_BAIDU_MAP_AK
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
+KV_REST_API_URL
+KV_REST_API_TOKEN
+STATS_HASH_SALT
+STATS_BACKUP_TOKEN
 TENCENT_MAP_KEY
 QWEATHER_KEY
 ```
+
+`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and Vercel KV's `KV_REST_API_URL` / `KV_REST_API_TOKEN` are equivalent storage choices for `/api/stats`; set one pair in Vercel. `STATS_HASH_SALT` is a private random string used to hash visitors for UV dedupe, and `STATS_BACKUP_TOKEN` protects the JSON export endpoint at `/api/stats?export=1`.
 
 Do not commit real app keys, tokens, private endpoints, `.vercel/`, or files under `secrets/`.
 
@@ -140,10 +148,12 @@ PUBLIC_GISCUS_MAPPING=pathname
 - `source/js/github-calendar.js` renders that local JSON into `#gitZone`, replacing the dead `gitcalendar.fomal.cc` API.
 - `api/location.mjs` proxies Tencent Map IP location through Vercel Functions so the Tencent key stays in platform env.
 - `api/weather.mjs` proxies QWeather now data through Vercel Functions so the weather key stays in platform env.
+- `api/stats.mjs` records PV/UV counters through Upstash Redis or Vercel KV and can export a backup JSON with `STATS_BACKUP_TOKEN`.
+- `source/js/stats-runtime.js` fills the recovered Busuanzi counter slots from `/api/stats` while keeping one anonymous visitor id in browser local storage.
 - `source/js/service-fallbacks.js` remains a defensive layer so widgets do not stay blank forever.
 
 - welcome/location falls back only when `/api/location` has no key or no response;
-- Busuanzi PV/UV counters fall back to `--` if the service stalls;
+- PV/UV counters fall back to `--` if `/api/stats` has no configured storage or cannot respond;
 - the weather clock first tries `/api/weather`, then falls back to a local time card;
 - Giscus renders a clear setup/loading status only if the script cannot load;
 - GitHub contribution calendar renders a clear status only if local data is unavailable.
@@ -172,7 +182,7 @@ Spot checks on 2026-06-18 confirmed image, PDF, font, and background paths under
 | --- | --- | --- | --- |
 | Picbed images/PDF/font | Markdown, CSS, recovered injectors | Fixed to jsDelivr GitHub CDN | Keep `Creeper5261/picbed` paths stable. |
 | jsDelivr npm CDN | Butterfly injected scripts | Fixed for APlayer, Vue, Element UI, SweetAlert2, WinBox, typed.js, Meting | No action now. |
-| Busuanzi PV/UV | Butterfly `busuanzi` | Frontend script reachable | Historical UV/PV cannot be restored from source; only the live Busuanzi service can provide current counters. |
+| PV/UV statistics | `api/stats.mjs`, `source/js/stats-runtime.js` | Replaced old Busuanzi dependency with same-origin counters backed by Upstash Redis or Vercel KV | Configure storage env on Vercel, keep `STATS_BACKUP_TOKEN`, and export `/api/stats?export=1&token=...` for periodic backups. |
 | Giscus comments | `source/js/comments-runtime.js` | Replaces Twikoo; bound to public `Creeper5261/Creeper5261.github.io` Discussions | Ensure the Giscus GitHub App is installed for the public repo. |
 | GitHub contribution calendar | `tools/prepare-github-calendar.mjs`, `source/js/github-calendar.js` | Replaces GitCalendar with local build data | Build refreshes data from GitHub public contributions; cache/fallback is local. |
 | QWeather widget / clock weather | `source/_data/recovered-injector.json` | Vercel key restored; widget/CDN may still fail; page has fallback | Recreate the QWeather widget/key if the old widget remains unavailable. |
@@ -183,7 +193,7 @@ Spot checks on 2026-06-18 confirmed image, PDF, font, and background paths under
 ## Notes On Lost Data
 
 - Article `date` and `updated` values were recovered into Markdown front matter where available.
-- Busuanzi historical UV/PV is not recoverable from static HTML or Hexo source alone.
+- Busuanzi historical UV/PV is not recoverable from static HTML or Hexo source alone. New PV/UV starts from the configured Upstash Redis or Vercel KV database and can be exported as JSON.
 - Old Twikoo comment history is not recoverable unless the old Twikoo backend database still exists. New comments use Giscus Discussions in the public output repository.
 - Vercel deployment snapshots can help recover generated assets and HTML, but not third-party service databases.
 

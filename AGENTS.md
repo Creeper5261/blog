@@ -46,8 +46,10 @@ pnpm run build
 - Use `.env.example` as the variable template.
 - Tencent Map requires `PUBLIC_TENCENT_MAP_KEY` or `TENCENT_MAP_KEY` on Vercel.
 - QWeather requires `PUBLIC_QWEATHER_KEY` or `QWEATHER_KEY` on Vercel.
+- PV/UV statistics require either `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` or Vercel KV's `KV_REST_API_URL` + `KV_REST_API_TOKEN` on Vercel.
+- Keep `STATS_HASH_SALT` and `STATS_BACKUP_TOKEN` private. The backup token authorizes `/api/stats?export=1`; never paste it into source, generated output, or test fixtures.
 - Giscus uses public IDs for `Creeper5261/Creeper5261.github.io`: repo id `R_kgDOJjHleA`, category id `DIC_kwDOJjHleM4C_aiF`, mapping `pathname`.
-- Busuanzi counters and old Twikoo comments are external data. Source edits cannot restore historical UV/PV or old comments without the original service data.
+- Old Busuanzi counters and old Twikoo comments are external data. Source edits cannot restore historical UV/PV or old comments without the original service data.
 - The old Twikoo frontend is replaced by `source/js/comments-runtime.js`; do not reintroduce Twikoo unless explicitly requested.
 - GitCalendar is replaced by `tools/prepare-github-calendar.mjs` and `source/js/github-calendar.js`; do not load `gitcalendar.fomal.cc`.
 - Runtime widget fallbacks live in `source/js/service-fallbacks.js`. Keep them lightweight and idempotent for normal load and `pjax:complete`.

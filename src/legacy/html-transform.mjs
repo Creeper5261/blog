@@ -38,6 +38,7 @@ const SERVER_ONLY_SERVICES = new Set([
 const RUNTIME_SCRIPTS = [
   '/js/github-calendar.js',
   '/js/comments-runtime.js',
+  '/js/stats-runtime.js',
   '/js/service-fallbacks.js'
 ]
 

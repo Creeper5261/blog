@@ -34,6 +34,19 @@ test('service fallback script covers recovered external widgets', async () => {
   assert.match(script, /#gitZone/)
 })
 
+test('stats runtime records visits and fills legacy Busuanzi counters', async () => {
+  const script = await readFile('source/js/stats-runtime.js', 'utf8')
+
+  assert.match(script, /\/api\/stats/)
+  assert.match(script, /localStorage/)
+  assert.match(script, /dat_stats_visitor_id/)
+  assert.match(script, /method:\s*'POST'/)
+  assert.match(script, /#busuanzi_value_site_uv/)
+  assert.match(script, /#busuanzi_value_site_pv/)
+  assert.match(script, /#busuanzi_value_page_pv/)
+  assert.match(script, /pjax:complete/)
+})
+
 test('comments runtime loads Giscus only', async () => {
   const script = await readFile('source/js/comments-runtime.js', 'utf8')
 
