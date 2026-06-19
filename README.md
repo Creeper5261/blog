@@ -22,6 +22,16 @@ Keep source and output split:
 - Vercel should deploy from the public output repository if you want the old "only publish generated files" model.
 - Giscus comments are bound to the public output repository's Discussions, not the private source repository.
 
+The automated pipeline is:
+
+```text
+private source repo -> pnpm run check -> pnpm run build -> dist/ -> public output repo -> Vercel
+```
+
+`publish.yml` runs on pushes to `main`, checks the private source, builds `dist/`, syncs it into a checkout of `Creeper5261/Creeper5261.github.io`, and pushes only generated output. Vercel should stay attached to the public repository for the source-private deployment model.
+
+`stats-backup.yml` runs daily, exports protected PV/UV data, uploads a private workflow artifact, and also commits the same JSON into the private `stats-backups` branch so the backup outlives artifact retention.
+
 ## URL Policy
 
 Use a reachable stable URL first:
@@ -62,6 +72,24 @@ Start local Astro dev server:
 
 ```bash
 pnpm run server
+```
+
+Start the local-only writing client:
+
+```bash
+pnpm run writer
+```
+
+Publish a generated `dist/` directory into a checked-out public output repository:
+
+```bash
+PUBLIC_REPO_CHECKOUT=../public-output pnpm run publish:output
+```
+
+Export PV/UV statistics into `.local/stats-backups`:
+
+```bash
+STATS_BACKUP_URL=https://creeper5261-github-io.vercel.app/api/stats STATS_BACKUP_TOKEN=... pnpm run backup:stats
 ```
 
 Run the old Hexo baseline:
@@ -111,13 +139,26 @@ KV_REST_API_URL
 KV_REST_API_TOKEN
 STATS_HASH_SALT
 STATS_BACKUP_TOKEN
+STATS_BACKUP_URL
 TENCENT_MAP_KEY
 QWEATHER_KEY
+WRITER_HOST
+WRITER_PORT
 ```
 
 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and Vercel KV's `KV_REST_API_URL` / `KV_REST_API_TOKEN` are equivalent storage choices for `/api/stats`; set one pair in Vercel. `STATS_HASH_SALT` is a private random string used to hash visitors for UV dedupe, and `STATS_BACKUP_TOKEN` protects the JSON export endpoint at `/api/stats?export=1`.
 
 Do not commit real app keys, tokens, private endpoints, `.vercel/`, or files under `secrets/`.
+
+GitHub Actions secrets for repository-owned automation:
+
+```text
+PUBLIC_REPO_DEPLOY_KEY
+STATS_BACKUP_URL
+STATS_BACKUP_TOKEN
+```
+
+`PUBLIC_REPO_DEPLOY_KEY` is an SSH private deploy key with write access to `Creeper5261/Creeper5261.github.io`. Keep Vercel app keys, Redis/KV tokens, and map/weather keys in Vercel Environment Variables; the public output workflow should not need those private runtime values.
 
 Vercel project variables configured on 2026-06-18:
 
@@ -151,6 +192,9 @@ PUBLIC_GISCUS_MAPPING=pathname
 - `api/stats.mjs` records PV/UV counters through Upstash Redis or Vercel KV and can export a backup JSON with `STATS_BACKUP_TOKEN`.
 - `source/js/stats-runtime.js` fills the recovered Busuanzi counter slots from `/api/stats` while keeping one anonymous visitor id in browser local storage.
 - `source/js/service-fallbacks.js` remains a defensive layer so widgets do not stay blank forever.
+- `tools/backup-stats.mjs` exports the protected stats JSON into timestamped local files; `.github/workflows/stats-backup.yml` uploads those files as private workflow artifacts and commits them to the private `stats-backups` branch every day.
+- `tools/writer/server.mjs` starts a localhost-only writing client for Markdown validation and saving into `source/_posts`.
+- `tools/publish-output.mjs` cleans and syncs generated `dist/` output into the public generated-output repository while preserving `.git` and `CNAME`.
 
 - welcome/location falls back only when `/api/location` has no key or no response;
 - PV/UV counters fall back to `--` if `/api/stats` has no configured storage or cannot respond;

@@ -1,0 +1,70 @@
+name: Backup visit statistics
+
+on:
+  schedule:
+    - cron: "17 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Export protected stats
+        env:
+          STATS_BACKUP_URL: ${{ secrets.STATS_BACKUP_URL }}
+          STATS_BACKUP_TOKEN: ${{ secrets.STATS_BACKUP_TOKEN }}
+        run: pnpm run backup:stats
+
+      - name: Upload private backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stats-backup
+          path: .local/stats-backups/*.json
+          retention-days: 90
+
+      - name: Persist backup to private branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          backup_file="$(find .local/stats-backups -name '*.json' -type f | sort | tail -n 1)"
+          test -n "$backup_file"
+          workdir="$(mktemp -d)"
+          git clone --no-checkout "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$workdir"
+          cd "$workdir"
+          if git ls-remote --exit-code --heads origin stats-backups >/dev/null 2>&1; then
+            git checkout stats-backups
+          else
+            git checkout --orphan stats-backups
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          mkdir -p stats
+          cp "$GITHUB_WORKSPACE/$backup_file" "stats/$(basename "$backup_file")"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stats
+          if git diff --cached --quiet; then
+            echo "No stats backup changes."
+          else
+            git commit -m "backup: export visit statistics"
+            git push origin stats-backups
+          fi

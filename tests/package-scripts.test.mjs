@@ -21,3 +21,9 @@ test('normal Astro preparation writes generated calendar data after static asset
   assert.notEqual(calendarIndex, -1)
   assert.ok(assetsIndex < calendarIndex, 'calendar data must be generated after .astro-static is refreshed')
 })
+
+test('data sovereignty helper scripts are exposed through package scripts', () => {
+  assert.match(packageJson.scripts.writer, /tools\/writer\/server\.mjs/)
+  assert.match(packageJson.scripts['publish:output'], /tools\/publish-output\.mjs/)
+  assert.match(packageJson.scripts['backup:stats'], /tools\/backup-stats\.mjs/)
+})

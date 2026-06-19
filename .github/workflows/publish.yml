@@ -1,0 +1,70 @@
+name: Publish generated blog output
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check source
+        run: pnpm run check
+
+      - name: Build generated output
+        run: pnpm run build
+
+      - name: Configure public repository deploy key
+        env:
+          PUBLIC_REPO_DEPLOY_KEY: ${{ secrets.PUBLIC_REPO_DEPLOY_KEY }}
+        run: |
+          test -n "$PUBLIC_REPO_DEPLOY_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$PUBLIC_REPO_DEPLOY_KEY" > ~/.ssh/public_repo_deploy_key
+          chmod 600 ~/.ssh/public_repo_deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git config --global core.sshCommand "ssh -i ~/.ssh/public_repo_deploy_key -o IdentitiesOnly=yes"
+
+      - name: Checkout public generated-output repository
+        run: git clone git@github.com:Creeper5261/Creeper5261.github.io.git ../public-output
+
+      - name: Sync generated output
+        env:
+          PUBLIC_REPO_CHECKOUT: ../public-output
+          PUBLISH_DIST_DIR: dist
+        run: pnpm run publish:output
+
+      - name: Commit and push generated output
+        working-directory: ../public-output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No generated output changes."
+          else
+            git commit -m "deploy: publish generated blog output"
+            git push origin main
+          fi
