@@ -21,8 +21,11 @@ test('stats backup workflow exports protected stats as a private artifact', asyn
   const workflow = await readWorkflow('stats-backup.yml')
 
   assert.match(workflow, /schedule:/)
+  assert.match(workflow, /contents: write/)
   assert.match(workflow, /STATS_BACKUP_URL/)
   assert.match(workflow, /STATS_BACKUP_TOKEN/)
   assert.match(workflow, /pnpm run backup:stats/)
   assert.match(workflow, /actions\/upload-artifact/)
+  assert.match(workflow, /stats-backups/)
+  assert.match(workflow, /git push origin stats-backups/)
 })

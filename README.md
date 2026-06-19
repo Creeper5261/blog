@@ -30,6 +30,8 @@ private source repo -> pnpm run check -> pnpm run build -> dist/ -> public outpu
 
 `publish.yml` runs on pushes to `main`, checks the private source, builds `dist/`, syncs it into a checkout of `Creeper5261/Creeper5261.github.io`, and pushes only generated output. Vercel should stay attached to the public repository for the source-private deployment model.
 
+`stats-backup.yml` runs daily, exports protected PV/UV data, uploads a private workflow artifact, and also commits the same JSON into the private `stats-backups` branch so the backup outlives artifact retention.
+
 ## URL Policy
 
 Use a reachable stable URL first:
@@ -190,7 +192,7 @@ PUBLIC_GISCUS_MAPPING=pathname
 - `api/stats.mjs` records PV/UV counters through Upstash Redis or Vercel KV and can export a backup JSON with `STATS_BACKUP_TOKEN`.
 - `source/js/stats-runtime.js` fills the recovered Busuanzi counter slots from `/api/stats` while keeping one anonymous visitor id in browser local storage.
 - `source/js/service-fallbacks.js` remains a defensive layer so widgets do not stay blank forever.
-- `tools/backup-stats.mjs` exports the protected stats JSON into timestamped local files; `.github/workflows/stats-backup.yml` uploads those files as private workflow artifacts every day.
+- `tools/backup-stats.mjs` exports the protected stats JSON into timestamped local files; `.github/workflows/stats-backup.yml` uploads those files as private workflow artifacts and commits them to the private `stats-backups` branch every day.
 - `tools/writer/server.mjs` starts a localhost-only writing client for Markdown validation and saving into `source/_posts`.
 - `tools/publish-output.mjs` cleans and syncs generated `dist/` output into the public generated-output repository while preserving `.git` and `CNAME`.
 

@@ -52,6 +52,7 @@ pnpm run build
 - PV/UV statistics require either `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` or Vercel KV's `KV_REST_API_URL` + `KV_REST_API_TOKEN` on Vercel.
 - Keep `STATS_HASH_SALT` and `STATS_BACKUP_TOKEN` private. The backup token authorizes `/api/stats?export=1`; never paste it into source, generated output, or test fixtures.
 - GitHub Actions uses `PUBLIC_REPO_DEPLOY_KEY`, `STATS_BACKUP_URL`, and `STATS_BACKUP_TOKEN` as repository secrets. Do not commit deploy keys or tokens.
+- Visit statistics backups are written to private workflow artifacts and the private `stats-backups` branch; do not merge backup JSON into the normal source branches.
 - `STATS_BACKUP_URL` should point at the deployed same-origin stats endpoint, normally `https://creeper5261-github-io.vercel.app/api/stats`.
 - Giscus uses public IDs for `Creeper5261/Creeper5261.github.io`: repo id `R_kgDOJjHleA`, category id `DIC_kwDOJjHleM4C_aiF`, mapping `pathname`.
 - Old Busuanzi counters and old Twikoo comments are external data. Source edits cannot restore historical UV/PV or old comments without the original service data.

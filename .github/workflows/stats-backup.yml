@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   backup:
@@ -41,3 +41,30 @@ jobs:
           name: stats-backup
           path: .local/stats-backups/*.json
           retention-days: 90
+
+      - name: Persist backup to private branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          backup_file="$(find .local/stats-backups -name '*.json' -type f | sort | tail -n 1)"
+          test -n "$backup_file"
+          workdir="$(mktemp -d)"
+          git clone --no-checkout "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$workdir"
+          cd "$workdir"
+          if git ls-remote --exit-code --heads origin stats-backups >/dev/null 2>&1; then
+            git checkout stats-backups
+          else
+            git checkout --orphan stats-backups
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          mkdir -p stats
+          cp "$GITHUB_WORKSPACE/$backup_file" "stats/$(basename "$backup_file")"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stats
+          if git diff --cached --quiet; then
+            echo "No stats backup changes."
+          else
+            git commit -m "backup: export visit statistics"
+            git push origin stats-backups
+          fi
