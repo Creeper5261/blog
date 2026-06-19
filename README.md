@@ -135,6 +135,8 @@ PUBLIC_GAUD_MAP_KEY
 PUBLIC_BAIDU_MAP_AK
 UPSTASH_REDIS_REST_URL
 UPSTASH_REDIS_REST_TOKEN
+UPSTASH_REDIS_REST_KV_REST_API_URL
+UPSTASH_REDIS_REST_KV_REST_API_TOKEN
 KV_REST_API_URL
 KV_REST_API_TOKEN
 STATS_HASH_SALT
@@ -146,7 +148,7 @@ WRITER_HOST
 WRITER_PORT
 ```
 
-`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and Vercel KV's `KV_REST_API_URL` / `KV_REST_API_TOKEN` are equivalent storage choices for `/api/stats`; set one pair in Vercel. `STATS_HASH_SALT` is a private random string used to hash visitors for UV dedupe, and `STATS_BACKUP_TOKEN` protects the JSON export endpoint at `/api/stats?export=1`.
+`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and Vercel KV's `KV_REST_API_URL` / `KV_REST_API_TOKEN` are equivalent storage choices for `/api/stats`; set one pair in Vercel. Vercel's Upstash marketplace connector may create prefixed KV names such as `UPSTASH_REDIS_REST_KV_REST_API_URL` / `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`; those are supported too. `STATS_HASH_SALT` is a private random string used to hash visitors for UV dedupe, and `STATS_BACKUP_TOKEN` protects the JSON export endpoint at `/api/stats?export=1`.
 
 Do not commit real app keys, tokens, private endpoints, `.vercel/`, or files under `secrets/`.
 

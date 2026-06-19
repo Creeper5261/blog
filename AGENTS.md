@@ -49,7 +49,7 @@ pnpm run build
 - Use `.env.example` as the variable template.
 - Tencent Map requires `PUBLIC_TENCENT_MAP_KEY` or `TENCENT_MAP_KEY` on Vercel.
 - QWeather requires `PUBLIC_QWEATHER_KEY` or `QWEATHER_KEY` on Vercel.
-- PV/UV statistics require either `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` or Vercel KV's `KV_REST_API_URL` + `KV_REST_API_TOKEN` on Vercel.
+- PV/UV statistics require either `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`, Vercel KV's `KV_REST_API_URL` + `KV_REST_API_TOKEN`, or Vercel Upstash marketplace prefixed names `UPSTASH_REDIS_REST_KV_REST_API_URL` + `UPSTASH_REDIS_REST_KV_REST_API_TOKEN` on Vercel.
 - Keep `STATS_HASH_SALT` and `STATS_BACKUP_TOKEN` private. The backup token authorizes `/api/stats?export=1`; never paste it into source, generated output, or test fixtures.
 - GitHub Actions uses `PUBLIC_REPO_DEPLOY_KEY`, `STATS_BACKUP_URL`, and `STATS_BACKUP_TOKEN` as repository secrets. Do not commit deploy keys or tokens.
 - Visit statistics backups are written to private workflow artifacts and the private `stats-backups` branch; do not merge backup JSON into the normal source branches.

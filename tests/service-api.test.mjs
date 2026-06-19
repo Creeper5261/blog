@@ -476,3 +476,33 @@ test('stats API can use Upstash REST storage from environment variables', async 
   })
   assert.deepEqual(commands, ['SADD', 'INCR', 'INCR', 'SCARD', 'GET', 'GET'])
 })
+
+test('stats API can use Vercel Upstash integration prefixed KV variables', async () => {
+  const response = await handleStatsRequest(new Request('https://example.test/api/stats?path=/'), {
+    env: {
+      UPSTASH_REDIS_REST_KV_REST_API_URL: 'https://prefixed-redis.example',
+      UPSTASH_REDIS_REST_KV_REST_API_TOKEN: 'prefixed-token',
+      STATS_HASH_SALT: 'salt-one'
+    },
+    fetchImpl: async (url, options) => {
+      assert.equal(String(url), 'https://prefixed-redis.example/pipeline')
+      assert.equal(options.headers.authorization, 'Bearer prefixed-token')
+
+      const [[command, key]] = JSON.parse(options.body)
+      if (command === 'SCARD') return Response.json([{ result: 2 }])
+      if (command === 'GET' && key === 'stats:site:pv') return Response.json([{ result: '3' }])
+      if (command === 'GET' && key === 'stats:page:/') return Response.json([{ result: '1' }])
+
+      throw new Error(`unexpected redis command: ${command}`)
+    }
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    site_uv: 2,
+    site_pv: 3,
+    page_pv: 1,
+    path: '/',
+    ok: true
+  })
+})
