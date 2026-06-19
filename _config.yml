@@ -121,6 +121,6 @@ search:
   format: html
 
 algolia:
-  appId: 6QHN7ALEUI
-  apiKey: 0dd4d63f2499f1ec4c39623ae043db47
+  appId:
+  apiKey:
   indexName: blog

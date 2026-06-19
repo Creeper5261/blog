@@ -1,0 +1,26 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import { applyPublicServices, getPublicServices } from '../legacy/html-transform.mjs'
+import { listLegacyPages } from '../legacy/routes.mjs'
+
+export async function getStaticPaths() {
+  const legacyRoot = path.resolve('src', 'legacy', 'pages')
+  const pages = await listLegacyPages(legacyRoot)
+
+  return pages
+    .filter((page) => page.kind !== 'not-found')
+    .map((page) => ({
+      params: { slug: page.slug },
+      props: { outputPath: page.outputPath }
+    }))
+}
+
+const legacyRoot = path.resolve('src', 'legacy', 'pages')
+const { outputPath } = Astro.props
+const html = await readFile(path.join(legacyRoot, outputPath), 'utf8')
+const rendered = applyPublicServices(html, getPublicServices())
+---
+
+<Fragment set:html={rendered} />

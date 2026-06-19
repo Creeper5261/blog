@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -16,6 +17,8 @@ const ignoredFiles = new Set([
   'hexo-server.err.log',
   'hexo-server.log',
   'hexo-server.pid',
+  'recovered-injector.json',
+  'recovered-shell.json',
   'static-server.pid'
 ]);
 
@@ -50,23 +53,54 @@ const forbidden = [
   {
     pattern: 'https://lf9-cdn-tos.bytecdntp.com/',
     reason: 'stale ByteDance CDN mirror; use a current npm CDN'
-  }
-];
-
-const manualAction = [
+  },
   {
     pattern: 'https://twikoo.godboy.cc/',
-    reason: 'Twikoo backend is tied to the expired custom domain and needs redeployment or a new envId'
+    reason: 'Twikoo has been replaced by Giscus; legacy backend URLs must not be loaded at runtime'
   },
   {
     pattern: 'https://gitcalendar.fomal.cc/api?Creeper5261',
-    reason: 'GitCalendar API is an external service and may need replacement if it stays unavailable'
+    reason: 'GitCalendar has been replaced by the local GitHub contribution calendar data'
   },
   {
     pattern: 'https://widget.qweather.net/simple/static/js/he-simple-common.js?v=2.0',
-    reason: 'QWeather widget script is external and may need a new widget/key setup'
+    reason: 'legacy QWeather widget script is replaced by the same-origin weather API'
+  },
+  {
+    pattern: 'https://cdn.cbd.int/hexo-butterfly-clock-anzhiyu/lib/clock.min.js',
+    reason: 'legacy clock script performs stale IP lookup; use the local service fallback clock'
   }
 ];
+
+const forbiddenFingerprints = [
+  {
+    sha256: 'd3a953f706e7aa92881591bea296777a10b903c53efb6b92ddf908c6c5f6b1f5',
+    length: 10,
+    reason: 'Algolia app id must be provided through PUBLIC_ALGOLIA_APP_ID'
+  },
+  {
+    sha256: '45b88f0b9726c4048327ea6cafab9be0848081ec63c68a84d07d4031b4a43a37',
+    length: 32,
+    reason: 'Algolia search key must be provided through PUBLIC_ALGOLIA_SEARCH_KEY'
+  },
+  {
+    sha256: '8dc0ebd87be9f6ce58573a6e594e4185b15d0ead15106ba9bf2c052d5f6dbd18',
+    length: 35,
+    reason: 'Tencent Map browser key must be provided through PUBLIC_TENCENT_MAP_KEY'
+  },
+  {
+    sha256: 'cc6d148c73b804111f9f5923a2a71d7a41008d9dc7ba89a72b71b1ee3c4f2f09',
+    length: 32,
+    reason: 'QWeather key must be provided through PUBLIC_QWEATHER_KEY'
+  },
+  {
+    sha256: 'a68d297eb36f39e555ab44eb144af3f1fa4dac9d487ccc0751db6edfd76ccc75',
+    length: 32,
+    reason: 'Gaode Map key must be provided through PUBLIC_GAUD_MAP_KEY'
+  }
+];
+
+const manualAction = [];
 
 async function walk(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
@@ -93,6 +127,31 @@ function shouldScan(file) {
   return runtimeFilePatterns.some(pattern => pattern.test(file));
 }
 
+function sha256(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+const forbiddenFingerprintsByLength = forbiddenFingerprints.reduce((groups, check) => {
+  if (!groups.has(check.length)) groups.set(check.length, []);
+  groups.get(check.length).push(check);
+  return groups;
+}, new Map());
+
+function containsForbiddenFingerprint(text, check) {
+  if (text.length < check.length) return false;
+
+  const candidatePattern = /[A-Za-z0-9-]{10,64}/g;
+  let match;
+
+  while ((match = candidatePattern.exec(text)) !== null) {
+    const candidates = forbiddenFingerprintsByLength.get(match[0].length);
+    if (!candidates) continue;
+    if (candidates.some(candidate => candidate.sha256 === check.sha256) && sha256(match[0]) === check.sha256) return true;
+  }
+
+  return false;
+}
+
 const files = (await walk(root))
   .map(file => ({ absolute: file, relative: normalizeRelative(file) }))
   .filter(file => shouldScan(file.relative));
@@ -111,6 +170,16 @@ for (const file of files) {
       failures.push({
         file: file.relative,
         pattern: check.pattern,
+        reason: check.reason
+      });
+    }
+  }
+
+  for (const check of forbiddenFingerprints) {
+    if (containsForbiddenFingerprint(text, check)) {
+      failures.push({
+        file: file.relative,
+        pattern: `sha256:${check.sha256}`,
         reason: check.reason
       });
     }
