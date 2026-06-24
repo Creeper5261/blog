@@ -27,7 +27,7 @@
     "recovery:note": "node -e \"console.log('Recovery harness lives outside this repo at ../tools in the original workspace.')\""
   },
   "dependencies": {
-    "hexo": "6.3.0",
+    "hexo": "8.1.2",
     "hexo-generator-archive": "^2.0.0",
     "hexo-generator-category": "^2.0.0",
     "hexo-generator-index": "^3.0.0",
