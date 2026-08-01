@@ -125,8 +125,14 @@ function removeLegacyWeatherBootstraps(html) {
     .replace(/<script\b[^>]*hexo-butterfly-clock-anzhiyu\/lib\/clock\.min\.js[^>]*><\/script>/gi, '')
 }
 
+function repairLegacyReferences(html) {
+  return html
+    .replaceAll('/js/search/local-search.js.js', '/js/search/local-search.js')
+    .replace(/href=(["'])\/movies\/\1/gi, 'href=$1/movie/$1')
+}
+
 function removeDeadRuntimeBootstraps(html) {
-  return removeLegacyWeatherBootstraps(removeLegacyTwikoo(removeDeadGitCalendar(html)))
+  return repairLegacyReferences(removeLegacyWeatherBootstraps(removeLegacyTwikoo(removeDeadGitCalendar(html))))
 }
 
 export function sanitizeLegacyHtml(html) {

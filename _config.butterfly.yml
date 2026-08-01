@@ -947,7 +947,7 @@ inject:
     - <script defer src="/js/runtime.js"></script>
     - <script defer src="/js/nav.js"></script>
     - <script defer src="/js/search/algolia.js"></script>
-    - <script defer src="/js/search/local-search.js.js"></script>
+    - <script defer src="/js/search/local-search.js"></script>
     - <script async src="/js/fps.js"></script>
     - <script defer src="https://cdn.jsdelivr.net/npm/winbox@0.2.82/dist/winbox.bundle.min.js"></script>
     - <script defer data-pjax src="/js/meihua.js"></script>

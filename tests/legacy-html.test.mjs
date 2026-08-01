@@ -69,6 +69,19 @@ test('sanitizeLegacyHtml removes legacy weather IP lookup bootstraps', () => {
   assert.doesNotMatch(sanitized, /hexo-butterfly-clock-anzhiyu\/lib\/clock\.min\.js/)
 })
 
+test('sanitizeLegacyHtml repairs recovered search and movie references', () => {
+  const sanitized = sanitizeLegacyHtml(`
+    <a href="/movies/">Movies</a>
+    <a href='/movies/'>Movies single quote</a>
+    <script defer src="/js/search/local-search.js.js"></script>
+  `)
+
+  assert.doesNotMatch(sanitized, /\/movies\/|local-search\.js\.js/)
+  assert.match(sanitized, /href="\/movie\/"/)
+  assert.match(sanitized, /href='\/movie\/'/)
+  assert.match(sanitized, /\/js\/search\/local-search\.js/)
+})
+
 test('sanitizeLegacyScript removes Tencent map key literals from copied scripts', () => {
   const script = `
     $.ajax({

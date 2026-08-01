@@ -1,0 +1,11 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import { applyPublicServices, getPublicServices } from '../../legacy/html-transform.mjs'
+
+const html = await readFile(path.resolve('src', 'legacy', 'pages', 'movie', 'index.html'), 'utf8')
+const rendered = applyPublicServices(html, getPublicServices())
+---
+
+<Fragment set:html={rendered} />

@@ -336,6 +336,12 @@ function removeNestedLazyloadPlaceholder(html) {
   return html.replace(/\sdata-lazy-src= "data:image\/gif;base64,R0lGODlhAQABAIAAAAAAAP\/\/\/yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"(?=\sdata-lazy-src=)/g, '')
 }
 
+function repairLegacyReferences(html) {
+  return html
+    .replaceAll('/js/search/local-search.js.js', '/js/search/local-search.js')
+    .replace(/href=(["'])\/movies\/\1/gi, 'href=$1/movie/$1')
+}
+
 hexo.extend.filter.register('after_render:html', function recoveredShellFilter(html) {
   const data = loadShell()
   let next = html
@@ -366,6 +372,7 @@ hexo.extend.filter.register('after_render:html', function recoveredShellFilter(h
   next = trimArticleContainerTail(next)
   next = restoreCommentDivider(next)
   next = removeNestedLazyloadPlaceholder(next)
+  next = repairLegacyReferences(next)
 
   return next
 }, 99)
