@@ -37,8 +37,17 @@ async function createFixture() {
       external: 'external',
       generated: 'generated'
     },
-    allowedExternalHosts: ['github.com']
+    allowedExternalHosts: ['github.com'],
+    assetPolicy: {
+      metadataFile: 'metadata.json',
+      publicPath: '/media',
+      allowedExtensions: ['.png', '.svg'],
+      maxBytes: 1048576,
+      requireAlt: true,
+      requireRights: true
+    }
   })
+  await writeJson(path.join(root, 'assets', 'metadata.json'), { schemaVersion: 1, assets: {} })
   return root
 }
 
@@ -197,6 +206,6 @@ test('content kinds in the external root fail validation', async () => {
 test('the content check package script remains part of the full check', async () => {
   const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, 'package.json'), 'utf8'))
 
-  assert.match(packageJson.scripts['check:content'], /tools\/content-contracts\/validate\.mjs/)
+  assert.match(packageJson.scripts['check:content'], /tools\/content-build\/build\.mjs --check/)
   assert.match(packageJson.scripts.check, /check:content/)
 })

@@ -69,6 +69,7 @@ async function copyDir({ sourceDir, targetDir, skipped, relativeBase = '' }) {
 export async function prepareAstroAssets({
   sourceRoot = path.resolve('source'),
   apiRoot = path.resolve('api'),
+  generatedRoot = path.resolve('generated'),
   targetRoot = path.resolve('.astro-static'),
   assetDirs = DEFAULT_ASSET_DIRS
 } = {}) {
@@ -90,6 +91,20 @@ export async function prepareAstroAssets({
     targetDir: path.join(targetRoot, 'api'),
     skipped,
     relativeBase: 'api'
+  })
+
+  await copyDir({
+    sourceDir: path.join(generatedRoot, 'media'),
+    targetDir: path.join(targetRoot, 'media'),
+    skipped,
+    relativeBase: 'media'
+  })
+
+  await copyDir({
+    sourceDir: path.join(generatedRoot, 'site-data'),
+    targetDir: path.join(targetRoot, 'data', 'knowledge'),
+    skipped,
+    relativeBase: path.join('data', 'knowledge')
   })
 
   await writeFile(path.join(targetRoot, '.nojekyll'), '')

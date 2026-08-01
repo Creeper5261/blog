@@ -3,6 +3,7 @@ import path from 'node:path'
 import matter from 'gray-matter'
 import remarkMdx from 'remark-mdx'
 import remarkParse from 'remark-parse'
+import remarkStringify from 'remark-stringify'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 
@@ -95,4 +96,19 @@ export function parseMarkdownContent(markdown, { extension = '.md' } = {}) {
     references,
     codeBlocks
   }
+}
+
+export function rewriteMarkdownAssetUrls(markdown, replacements, { extension = '.md' } = {}) {
+  const processor = unified().use(remarkParse)
+  if (extension.toLowerCase() === '.mdx') processor.use(remarkMdx)
+  processor.use(remarkStringify)
+  const tree = processor.parse(String(markdown))
+  const urls = new Map(replacements.map(({ path: authoredPath, url }) => [authoredPath, url]))
+
+  visit(tree, ['image', 'link'], (node) => {
+    const replacement = urls.get(String(node.url || '').trim())
+    if (replacement) node.url = replacement
+  })
+
+  return processor.stringify(tree)
 }

@@ -9,5 +9,10 @@
   "updatedAt": "2026-08-01",
   "body": "这是 S0 使用的结构化内容示例；旧博客内容暂不迁移。",
   "relations": [],
-  "media": []
+  "media": [
+    {
+      "path": "../../assets/examples/content-contract.svg",
+      "alt": "内容经过校验后生成站点数据"
+    }
+  ]
 }

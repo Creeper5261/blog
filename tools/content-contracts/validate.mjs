@@ -153,7 +153,8 @@ function validateExternalUrls(record, allowedHosts, errors) {
 
 export async function validateKnowledgeSite({
   root = process.cwd(),
-  configFile = DEFAULT_CONFIG
+  configFile = DEFAULT_CONFIG,
+  includeRecords = false
 } = {}) {
   const repositoryRoot = path.resolve(root)
   const errors = []
@@ -264,12 +265,18 @@ export async function validateKnowledgeSite({
   }
 
   errors.sort((left, right) => `${left.file}:${left.pointer}:${left.code}`.localeCompare(`${right.file}:${right.pointer}:${right.code}`))
-  return {
+  const result = {
     ok: errors.length === 0,
     scannedFiles: contentFiles.length + externalFiles.length,
     objectCount: records.length,
     errors
   }
+  if (includeRecords) {
+    result.config = config
+    result.roots = roots
+    result.records = records
+  }
+  return result
 }
 
 async function main() {

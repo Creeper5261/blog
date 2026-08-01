@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { parseMarkdownContent } from '../tools/content-build/markdown.mjs'
+import { parseMarkdownContent, rewriteMarkdownAssetUrls } from '../tools/content-build/markdown.mjs'
 
 test('parseMarkdownContent extracts frontmatter, references, and code blocks', () => {
   const parsed = parseMarkdownContent(`---
@@ -39,6 +39,14 @@ console.log('content')
   assert.equal(parsed.references.contentPaths[0].path, './next.mdx')
   assert.deepEqual(parsed.codeBlocks.map((block) => block.language), ['js'])
   assert.ok(parsed.references.assets[0].line > 7, 'locations should use original file line numbers')
+})
+
+test('rewriteMarkdownAssetUrls changes generated Markdown without changing unrelated text', () => {
+  const source = '![Diagram](./diagram.svg)\n\nMention ./diagram.svg in prose.\n'
+  const rewritten = rewriteMarkdownAssetUrls(source, [{ path: './diagram.svg', url: '/media/hash.svg' }])
+
+  assert.match(rewritten, /!\[Diagram\]\(\/media\/hash\.svg\)/)
+  assert.match(rewritten, /Mention \.\/diagram\.svg in prose\./)
 })
 
 test('parseMarkdownContent accepts MDX while keeping declarative metadata', () => {

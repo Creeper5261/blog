@@ -22,16 +22,16 @@ test('normal Astro preparation writes generated calendar data after static asset
   assert.ok(assetsIndex < calendarIndex, 'calendar data must be generated after .astro-static is refreshed')
 })
 
-test('Astro build validates knowledge content before preparing static output', () => {
+test('Astro build generates knowledge content before preparing static output', () => {
   const build = packageJson.scripts.build
-  const contentCheckIndex = build.indexOf('check:content')
+  const contentBuildIndex = build.indexOf('build:content')
   const prepareIndex = build.indexOf('prepare:astro')
   const astroBuildIndex = build.indexOf('astro build')
 
-  assert.notEqual(contentCheckIndex, -1)
+  assert.notEqual(contentBuildIndex, -1)
   assert.notEqual(prepareIndex, -1)
   assert.notEqual(astroBuildIndex, -1)
-  assert.ok(contentCheckIndex < prepareIndex)
+  assert.ok(contentBuildIndex < prepareIndex)
   assert.ok(prepareIndex < astroBuildIndex)
 })
 

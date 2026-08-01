@@ -59,6 +59,22 @@ test('prepareAstroAssets copies generated data files', async () => {
   assert.equal(await exists(path.join(targetRoot, 'data', 'github-calendar.json')), true)
 })
 
+test('prepareAstroAssets publishes generated knowledge data and hashed media', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'astro-assets-knowledge-'))
+  const sourceRoot = path.join(root, 'source')
+  const generatedRoot = path.join(root, 'generated')
+  const targetRoot = path.join(root, '.astro-static')
+  await mkdir(path.join(generatedRoot, 'site-data'), { recursive: true })
+  await mkdir(path.join(generatedRoot, 'media'), { recursive: true })
+  await writeFile(path.join(generatedRoot, 'site-data', 'asset-manifest.json'), '{"schemaVersion":1,"assets":[]}')
+  await writeFile(path.join(generatedRoot, 'media', 'abc.svg'), '<svg/>')
+
+  await prepareAstroAssets({ sourceRoot, generatedRoot, targetRoot })
+
+  assert.equal(await exists(path.join(targetRoot, 'data', 'knowledge', 'asset-manifest.json')), true)
+  assert.equal(await exists(path.join(targetRoot, 'media', 'abc.svg')), true)
+})
+
 test('prepareAstroAssets writes static host metadata', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'astro-assets-metadata-'))
   const sourceRoot = path.join(root, 'source')

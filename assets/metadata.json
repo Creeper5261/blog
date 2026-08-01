@@ -1,0 +1,10 @@
+{
+  "$schema": "../schemas/v1/asset-metadata.schema.json",
+  "schemaVersion": 1,
+  "assets": {
+    "examples/content-contract.svg": {
+      "rights": "original",
+      "source": "DAT Blog knowledge-site contract example"
+    }
+  }
+}

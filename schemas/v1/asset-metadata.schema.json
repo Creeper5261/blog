@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://creeper5261.github.io/schemas/v1/asset-metadata.schema.json",
+  "title": "Knowledge site asset metadata",
+  "type": "object",
+  "required": ["schemaVersion", "assets"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "assets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["rights"],
+        "properties": {
+          "rights": { "type": "string", "minLength": 1 },
+          "source": { "type": "string", "minLength": 1 },
+          "credit": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
