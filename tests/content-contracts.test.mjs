@@ -88,6 +88,48 @@ test('all S0 object kinds share one versioned contract', async () => {
   assert.equal(result.objectCount, 9)
 })
 
+test('Markdown content participates in stable ID and relationship validation', async () => {
+  const root = await createFixture()
+  await writeJson(path.join(root, 'content', 'target.json'), object('note', 'test.target', { body: 'target' }))
+  await writeFile(path.join(root, 'content', 'article.md'), `---
+schemaVersion: 1
+id: test.article
+kind: article
+title: Markdown article
+status: draft
+relations:
+  - type: follows
+    target: test.target
+---
+
+[Target](knowledge:test.target)
+`)
+
+  const result = await validateKnowledgeSite({ root })
+  assert.equal(result.ok, true)
+  assert.equal(result.objectCount, 2)
+})
+
+test('unknown knowledge links in Markdown fail with source location', async () => {
+  const root = await createFixture()
+  await writeFile(path.join(root, 'content', 'article.md'), `---
+schemaVersion: 1
+id: test.article
+kind: article
+title: Markdown article
+status: draft
+---
+
+[Missing](knowledge:test.missing)
+`)
+
+  const result = await validateKnowledgeSite({ root })
+  const failure = result.errors.find((error) => error.code === 'missing-target')
+  assert.equal(result.ok, false)
+  assert.equal(failure.file, 'content/article.md')
+  assert.match(failure.pointer, /^line:\d+:\d+$/)
+})
+
 test('duplicate IDs and unresolved relationship targets fail validation', async () => {
   const root = await createFixture()
   await writeJson(path.join(root, 'content', 'first.json'), object('note', 'test.duplicate', {

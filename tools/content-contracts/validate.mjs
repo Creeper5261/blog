@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 
 import Ajv2020 from 'ajv/dist/2020.js'
 
+import { parseMarkdownContent } from '../content-build/markdown.mjs'
+
 const DEFAULT_CONFIG = 'knowledge-site.config.json'
 const EXTERNAL_KINDS = new Set(['external-embed', 'pulse'])
 
@@ -33,7 +35,7 @@ async function readJson(file, root, errors) {
   }
 }
 
-async function walkJsonFiles(directory) {
+async function walkContentFiles(directory, extensions = new Set(['.json'])) {
   let entries
   try {
     entries = await fs.readdir(directory, { withFileTypes: true })
@@ -45,8 +47,8 @@ async function walkJsonFiles(directory) {
   const files = []
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     const target = path.join(directory, entry.name)
-    if (entry.isDirectory()) files.push(...await walkJsonFiles(target))
-    if (entry.isFile() && entry.name.endsWith('.json')) files.push(target)
+    if (entry.isDirectory()) files.push(...await walkContentFiles(target, extensions))
+    if (entry.isFile() && extensions.has(path.extname(entry.name).toLowerCase())) files.push(target)
   }
   return files
 }
@@ -94,8 +96,27 @@ function externalUrls(document) {
     .map((property) => ({ value: document[property], pointer: `/${property}` }))
 }
 
+async function readContentRecord(absoluteFile, root, errors) {
+  const extension = path.extname(absoluteFile).toLowerCase()
+  if (extension === '.json') {
+    const document = await readJson(absoluteFile, root, errors)
+    return document ? { document, references: null, codeBlocks: [] } : null
+  }
+
+  try {
+    return parseMarkdownContent(await fs.readFile(absoluteFile, 'utf8'), { extension })
+  } catch (error) {
+    addError(errors, repositoryPath(root, absoluteFile), 'invalid-markdown', error.message)
+    return null
+  }
+}
+
 function validateAssetReferences(record, allowedRoots, errors) {
-  for (const reference of referencedAssets(record.document)) {
+  const markdownReferences = (record.references?.assets ?? []).map((reference) => ({
+    value: reference.path,
+    pointer: reference.line ? `line:${reference.line}:${reference.column}` : ''
+  }))
+  for (const reference of [...referencedAssets(record.document), ...markdownReferences]) {
     if (path.isAbsolute(reference.value)) {
       addError(errors, record.file, 'unsafe-asset-path', 'asset path must be relative', reference.pointer)
       continue
@@ -109,7 +130,11 @@ function validateAssetReferences(record, allowedRoots, errors) {
 }
 
 function validateExternalUrls(record, allowedHosts, errors) {
-  for (const reference of externalUrls(record.document)) {
+  const markdownReferences = (record.references?.externalUrls ?? []).map((reference) => ({
+    value: reference.url,
+    pointer: reference.line ? `line:${reference.line}:${reference.column}` : ''
+  }))
+  for (const reference of [...externalUrls(record.document), ...markdownReferences]) {
     let url
     try {
       url = new URL(reference.value)
@@ -184,14 +209,15 @@ export async function validateKnowledgeSite({
   }
   if (errors.length) return { ok: false, scannedFiles: 0, objectCount: 0, errors }
 
-  const contentFiles = await walkJsonFiles(roots.content)
-  const externalFiles = await walkJsonFiles(roots.external)
+  const contentFiles = await walkContentFiles(roots.content, new Set(['.json', '.md', '.mdx']))
+  const externalFiles = await walkContentFiles(roots.external)
   const records = []
 
   for (const [scope, files] of [['content', contentFiles], ['external', externalFiles]]) {
     for (const absoluteFile of files) {
-      const document = await readJson(absoluteFile, repositoryRoot, errors)
-      if (!document) continue
+      const parsed = await readContentRecord(absoluteFile, repositoryRoot, errors)
+      if (!parsed) continue
+      const { document, references, codeBlocks } = parsed
 
       const file = repositoryPath(repositoryRoot, absoluteFile)
       if (!validateObject(document)) {
@@ -207,7 +233,7 @@ export async function validateKnowledgeSite({
         addError(errors, file, 'wrong-root', `${document.kind} objects belong in the external root`, '/kind')
       }
 
-      records.push({ absoluteFile, document, file })
+      records.push({ absoluteFile, document, file, references, codeBlocks })
     }
   }
 
@@ -224,7 +250,11 @@ export async function validateKnowledgeSite({
 
   const allowedHosts = new Set(config.allowedExternalHosts.map((host) => host.toLowerCase()))
   for (const record of records) {
-    for (const reference of referencedIds(record.document)) {
+    const markdownTargets = (record.references?.knowledgeIds ?? []).map((reference) => ({
+      target: reference.target,
+      pointer: reference.line ? `line:${reference.line}:${reference.column}` : ''
+    }))
+    for (const reference of [...referencedIds(record.document), ...markdownTargets]) {
       if (!ids.has(reference.target)) {
         addError(errors, record.file, 'missing-target', `unknown target id: ${reference.target}`, reference.pointer)
       }
