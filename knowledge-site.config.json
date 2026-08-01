@@ -1,0 +1,18 @@
+{
+  "$schema": "./schemas/v1/site-config.schema.json",
+  "schemaVersion": 1,
+  "roots": {
+    "content": "content",
+    "assets": "assets",
+    "schemas": "schemas",
+    "external": "external",
+    "generated": "generated"
+  },
+  "allowedExternalHosts": [
+    "github.com",
+    "player.bilibili.com",
+    "www.bilibili.com",
+    "www.youtube.com",
+    "youtu.be"
+  ]
+}

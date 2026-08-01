@@ -15,6 +15,9 @@ _multiconfig.yml
 .astro-static/
 dist/
 
+# Knowledge-site generated data
+generated/
+
 # Local runtime logs and process files
 .local/
 *.log

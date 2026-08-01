@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://creeper5261.github.io/schemas/v1/knowledge-object.schema.json",
+  "title": "Knowledge site object",
+  "type": "object",
+  "required": ["schemaVersion", "id", "kind", "title", "status"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)+$"
+    },
+    "kind": {
+      "enum": [
+        "article",
+        "note",
+        "entity",
+        "timeline",
+        "collection",
+        "media",
+        "external-embed",
+        "tool",
+        "pulse"
+      ]
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["draft", "evergreen", "archived"] },
+    "publishedAt": { "$ref": "#/$defs/date" },
+    "updatedAt": { "$ref": "#/$defs/date" },
+    "body": { "type": "string" },
+    "relations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relation" },
+      "default": []
+    },
+    "media": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mediaReference" },
+      "default": []
+    },
+    "entityType": { "type": "string", "minLength": 1 },
+    "members": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/stableId" },
+      "uniqueItems": true
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "title"],
+        "properties": {
+          "at": { "$ref": "#/$defs/date" },
+          "title": { "type": "string", "minLength": 1 },
+          "target": { "$ref": "#/$defs/stableId" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "asset": { "$ref": "#/$defs/mediaReference" },
+    "sourceUrl": { "type": "string", "minLength": 1 },
+    "provider": { "type": "string", "minLength": 1 },
+    "url": { "type": "string", "minLength": 1 },
+    "embedUrl": { "type": "string", "minLength": 1 },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "privacy": { "enum": ["local-only", "public-readonly"] },
+    "inputKinds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "outputKinds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "source": { "type": "string", "minLength": 1 },
+    "query": { "type": "string", "minLength": 1 },
+    "schedule": { "type": "string", "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "enum": ["article", "note"] } }, "required": ["kind"] },
+      "then": { "required": ["body"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "entity" } }, "required": ["kind"] },
+      "then": { "required": ["entityType"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "timeline" } }, "required": ["kind"] },
+      "then": { "required": ["entries"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "collection" } }, "required": ["kind"] },
+      "then": { "required": ["members"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "media" } }, "required": ["kind"] },
+      "then": { "required": ["asset"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "external-embed" } }, "required": ["kind"] },
+      "then": { "required": ["provider", "url"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "tool" } }, "required": ["kind"] },
+      "then": { "required": ["slug", "privacy", "inputKinds", "outputKinds"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "pulse" } }, "required": ["kind"] },
+      "then": { "required": ["source", "query"] }
+    }
+  ],
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)+$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:T[^\\s]+)?$"
+    },
+    "relation": {
+      "type": "object",
+      "required": ["type", "target"],
+      "properties": {
+        "type": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "target": { "$ref": "#/$defs/stableId" }
+      },
+      "additionalProperties": false
+    },
+    "mediaReference": {
+      "type": "object",
+      "required": ["path", "alt"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "alt": { "type": "string", "minLength": 1 },
+        "rights": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
