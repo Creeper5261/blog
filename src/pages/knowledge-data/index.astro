@@ -1,0 +1,90 @@
+---
+const dataRoot = '/data/knowledge'
+const files = [
+  'release.json',
+  'content-index.json',
+  'relationship-graph.json',
+  'timelines.json',
+  'search-source.json',
+  'navigation.json',
+  'asset-map.json',
+  'external-embeds.json',
+  'features.json',
+  'pulses.json'
+]
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="robots" content="noindex" />
+    <title>Knowledge site-data inspector</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 72rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+      h1 { margin-bottom: .25rem; }
+      .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .75rem; margin: 1.5rem 0; }
+      .card { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .75rem; padding: 1rem; }
+      .label { display: block; opacity: .7; font-size: .875rem; }
+      .value { overflow-wrap: anywhere; font-family: ui-monospace, monospace; }
+      ul { padding-left: 1.25rem; }
+      a { color: inherit; }
+      #status[data-state="error"] { color: #c62828; }
+    </style>
+  </head>
+  <body data-root={dataRoot}>
+    <main>
+      <h1>Knowledge site-data inspector</h1>
+      <p>只读检查当前静态发布包；此页面不访问私有内容目录或在线数据库。</p>
+      <p id="status" role="status">正在读取版本化站点数据…</p>
+      <section class="summary" aria-label="发布摘要">
+        <div class="card"><span class="label">Build hash</span><span class="value" id="build-hash">—</span></div>
+        <div class="card"><span class="label">Content objects</span><span class="value" id="content-count">—</span></div>
+        <div class="card"><span class="label">Pulse snapshots</span><span class="value" id="pulse-count">—</span></div>
+      </section>
+      <section>
+        <h2>内容索引</h2>
+        <ul id="content-items"><li>等待数据…</li></ul>
+      </section>
+      <section>
+        <h2>原始 JSON</h2>
+        <ul>
+          {files.map((file) => <li><a href={`${dataRoot}/${file}`}>{file}</a></li>)}
+        </ul>
+      </section>
+      <noscript><p>JavaScript 已禁用；仍可通过上方链接直接检查静态 JSON。</p></noscript>
+    </main>
+    <script is:inline type="module">
+      const root = document.body.dataset.root
+      const status = document.querySelector('#status')
+      const load = async (file) => {
+        const response = await fetch(`${root}/${file}`)
+        if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`)
+        return response.json()
+      }
+
+      try {
+        const [release, content, pulses] = await Promise.all([
+          load('release.json'),
+          load('content-index.json'),
+          load('pulses.json')
+        ])
+        document.querySelector('#build-hash').textContent = release.buildHash
+        document.querySelector('#content-count').textContent = String(content.items.length)
+        document.querySelector('#pulse-count').textContent = String(pulses.pulses.length)
+        const list = document.querySelector('#content-items')
+        list.replaceChildren(...content.items.map((item) => {
+          const entry = document.createElement('li')
+          entry.textContent = `${item.title} (${item.id})`
+          return entry
+        }))
+        status.textContent = '读取成功。所有数据来自当前静态发布包。'
+      } catch (error) {
+        status.dataset.state = 'error'
+        status.textContent = `读取失败：${error.message}`
+      }
+    </script>
+  </body>
+</html>
