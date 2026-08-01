@@ -77,7 +77,8 @@
     },
     "source": { "type": "string", "minLength": 1 },
     "query": { "type": "string", "minLength": 1 },
-    "schedule": { "type": "string", "minLength": 1 }
+    "schedule": { "type": "string", "minLength": 1 },
+    "snapshot": { "$ref": "#/$defs/pulseSnapshot" }
   },
   "allOf": [
     {
@@ -138,6 +139,28 @@
         "path": { "type": "string", "minLength": 1 },
         "alt": { "type": "string", "minLength": 1 },
         "rights": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "pulseSnapshot": {
+      "type": "object",
+      "required": ["fetchedAt", "items"],
+      "properties": {
+        "fetchedAt": { "$ref": "#/$defs/date" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "title": { "type": "string", "minLength": 1 },
+              "url": { "type": "string", "minLength": 1 },
+              "summary": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
       },
       "additionalProperties": false
     }
