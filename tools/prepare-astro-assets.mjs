@@ -23,6 +23,22 @@ const STATIC_HOST_PACKAGE = {
   }
 }
 
+async function writeVercelConfig(generatedRoot, targetRoot) {
+  let release
+  try { release = JSON.parse(await readFile(path.join(generatedRoot, 'site-data', 'release.json'), 'utf8')) } catch { return }
+  const immutable = release.cache?.immutableCacheControl
+  const mutable = release.cache?.mutableCacheControl
+  if (!immutable || !mutable) return
+  const config = {
+    headers: [
+      { source: '/data/knowledge/releases/(.*)', headers: [{ key: 'Cache-Control', value: immutable }] },
+      { source: '/media/(.*)', headers: [{ key: 'Cache-Control', value: immutable }] },
+      { source: '/data/knowledge/:file', headers: [{ key: 'Cache-Control', value: mutable }] }
+    ]
+  }
+  await writeFile(path.join(targetRoot, 'vercel.json'), `${JSON.stringify(config, null, 2)}\n`)
+}
+
 async function copyDir({ sourceDir, targetDir, skipped, relativeBase = '' }) {
   let entries
   try {
@@ -106,6 +122,8 @@ export async function prepareAstroAssets({
     skipped,
     relativeBase: path.join('data', 'knowledge')
   })
+
+  await writeVercelConfig(generatedRoot, targetRoot)
 
   await writeFile(path.join(targetRoot, '.nojekyll'), '')
   await writeFile(path.join(targetRoot, 'package.json'), `${JSON.stringify(STATIC_HOST_PACKAGE, null, 2)}\n`)

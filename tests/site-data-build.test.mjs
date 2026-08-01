@@ -6,6 +6,7 @@ import { after, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { buildSiteData } from '../tools/site-data/build.mjs'
+import { rollbackSiteData } from '../tools/site-data/rollback.mjs'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 const temporaryRoots = []
@@ -36,6 +37,11 @@ async function createFixture() {
     assetPolicy: {
       metadataFile: 'metadata.json', publicPath: '/media', allowedExtensions: ['.svg'], maxBytes: 1024,
       requireAlt: true, requireRights: true
+    },
+    siteDataPolicy: {
+      releaseRetention: 3,
+      immutableCacheControl: 'public, max-age=31536000, immutable',
+      mutableCacheControl: 'public, max-age=0, must-revalidate'
     }
   })
   await writeFile(path.join(root, 'assets', 'diagram.svg'), SVG)
@@ -94,16 +100,18 @@ test('site-data build keeps canonical fields consistent across every projection'
   assert.equal(result.bundle['features.json'].tools[0].privacy, 'local-only')
 })
 
-test('full, incremental, and repeated builds produce the same release hash', async () => {
+test('incremental build reuses verified outputs and invalidates on source changes', async () => {
   const root = await createFixture()
   const full = await buildSiteData({ root, write: true })
   const firstRelease = await readFile(path.join(root, 'generated', 'site-data', 'release.json'), 'utf8')
-  const incremental = await buildSiteData({ root, write: false, mode: 'incremental' })
+  const incremental = await buildSiteData({ root, write: true, mode: 'incremental' })
   const repeated = await buildSiteData({ root, write: true })
 
   assert.equal(full.ok, true)
   assert.equal(incremental.ok, true)
   assert.equal(repeated.ok, true)
+  assert.equal(full.cacheHit, false)
+  assert.equal(incremental.cacheHit, true)
   assert.equal(full.buildHash, incremental.buildHash)
   assert.equal(full.buildHash, repeated.buildHash)
   assert.equal(await readFile(path.join(root, 'generated', 'site-data', 'release.json'), 'utf8'), firstRelease)
@@ -113,6 +121,91 @@ test('full, incremental, and repeated builds produce the same release hash', asy
   )
   assert.match(full.release.cache.immutableReleasePath, new RegExp(full.buildHash))
   assert.equal(full.release.rollback.release, full.buildHash)
+
+  const articleFile = path.join(root, 'content', 'article.json')
+  const article = JSON.parse(await readFile(articleFile, 'utf8'))
+  article.body = 'Changed source invalidates the cache'
+  await writeJson(articleFile, article)
+  const changed = await buildSiteData({ root, write: true, mode: 'incremental' })
+  const cachedChanged = await buildSiteData({ root, write: true, mode: 'incremental' })
+  assert.equal(changed.cacheHit, false)
+  assert.notEqual(changed.buildHash, full.buildHash)
+  assert.equal(cachedChanged.cacheHit, true)
+  assert.equal(cachedChanged.buildHash, changed.buildHash)
+})
+
+test('release retention keeps newest immutable builds and removes the oldest', async () => {
+  const root = await createFixture()
+  const hashes = []
+  const articleFile = path.join(root, 'content', 'article.json')
+  for (let version = 1; version <= 4; version += 1) {
+    const article = JSON.parse(await readFile(articleFile, 'utf8'))
+    article.body = `Release ${version}`
+    await writeJson(articleFile, article)
+    hashes.push((await buildSiteData({ root, write: true })).buildHash)
+  }
+
+  const history = JSON.parse(await readFile(path.join(root, 'generated', 'site-data', 'release-history.json'), 'utf8'))
+  assert.deepEqual(history.releases, hashes.slice(1).reverse())
+  await assert.rejects(readFile(path.join(root, 'generated', 'site-data', 'releases', hashes[0], 'release.json')), { code: 'ENOENT' })
+  for (const hash of history.releases) {
+    await readFile(path.join(root, 'generated', 'site-data', 'releases', hash, 'release.json'))
+  }
+})
+
+test('clean CI build hydrates retained releases from the previous public output', async () => {
+  const previousRoot = await createFixture()
+  const previous = await buildSiteData({ root: previousRoot, write: true })
+  const cleanRoot = await createFixture()
+  const articleFile = path.join(cleanRoot, 'content', 'article.json')
+  const article = JSON.parse(await readFile(articleFile, 'utf8'))
+  article.body = 'Clean CI release'
+  await writeJson(articleFile, article)
+
+  const current = await buildSiteData({
+    root: cleanRoot,
+    write: true,
+    previousSiteDataRoot: path.join(previousRoot, 'generated', 'site-data')
+  })
+  const history = JSON.parse(await readFile(path.join(cleanRoot, 'generated', 'site-data', 'release-history.json'), 'utf8'))
+
+  assert.deepEqual(history.releases, [current.buildHash, previous.buildHash])
+  await readFile(path.join(cleanRoot, 'generated', 'site-data', 'releases', previous.buildHash, 'release.json'))
+})
+
+test('rollback verifies and restores a retained release without changing source', async () => {
+  const root = await createFixture()
+  const articleFile = path.join(root, 'content', 'article.json')
+  const first = await buildSiteData({ root, write: true })
+  const article = JSON.parse(await readFile(articleFile, 'utf8'))
+  article.body = 'New release body'
+  await writeJson(articleFile, article)
+  const second = await buildSiteData({ root, write: true })
+
+  const rollback = await rollbackSiteData({ root, releaseHash: first.buildHash })
+  const restoredRelease = JSON.parse(await readFile(path.join(root, 'generated', 'site-data', 'release.json'), 'utf8'))
+  const restoredSearch = JSON.parse(await readFile(path.join(root, 'generated', 'site-data', 'search-source.json'), 'utf8'))
+  assert.equal(rollback.ok, true)
+  assert.equal(restoredRelease.buildHash, first.buildHash)
+  assert.match(restoredSearch.documents[0].text, /Searchable body/)
+
+  const rebuilt = await buildSiteData({ root, write: true, mode: 'incremental' })
+  assert.equal(rebuilt.cacheHit, false)
+  assert.equal(rebuilt.buildHash, second.buildHash)
+})
+
+test('rollback refuses a retained release with a corrupted file', async () => {
+  const root = await createFixture()
+  const first = await buildSiteData({ root, write: true })
+  await writeFile(
+    path.join(root, 'generated', 'site-data', 'releases', first.buildHash, 'content-index.json'),
+    '{"tampered":true}\n'
+  )
+
+  await assert.rejects(
+    rollbackSiteData({ root, releaseHash: first.buildHash }),
+    /failed integrity check/
+  )
 })
 
 test('a fresh Pulse snapshot replaces fallback data', async () => {

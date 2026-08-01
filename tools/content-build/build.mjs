@@ -177,10 +177,21 @@ async function writeGeneratedOutput({ generatedRoot, manifest, records, report, 
     await copyFile(source, path.join(stagingRoot, 'media', filename))
   }
 
-  await rm(siteDataTarget, { recursive: true, force: true })
-  await rm(mediaTarget, { recursive: true, force: true })
-  await rename(path.join(stagingRoot, 'site-data'), siteDataTarget)
-  await rename(path.join(stagingRoot, 'media'), mediaTarget)
+  await mkdir(siteDataTarget, { recursive: true })
+  for (const filename of ['asset-manifest.json', 'content-records.json', 'build-report.json']) {
+    const target = path.join(siteDataTarget, filename)
+    await rm(target, { force: true })
+    await rename(path.join(stagingRoot, 'site-data', filename), target)
+  }
+  await mkdir(mediaTarget, { recursive: true })
+  for (const filename of await readdir(path.join(stagingRoot, 'media'))) {
+    const target = path.join(mediaTarget, filename)
+    try {
+      await rename(path.join(stagingRoot, 'media', filename), target)
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error
+    }
+  }
   await rm(stagingRoot, { recursive: true, force: true })
 }
 

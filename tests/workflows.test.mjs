@@ -14,6 +14,8 @@ test('publish workflow builds private source and pushes generated output to publ
   assert.match(workflow, /Creeper5261\/Creeper5261\.github\.io/)
   assert.match(workflow, /PUBLIC_REPO_DEPLOY_KEY/)
   assert.match(workflow, /pnpm run publish:output/)
+  assert.match(workflow, /SITE_DATA_PREVIOUS_ROOT: \.\.\/public-output\/data\/knowledge/)
+  assert.ok(workflow.indexOf('Checkout public generated-output repository') < workflow.indexOf('Build generated output with retained releases'))
   assert.doesNotMatch(workflow, /PUBLIC_TENCENT_MAP_KEY|PUBLIC_QWEATHER_KEY|UPSTASH_REDIS_REST_TOKEN/)
 })
 

@@ -40,3 +40,9 @@ test('data sovereignty helper scripts are exposed through package scripts', () =
   assert.match(packageJson.scripts['publish:output'], /tools\/publish-output\.mjs/)
   assert.match(packageJson.scripts['backup:stats'], /tools\/backup-stats\.mjs/)
 })
+
+test('local server uses incremental site-data and rollback stays explicit', () => {
+  assert.match(packageJson.scripts.server, /build:site-data:incremental/)
+  assert.match(packageJson.scripts['build:site-data:incremental'], /--mode=incremental/)
+  assert.match(packageJson.scripts['rollback:site-data'], /tools\/site-data\/rollback\.mjs/)
+})

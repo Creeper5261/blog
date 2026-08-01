@@ -32,5 +32,10 @@
     "maxBytes": 10485760,
     "requireAlt": true,
     "requireRights": true
+  },
+  "siteDataPolicy": {
+    "releaseRetention": 5,
+    "immutableCacheControl": "public, max-age=31536000, immutable",
+    "mutableCacheControl": "public, max-age=0, must-revalidate"
   }
 }

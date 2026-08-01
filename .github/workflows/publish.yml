@@ -33,9 +33,6 @@ jobs:
       - name: Check source
         run: pnpm run check
 
-      - name: Build generated output
-        run: pnpm run build
-
       - name: Configure public repository deploy key
         env:
           PUBLIC_REPO_DEPLOY_KEY: ${{ secrets.PUBLIC_REPO_DEPLOY_KEY }}
@@ -49,6 +46,11 @@ jobs:
 
       - name: Checkout public generated-output repository
         run: git clone git@github.com:Creeper5261/Creeper5261.github.io.git ../public-output
+
+      - name: Build generated output with retained releases
+        env:
+          SITE_DATA_PREVIOUS_ROOT: ../public-output/data/knowledge
+        run: pnpm run build
 
       - name: Sync generated output
         env:

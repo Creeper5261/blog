@@ -75,6 +75,27 @@ test('prepareAstroAssets publishes generated knowledge data and hashed media', a
   assert.equal(await exists(path.join(targetRoot, 'media', 'abc.svg')), true)
 })
 
+test('prepareAstroAssets writes immutable and mutable Vercel cache headers from the release', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'astro-assets-cache-'))
+  const sourceRoot = path.join(root, 'source')
+  const generatedRoot = path.join(root, 'generated')
+  const targetRoot = path.join(root, '.astro-static')
+  await mkdir(path.join(generatedRoot, 'site-data'), { recursive: true })
+  await writeFile(path.join(generatedRoot, 'site-data', 'release.json'), JSON.stringify({
+    cache: {
+      immutableCacheControl: 'public, max-age=31536000, immutable',
+      mutableCacheControl: 'public, max-age=0, must-revalidate'
+    }
+  }))
+
+  await prepareAstroAssets({ sourceRoot, generatedRoot, targetRoot })
+  const config = JSON.parse(await readFile(path.join(targetRoot, 'vercel.json'), 'utf8'))
+
+  assert.equal(config.headers[0].source, '/data/knowledge/releases/(.*)')
+  assert.equal(config.headers[0].headers[0].value, 'public, max-age=31536000, immutable')
+  assert.equal(config.headers[2].headers[0].value, 'public, max-age=0, must-revalidate')
+})
+
 test('prepareAstroAssets writes static host metadata', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'astro-assets-metadata-'))
   const sourceRoot = path.join(root, 'source')

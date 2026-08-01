@@ -3,7 +3,7 @@
   "$id": "https://creeper5261.github.io/schemas/v1/site-config.schema.json",
   "title": "Knowledge site configuration",
   "type": "object",
-  "required": ["schemaVersion", "roots", "allowedExternalHosts", "assetPolicy"],
+  "required": ["schemaVersion", "roots", "allowedExternalHosts", "assetPolicy", "siteDataPolicy"],
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
@@ -45,12 +45,27 @@
         "requireRights": { "type": "boolean" }
       },
       "additionalProperties": false
+    },
+    "siteDataPolicy": {
+      "type": "object",
+      "required": ["releaseRetention", "immutableCacheControl", "mutableCacheControl"],
+      "properties": {
+        "releaseRetention": { "type": "integer", "minimum": 2, "maximum": 20 },
+        "immutableCacheControl": { "$ref": "#/$defs/headerValue" },
+        "mutableCacheControl": { "$ref": "#/$defs/headerValue" }
+      },
+      "additionalProperties": false
     }
   },
   "$defs": {
     "relativePath": {
       "type": "string",
       "minLength": 1
+    },
+    "headerValue": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\r\\n]+$"
     }
   },
   "additionalProperties": false

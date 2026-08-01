@@ -1,10 +1,18 @@
 import crypto from 'node:crypto'
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { buildKnowledgeContent } from '../content-build/build.mjs'
 import { validateKnowledgeSite } from '../content-contracts/validate.mjs'
+
+const INPUT_CACHE_VERSION = 1
+const BUILDER_INPUTS = [
+  fileURLToPath(import.meta.url),
+  fileURLToPath(new URL('../content-build/build.mjs', import.meta.url)),
+  fileURLToPath(new URL('../content-build/markdown.mjs', import.meta.url)),
+  fileURLToPath(new URL('../content-contracts/validate.mjs', import.meta.url))
+]
 
 function json(value) {
   return `${JSON.stringify(value, null, 2)}\n`
@@ -12,6 +20,64 @@ function json(value) {
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex')
+}
+
+function normalizePath(value) {
+  return value.split(path.sep).join('/')
+}
+
+function isInside(parent, candidate) {
+  const relative = path.relative(parent, candidate)
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative))
+}
+
+async function walkFiles(directory) {
+  let entries
+  try {
+    entries = await readdir(directory, { withFileTypes: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+  const files = []
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+    const absolute = path.join(directory, entry.name)
+    if (entry.isDirectory()) files.push(...await walkFiles(absolute))
+    if (entry.isFile()) files.push(absolute)
+  }
+  return files
+}
+
+async function inputFingerprint(repositoryRoot) {
+  const configFile = path.join(repositoryRoot, 'knowledge-site.config.json')
+  let config = {}
+  try { config = JSON.parse(await readFile(configFile, 'utf8')) } catch {}
+  const files = new Map([[configFile, 'knowledge-site.config.json']])
+  for (const [label, configured] of Object.entries(config.roots ?? {})) {
+    if (label === 'generated' || typeof configured !== 'string' || path.isAbsolute(configured)) continue
+    const root = path.resolve(repositoryRoot, configured)
+    if (!isInside(repositoryRoot, root)) continue
+    for (const file of await walkFiles(root)) files.set(file, normalizePath(path.relative(repositoryRoot, file)))
+  }
+  for (const [index, file] of BUILDER_INPUTS.entries()) files.set(file, `@builder/${index}-${path.basename(file)}`)
+
+  const hash = crypto.createHash('sha256').update(`site-data-input-v${INPUT_CACHE_VERSION}\n`)
+  for (const [file, label] of [...files].sort((left, right) => left[1].localeCompare(right[1]))) {
+    hash.update(label).update('\0').update(await readFile(file)).update('\0')
+  }
+  return hash.digest('hex')
+}
+
+async function readJson(file) {
+  try { return JSON.parse(await readFile(file, 'utf8')) } catch { return null }
+}
+
+async function configuredGeneratedRoot(repositoryRoot) {
+  const config = await readJson(path.join(repositoryRoot, 'knowledge-site.config.json'))
+  const configured = config?.roots?.generated
+  if (typeof configured !== 'string' || path.isAbsolute(configured)) return path.join(repositoryRoot, 'generated')
+  const resolved = path.resolve(repositoryRoot, configured)
+  return isInside(repositoryRoot, resolved) && resolved !== repositoryRoot ? resolved : path.join(repositoryRoot, 'generated')
 }
 
 function byId(left, right) {
@@ -182,7 +248,7 @@ function buildPayloads(core, sourceRecords, pulses) {
   ])
 }
 
-function releaseManifest(payloads) {
+function releaseManifest(payloads, policy) {
   const files = [...payloads]
     .map(([file, value]) => {
       const bytes = json(value)
@@ -194,7 +260,12 @@ function releaseManifest(payloads) {
     schemaVersion: 1,
     buildHash,
     compatibility: { minimumReaderVersion: 1, currentReaderVersion: 1, supportedSchemaVersions: [1] },
-    cache: { immutableReleasePath: `/data/knowledge/releases/${buildHash}/`, mutablePointer: '/data/knowledge/release.json' },
+    cache: {
+      immutableReleasePath: `/data/knowledge/releases/${buildHash}/`,
+      mutablePointer: '/data/knowledge/release.json',
+      immutableCacheControl: policy.immutableCacheControl,
+      mutableCacheControl: policy.mutableCacheControl
+    },
     rollback: { strategy: 'deploy-release-by-hash', release: buildHash, requiresDeploymentArtifact: true },
     files
   }
@@ -206,19 +277,152 @@ async function writePayloadDirectory(directory, payloads, release) {
   await writeFile(path.join(directory, 'release.json'), json(release))
 }
 
-async function writeSiteData(generatedRoot, payloads, release) {
+async function listReleaseHashes(siteDataRoot) {
+  try {
+    return (await readdir(path.join(siteDataRoot, 'releases'), { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory() && /^[a-f0-9]{64}$/.test(entry.name))
+      .map((entry) => entry.name)
+      .sort()
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+}
+
+async function releaseOrder(siteDataRoot) {
+  const history = await readJson(path.join(siteDataRoot, 'release-history.json'))
+  const available = new Set(await listReleaseHashes(siteDataRoot))
+  const ordered = []
+  for (const hash of history?.releases ?? []) {
+    if (available.delete(hash)) ordered.push(hash)
+  }
+  return [...ordered, ...available]
+}
+
+async function copyRetainedReleases({ staging, currentHash, sources, retention }) {
+  const candidates = [currentHash]
+  for (const source of sources) {
+    for (const hash of await releaseOrder(source)) {
+      if (!candidates.includes(hash)) candidates.push(hash)
+    }
+  }
+  const retained = candidates.slice(0, retention)
+  for (const hash of retained.slice(1)) {
+    let selected = null
+    for (const candidate of sources) {
+      try {
+        if ((await stat(path.join(candidate, 'releases', hash))).isDirectory()) { selected = candidate; break }
+      } catch {}
+    }
+    if (selected) await cp(path.join(selected, 'releases', hash), path.join(staging, 'releases', hash), { recursive: true })
+  }
+  await writeFile(path.join(staging, 'release-history.json'), json({ schemaVersion: 1, releases: retained }))
+  return retained
+}
+
+async function pruneMediaForReleases(generatedRoot, retainedReleases) {
+  const keep = new Set()
+  for (const hash of retainedReleases) {
+    const manifest = await readJson(path.join(generatedRoot, 'site-data', 'releases', hash, 'asset-manifest.json'))
+    for (const asset of manifest?.assets ?? []) keep.add(asset.filename)
+  }
+  const mediaRoot = path.join(generatedRoot, 'media')
+  let entries = []
+  try { entries = await readdir(mediaRoot, { withFileTypes: true }) } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
+  for (const entry of entries) {
+    if (entry.isFile() && !keep.has(entry.name)) await rm(path.join(mediaRoot, entry.name), { force: true })
+  }
+}
+
+async function writeSiteData({ generatedRoot, payloads, release, policy, previousSiteDataRoot }) {
   const staging = path.join(generatedRoot, `.site-data-${process.pid}`)
   const target = path.join(generatedRoot, 'site-data')
   await rm(staging, { recursive: true, force: true })
   await writePayloadDirectory(staging, payloads, release)
   await writePayloadDirectory(path.join(staging, 'releases', release.buildHash), payloads, release)
+  const sources = [target]
+  if (previousSiteDataRoot) {
+    const resolved = path.resolve(previousSiteDataRoot)
+    if (!sources.includes(resolved)) sources.push(resolved)
+  }
+  const retainedReleases = await copyRetainedReleases({
+    staging,
+    currentHash: release.buildHash,
+    sources,
+    retention: policy.releaseRetention
+  })
   await rm(target, { recursive: true, force: true })
   await rename(staging, target)
+  await pruneMediaForReleases(generatedRoot, retainedReleases)
+  return retainedReleases
 }
 
-export async function buildSiteData({ root = process.cwd(), write = true, mode = 'full', pulseProvider } = {}) {
+async function verifyFileHash(file, expectedHash) {
+  try { return sha256(await readFile(file)) === expectedHash } catch { return false }
+}
+
+async function loadIncrementalHit({ generatedRoot, inputHash }) {
+  const cacheFile = path.join(generatedRoot, '.cache', `site-data-v${INPUT_CACHE_VERSION}.json`)
+  const cache = await readJson(cacheFile)
+  if (cache?.inputHash !== inputHash) return null
+  const siteDataRoot = path.join(generatedRoot, 'site-data')
+  const release = await readJson(path.join(siteDataRoot, 'release.json'))
+  if (!release || release.buildHash !== cache.buildHash) return null
+
+  const bundle = {}
+  for (const descriptor of release.files ?? []) {
+    const file = path.join(siteDataRoot, descriptor.file)
+    if (!await verifyFileHash(file, descriptor.hash)) return null
+    bundle[descriptor.file] = await readJson(file)
+    if (!bundle[descriptor.file]) return null
+  }
+  for (const asset of bundle['asset-manifest.json']?.assets ?? []) {
+    if (!await verifyFileHash(path.join(generatedRoot, 'media', asset.filename), asset.hash)) return null
+  }
+  const history = await readJson(path.join(siteDataRoot, 'release-history.json'))
+  return {
+    ok: true,
+    mode: 'incremental',
+    cacheHit: true,
+    inputHash,
+    objectCount: bundle['content-records.json']?.records?.length ?? 0,
+    assetCount: bundle['asset-manifest.json']?.assets?.length ?? 0,
+    buildHash: release.buildHash,
+    retainedReleases: history?.releases ?? [release.buildHash],
+    outputs: [...release.files.map((item) => item.file), 'release.json'].sort(),
+    bundle,
+    release,
+    errors: []
+  }
+}
+
+async function writeIncrementalCache(generatedRoot, inputHash, buildHash) {
+  const cacheRoot = path.join(generatedRoot, '.cache')
+  await mkdir(cacheRoot, { recursive: true })
+  await writeFile(path.join(cacheRoot, `site-data-v${INPUT_CACHE_VERSION}.json`), json({
+    schemaVersion: 1,
+    inputHash,
+    buildHash
+  }))
+}
+
+export async function buildSiteData({
+  root = process.cwd(),
+  write = true,
+  mode = 'full',
+  pulseProvider,
+  previousSiteDataRoot = process.env.SITE_DATA_PREVIOUS_ROOT
+} = {}) {
   if (!['full', 'incremental'].includes(mode)) throw new Error(`unsupported site-data build mode: ${mode}`)
   const repositoryRoot = path.resolve(root)
+  const inputHash = await inputFingerprint(repositoryRoot)
+  const incrementalGeneratedRoot = await configuredGeneratedRoot(repositoryRoot)
+  if (mode === 'incremental' && write && !pulseProvider) {
+    const hit = await loadIncrementalHit({ generatedRoot: incrementalGeneratedRoot, inputHash })
+    if (hit) return hit
+  }
   const [core, validation] = await Promise.all([
     buildKnowledgeContent({ root: repositoryRoot, write }),
     validateKnowledgeSite({ root: repositoryRoot, includeRecords: true })
@@ -232,15 +436,28 @@ export async function buildSiteData({ root = process.cwd(), write = true, mode =
   if (errors.length) return { ok: false, objectCount: core.objectCount, assetCount: core.assetCount, errors }
 
   const payloads = buildPayloads(core, sourceRecords, pulses)
-  const release = releaseManifest(payloads)
-  if (write) await writeSiteData(validation.roots.generated, payloads, release)
+  const release = releaseManifest(payloads, validation.config.siteDataPolicy)
+  let retainedReleases = [release.buildHash]
+  if (write) {
+    retainedReleases = await writeSiteData({
+      generatedRoot: validation.roots.generated,
+      payloads,
+      release,
+      policy: validation.config.siteDataPolicy,
+      previousSiteDataRoot
+    })
+    await writeIncrementalCache(validation.roots.generated, inputHash, release.buildHash)
+  }
 
   return {
     ok: true,
     mode,
+    cacheHit: false,
+    inputHash,
     objectCount: core.objectCount,
     assetCount: core.assetCount,
     buildHash: release.buildHash,
+    retainedReleases,
     outputs: [...payloads.keys(), 'release.json'].sort(),
     bundle: Object.fromEntries(payloads),
     release,

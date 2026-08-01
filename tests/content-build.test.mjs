@@ -46,6 +46,11 @@ async function createFixture({ maxBytes = 1024 * 1024, allowedExtensions = ['.pd
       maxBytes,
       requireAlt: true,
       requireRights: true
+    },
+    siteDataPolicy: {
+      releaseRetention: 3,
+      immutableCacheControl: 'public, max-age=31536000, immutable',
+      mutableCacheControl: 'public, max-age=0, must-revalidate'
     }
   })
   return root
