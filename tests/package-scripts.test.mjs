@@ -22,6 +22,19 @@ test('normal Astro preparation writes generated calendar data after static asset
   assert.ok(assetsIndex < calendarIndex, 'calendar data must be generated after .astro-static is refreshed')
 })
 
+test('Astro build validates knowledge content before preparing static output', () => {
+  const build = packageJson.scripts.build
+  const contentCheckIndex = build.indexOf('check:content')
+  const prepareIndex = build.indexOf('prepare:astro')
+  const astroBuildIndex = build.indexOf('astro build')
+
+  assert.notEqual(contentCheckIndex, -1)
+  assert.notEqual(prepareIndex, -1)
+  assert.notEqual(astroBuildIndex, -1)
+  assert.ok(contentCheckIndex < prepareIndex)
+  assert.ok(prepareIndex < astroBuildIndex)
+})
+
 test('data sovereignty helper scripts are exposed through package scripts', () => {
   assert.match(packageJson.scripts.writer, /tools\/writer\/server\.mjs/)
   assert.match(packageJson.scripts['publish:output'], /tools\/publish-output\.mjs/)
