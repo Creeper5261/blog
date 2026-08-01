@@ -11,7 +11,11 @@ test('knowledge data inspector reads only published static JSON', async () => {
 
   assert.match(source, /\/data\/knowledge/)
   assert.match(source, /load\('release\.json'\)/)
-  assert.match(source, /load\('content-index\.json'\)/)
+  assert.match(source, /load\('hybrid-index\.json'\)/)
+  assert.match(source, /hybrid\.locators\.listings\.manifest/)
+  assert.match(source, /release\.cache\.immutableReleasePath/)
+  assert.match(source, /item\.locator\.url/)
+  assert.doesNotMatch(source, /load\('content-index\.json'\)/)
   assert.match(source, /<script is:inline type="module">/)
   assert.match(source, /textContent/)
   assert.doesNotMatch(source, /readFile|content\/|external\/|generated\//)
