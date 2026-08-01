@@ -78,6 +78,10 @@
     "source": { "type": "string", "minLength": 1 },
     "query": { "type": "string", "minLength": 1 },
     "schedule": { "type": "string", "minLength": 1 },
+    "enabled": { "type": "boolean" },
+    "ttlHours": { "type": "integer", "minimum": 1, "maximum": 168 },
+    "itemLimit": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "accessRules": { "type": "string", "minLength": 1 },
     "snapshot": { "$ref": "#/$defs/pulseSnapshot" }
   },
   "allOf": [
@@ -111,7 +115,7 @@
     },
     {
       "if": { "properties": { "kind": { "const": "pulse" } }, "required": ["kind"] },
-      "then": { "required": ["source", "query"] }
+      "then": { "required": ["source", "query", "schedule", "accessRules"] }
     }
   ],
   "$defs": {
@@ -144,19 +148,35 @@
     },
     "pulseSnapshot": {
       "type": "object",
-      "required": ["fetchedAt", "items"],
+      "required": ["fetchedAt", "expiresAt", "query", "sortBasis", "items"],
       "properties": {
+        "schemaVersion": { "const": 1 },
+        "pulseId": { "$ref": "#/$defs/stableId" },
         "fetchedAt": { "$ref": "#/$defs/date" },
+        "expiresAt": { "$ref": "#/$defs/date" },
+        "query": { "type": "string", "minLength": 1 },
+        "sortBasis": {
+          "type": "object",
+          "required": ["field", "direction"],
+          "properties": {
+            "field": { "type": "string", "minLength": 1 },
+            "direction": { "enum": ["ascending", "descending"] }
+          },
+          "additionalProperties": false
+        },
         "items": {
           "type": "array",
+          "minItems": 1,
           "items": {
             "type": "object",
-            "required": ["id", "title"],
+            "required": ["id", "title", "url", "source"],
             "properties": {
               "id": { "type": "string", "minLength": 1 },
               "title": { "type": "string", "minLength": 1 },
-              "url": { "type": "string", "minLength": 1 },
-              "summary": { "type": "string" }
+              "url": { "type": "string", "pattern": "^https://" },
+              "source": { "type": "string", "minLength": 1 },
+              "summary": { "type": "string" },
+              "score": { "type": "number" }
             },
             "additionalProperties": false
           }

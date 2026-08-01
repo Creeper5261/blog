@@ -94,7 +94,9 @@ test('all S0 object kinds share one versioned contract', async () => {
   }))
   await writeJson(path.join(root, 'external', 'pulse.json'), object('pulse', 'test.pulse', {
     source: 'github',
-    query: 'created:>2026-07-01'
+    query: 'created:>2026-07-01',
+    schedule: 'daily',
+    accessRules: 'Official public API metadata.'
   }))
 
   const result = await validateKnowledgeSite({ root })

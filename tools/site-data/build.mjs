@@ -48,7 +48,7 @@ async function walkFiles(directory) {
   return files
 }
 
-async function inputFingerprint(repositoryRoot) {
+async function inputFingerprint(repositoryRoot, pulseSnapshotRoot) {
   const configFile = path.join(repositoryRoot, 'knowledge-site.config.json')
   let config = {}
   try { config = JSON.parse(await readFile(configFile, 'utf8')) } catch {}
@@ -60,6 +60,11 @@ async function inputFingerprint(repositoryRoot) {
     for (const file of await walkFiles(root)) files.set(file, normalizePath(path.relative(repositoryRoot, file)))
   }
   for (const [index, file] of BUILDER_INPUTS.entries()) files.set(file, `@builder/${index}-${path.basename(file)}`)
+  if (pulseSnapshotRoot) {
+    for (const file of await walkFiles(pulseSnapshotRoot)) {
+      files.set(file, `@pulse-snapshot/${normalizePath(path.relative(pulseSnapshotRoot, file))}`)
+    }
+  }
 
   const hash = crypto.createHash('sha256').update(`site-data-input-v${INPUT_CACHE_VERSION}\n`)
   for (const [file, label] of [...files].sort((left, right) => left[1].localeCompare(right[1]))) {
@@ -138,10 +143,11 @@ function buildTimelines(records, recordById) {
   }
 }
 
-async function resolvePulses(records, sourceRecords, pulseProvider, errors) {
+async function resolvePulses(records, sourceRecords, pulseProvider, pulseSnapshotRoot, errors) {
   const pulses = []
   for (const record of records.filter((item) => item.kind === 'pulse').sort(byId)) {
     const source = sourceRecords.get(record.id)
+    if (source.enabled === false) continue
     let snapshot
     let status = 'snapshot'
     if (pulseProvider) {
@@ -153,6 +159,10 @@ async function resolvePulses(records, sourceRecords, pulseProvider, errors) {
         snapshot = source.snapshot
         status = 'fallback'
       }
+    } else if (pulseSnapshotRoot) {
+      snapshot = await readJson(path.join(pulseSnapshotRoot, record.id, 'latest.json'))
+      if (isPulseSnapshot(snapshot) && snapshot.query === source.query) status = 'stored'
+      else snapshot = source.snapshot
     } else {
       snapshot = source.snapshot
     }
@@ -170,8 +180,11 @@ async function resolvePulses(records, sourceRecords, pulseProvider, errors) {
       source: record.sourceName,
       query: record.query,
       schedule: record.schedule,
+      accessRules: source.accessRules,
       snapshotStatus: status,
       fetchedAt: snapshot.fetchedAt,
+      expiresAt: snapshot.expiresAt,
+      sortBasis: snapshot.sortBasis,
       items: snapshot.items
     })
   }
@@ -182,8 +195,15 @@ function isPulseSnapshot(snapshot) {
   return Boolean(
     snapshot &&
     typeof snapshot.fetchedAt === 'string' &&
+    typeof snapshot.expiresAt === 'string' &&
+    snapshot.sortBasis &&
+    typeof snapshot.sortBasis.field === 'string' &&
+    ['ascending', 'descending'].includes(snapshot.sortBasis.direction) &&
+    typeof snapshot.query === 'string' &&
     Array.isArray(snapshot.items) &&
-    snapshot.items.every((item) => item && typeof item.id === 'string' && typeof item.title === 'string')
+    snapshot.items.length > 0 &&
+    snapshot.items.every((item) => item && typeof item.id === 'string' && typeof item.title === 'string' &&
+      typeof item.url === 'string' && item.url.startsWith('https://') && typeof item.source === 'string')
   )
 }
 
@@ -413,12 +433,16 @@ export async function buildSiteData({
   write = true,
   mode = 'full',
   pulseProvider,
-  previousSiteDataRoot = process.env.SITE_DATA_PREVIOUS_ROOT
+  previousSiteDataRoot = process.env.SITE_DATA_PREVIOUS_ROOT,
+  pulseSnapshotRoot = process.env.PULSE_SNAPSHOT_ROOT
 } = {}) {
   if (!['full', 'incremental'].includes(mode)) throw new Error(`unsupported site-data build mode: ${mode}`)
   const repositoryRoot = path.resolve(root)
-  const inputHash = await inputFingerprint(repositoryRoot)
   const incrementalGeneratedRoot = await configuredGeneratedRoot(repositoryRoot)
+  const resolvedPulseSnapshotRoot = pulseSnapshotRoot
+    ? path.resolve(repositoryRoot, pulseSnapshotRoot)
+    : path.join(incrementalGeneratedRoot, 'pulse-snapshots')
+  const inputHash = await inputFingerprint(repositoryRoot, resolvedPulseSnapshotRoot)
   if (mode === 'incremental' && write && !pulseProvider) {
     const hit = await loadIncrementalHit({ generatedRoot: incrementalGeneratedRoot, inputHash })
     if (hit) return hit
@@ -432,7 +456,7 @@ export async function buildSiteData({
 
   const errors = []
   const sourceRecords = new Map(validation.records.map((record) => [record.document.id, record.document]))
-  const pulses = await resolvePulses(core.content.records, sourceRecords, pulseProvider, errors)
+  const pulses = await resolvePulses(core.content.records, sourceRecords, pulseProvider, resolvedPulseSnapshotRoot, errors)
   if (errors.length) return { ok: false, objectCount: core.objectCount, assetCount: core.assetCount, errors }
 
   const payloads = buildPayloads(core, sourceRecords, pulses)

@@ -16,6 +16,13 @@ jobs:
       - name: Checkout private source
         uses: actions/checkout@v4
 
+      - name: Checkout retained Pulse snapshots
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: pulse-snapshots
+          path: .pulse-state
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -50,6 +57,7 @@ jobs:
       - name: Build generated output with retained releases
         env:
           SITE_DATA_PREVIOUS_ROOT: ../public-output/data/knowledge
+          PULSE_SNAPSHOT_ROOT: .pulse-state/snapshots
         run: pnpm run build
 
       - name: Sync generated output

@@ -17,6 +17,7 @@
     "build:site-data": "node tools/site-data/build.mjs",
     "build:site-data:incremental": "node tools/site-data/build.mjs --mode=incremental",
     "rollback:site-data": "node tools/site-data/rollback.mjs",
+    "update:pulse": "node tools/pulse/update.mjs",
     "prepare:astro": "node tools/prepare-astro-assets.mjs && node tools/prepare-github-calendar.mjs",
     "writer": "node tools/writer/server.mjs",
     "publish:output": "node tools/publish-output.mjs",

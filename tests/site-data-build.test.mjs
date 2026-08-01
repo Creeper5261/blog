@@ -71,7 +71,12 @@ async function createFixture() {
   })
   await writeJson(path.join(root, 'external', 'pulse.json'), {
     ...common, id: 'test.pulse', kind: 'pulse', title: 'Pulse', source: 'fixture', query: 'latest', schedule: 'daily',
-    snapshot: { fetchedAt: '2026-08-01T10:00:00Z', items: [{ id: 'one', title: 'Snapshot item', url: 'https://example.com/one' }] }
+    accessRules: 'Fixture data only.',
+    snapshot: {
+      fetchedAt: '2026-08-01T10:00:00Z', expiresAt: '2026-08-02T10:00:00Z', query: 'latest',
+      sortBasis: { field: 'score', direction: 'descending' },
+      items: [{ id: 'one', title: 'Snapshot item', url: 'https://example.com/one', source: 'fixture', score: 1 }]
+    }
   })
   return root
 }
@@ -213,7 +218,11 @@ test('a fresh Pulse snapshot replaces fallback data', async () => {
   const result = await buildSiteData({
     root,
     write: false,
-    pulseProvider: async () => ({ fetchedAt: '2026-08-01T12:00:00Z', items: [{ id: 'fresh', title: 'Fresh item' }] })
+    pulseProvider: async () => ({
+      fetchedAt: '2026-08-01T12:00:00Z', expiresAt: '2026-08-02T12:00:00Z', query: 'latest',
+      sortBasis: { field: 'score', direction: 'descending' },
+      items: [{ id: 'fresh', title: 'Fresh item', url: 'https://example.com/fresh', source: 'fixture' }]
+    })
   })
 
   assert.equal(result.ok, true)

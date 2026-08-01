@@ -45,4 +45,5 @@ test('local server uses incremental site-data and rollback stays explicit', () =
   assert.match(packageJson.scripts.server, /build:site-data:incremental/)
   assert.match(packageJson.scripts['build:site-data:incremental'], /--mode=incremental/)
   assert.match(packageJson.scripts['rollback:site-data'], /tools\/site-data\/rollback\.mjs/)
+  assert.match(packageJson.scripts['update:pulse'], /tools\/pulse\/update\.mjs/)
 })
