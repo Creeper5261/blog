@@ -13,7 +13,7 @@ This is DAT's recovered blog source. The default build path is now Astro, with t
 ## Working Rules
 
 - Do not edit generated directories by hand: `public/`, `dist/`, `.astro/`, or `.astro-static/`.
-- Do not commit `node_modules/`, generated output, `db.json`, `_multiconfig.yml`, logs, pid files, `.env*`, `.vercel/`, or `secrets/`.
+- Do not commit `node_modules/`, generated output, `db.json`, `_multiconfig.yml`, logs, pid files, environment files containing real values, local configuration, `.vercel/`, or `secrets/`. The credential-free `.env.example` template is allowed.
 - Treat `astro.config.mjs`, `src/`, `source/`, `tools/`, `package.json`, and `pnpm-lock.yaml` as the modern source of truth.
 - Treat `src/legacy/pages` as tracked Astro compatibility source. Refresh it from Hexo `public/` only with `pnpm run recovery:prepare-legacy-pages` after a deliberate recovery refresh.
 - Treat `_config.yml`, `_config.butterfly.yml`, and `legacy:*` scripts as the Hexo baseline and rollback path.
@@ -71,4 +71,14 @@ The intended private remote is:
 git@github.com:Creeper5261/blog.git
 ```
 
-Do not push unless the user asks.
+### Branches, Commits, And Pushes
+
+- Never force-push `main`.
+- Never develop directly on `main`. Create a feature branch before making implementation changes.
+- Feature branches must use `feature/<short-description>`. `<short-description>` must describe the work in plain language; do not use internal conventions or opaque numeric identifiers.
+- Commit after each meaningful, coherent development block. Do not bundle unrelated work into the same commit.
+- Do not push unless the user explicitly asks, or the work is being merged back into `main`.
+
+### Local-Only Material
+
+- Never add environment files containing real values, local configuration, or `docs/` material to Git. Keep them local and ensure they are ignored before committing. A credential-free `.env.example` template is explicitly allowed.

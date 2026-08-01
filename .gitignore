@@ -25,6 +25,15 @@ dist/
 .env.*
 !.env.example
 
+# Local configuration and working documentation
+*.local.json
+*.local.yaml
+*.local.yml
+config.local.json
+config.local.yaml
+config.local.yml
+docs/
+
 # Local platform state and private secret material
 .vercel/
 .netlify/
