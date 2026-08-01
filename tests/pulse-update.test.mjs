@@ -40,7 +40,8 @@ async function createFixture() {
     siteDataPolicy: {
       releaseRetention: 3,
       immutableCacheControl: 'public, max-age=31536000, immutable',
-      mutableCacheControl: 'public, max-age=0, must-revalidate'
+      mutableCacheControl: 'public, max-age=0, must-revalidate',
+      hybridIndex: { maxShardBytes: 2048, objectHashPrefixLength: 2 }
     }
   })
   await writeJson(path.join(root, 'assets', 'metadata.json'), { schemaVersion: 1, assets: {} })

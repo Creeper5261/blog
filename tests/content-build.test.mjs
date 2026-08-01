@@ -50,7 +50,8 @@ async function createFixture({ maxBytes = 1024 * 1024, allowedExtensions = ['.pd
     siteDataPolicy: {
       releaseRetention: 3,
       immutableCacheControl: 'public, max-age=31536000, immutable',
-      mutableCacheControl: 'public, max-age=0, must-revalidate'
+      mutableCacheControl: 'public, max-age=0, must-revalidate',
+      hybridIndex: { maxShardBytes: 2048, objectHashPrefixLength: 2 }
     }
   })
   return root

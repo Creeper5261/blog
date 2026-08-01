@@ -32,6 +32,7 @@ async function writeVercelConfig(generatedRoot, targetRoot) {
   const config = {
     headers: [
       { source: '/data/knowledge/releases/(.*)', headers: [{ key: 'Cache-Control', value: immutable }] },
+      { source: '/data/knowledge/objects/(.*)', headers: [{ key: 'Cache-Control', value: immutable }] },
       { source: '/media/(.*)', headers: [{ key: 'Cache-Control', value: immutable }] },
       { source: '/data/knowledge/:file', headers: [{ key: 'Cache-Control', value: mutable }] }
     ]

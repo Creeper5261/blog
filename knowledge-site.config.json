@@ -36,6 +36,10 @@
   "siteDataPolicy": {
     "releaseRetention": 5,
     "immutableCacheControl": "public, max-age=31536000, immutable",
-    "mutableCacheControl": "public, max-age=0, must-revalidate"
+    "mutableCacheControl": "public, max-age=0, must-revalidate",
+    "hybridIndex": {
+      "maxShardBytes": 131072,
+      "objectHashPrefixLength": 2
+    }
   }
 }

@@ -93,7 +93,9 @@ test('prepareAstroAssets writes immutable and mutable Vercel cache headers from 
 
   assert.equal(config.headers[0].source, '/data/knowledge/releases/(.*)')
   assert.equal(config.headers[0].headers[0].value, 'public, max-age=31536000, immutable')
-  assert.equal(config.headers[2].headers[0].value, 'public, max-age=0, must-revalidate')
+  assert.equal(config.headers[1].source, '/data/knowledge/objects/(.*)')
+  assert.equal(config.headers[1].headers[0].value, 'public, max-age=31536000, immutable')
+  assert.equal(config.headers[3].headers[0].value, 'public, max-age=0, must-revalidate')
 })
 
 test('prepareAstroAssets writes static host metadata', async () => {

@@ -5,13 +5,15 @@ import { fileURLToPath } from 'node:url'
 
 import { buildKnowledgeContent } from '../content-build/build.mjs'
 import { validateKnowledgeSite } from '../content-contracts/validate.mjs'
+import { buildHybridIndex } from './hybrid-index.mjs'
 
 const INPUT_CACHE_VERSION = 1
 const BUILDER_INPUTS = [
   fileURLToPath(import.meta.url),
   fileURLToPath(new URL('../content-build/build.mjs', import.meta.url)),
   fileURLToPath(new URL('../content-build/markdown.mjs', import.meta.url)),
-  fileURLToPath(new URL('../content-contracts/validate.mjs', import.meta.url))
+  fileURLToPath(new URL('../content-contracts/validate.mjs', import.meta.url)),
+  fileURLToPath(new URL('./hybrid-index.mjs', import.meta.url))
 ]
 
 function json(value) {
@@ -89,7 +91,7 @@ function byId(left, right) {
   return left.id.localeCompare(right.id)
 }
 
-function canonical(record) {
+function canonical(record, locators) {
   return {
     id: record.id,
     kind: record.kind,
@@ -97,7 +99,8 @@ function canonical(record) {
     status: record.status,
     publishedAt: record.publishedAt,
     updatedAt: record.updatedAt,
-    assetUrls: record.assets.map((asset) => asset.url)
+    assetUrls: record.assets.map((asset) => asset.url),
+    locator: locators?.get(record.id)
   }
 }
 
@@ -109,8 +112,8 @@ function searchableText(record) {
     .trim()
 }
 
-function buildRelationships(records) {
-  const nodes = records.map(canonical).sort(byId)
+function buildRelationships(records, locators) {
+  const nodes = records.map((record) => canonical(record, locators)).sort(byId)
   const edges = []
   for (const record of records) {
     for (const relation of record.relations) {
@@ -127,23 +130,23 @@ function buildRelationships(records) {
   return { schemaVersion: 1, nodes, edges }
 }
 
-function buildTimelines(records, recordById) {
+function buildTimelines(records, recordById, locators) {
   return {
     schemaVersion: 1,
     timelines: records
       .filter((record) => record.kind === 'timeline')
       .map((record) => ({
-        ...canonical(record),
+        ...canonical(record, locators),
         entries: record.entries.map((entry) => ({
           ...entry,
-          target: entry.target ? canonical(recordById.get(entry.target)) : null
+          target: entry.target ? canonical(recordById.get(entry.target), locators) : null
         }))
       }))
       .sort(byId)
   }
 }
 
-async function resolvePulses(records, sourceRecords, pulseProvider, pulseSnapshotRoot, errors) {
+async function resolvePulses(records, sourceRecords, pulseProvider, pulseSnapshotRoot, locators, errors) {
   const pulses = []
   for (const record of records.filter((item) => item.kind === 'pulse').sort(byId)) {
     const source = sourceRecords.get(record.id)
@@ -176,7 +179,7 @@ async function resolvePulses(records, sourceRecords, pulseProvider, pulseSnapsho
       continue
     }
     pulses.push({
-      ...canonical(record),
+      ...canonical(record, locators),
       source: record.sourceName,
       query: record.query,
       schedule: record.schedule,
@@ -207,23 +210,24 @@ function isPulseSnapshot(snapshot) {
   )
 }
 
-function buildPayloads(core, sourceRecords, pulses) {
+function buildPayloads(core, sourceRecords, pulses, hybrid) {
   const records = core.content.records
+  const locators = hybrid.locators
   const recordById = new Map(records.map((record) => [record.id, record]))
-  const contentIndex = { schemaVersion: 1, items: records.map(canonical).sort(byId) }
-  const relationships = buildRelationships(records)
-  const timelines = buildTimelines(records, recordById)
+  const contentIndex = { schemaVersion: 1, items: records.map((record) => canonical(record, locators)).sort(byId) }
+  const relationships = buildRelationships(records, locators)
+  const timelines = buildTimelines(records, recordById, locators)
   const search = {
     schemaVersion: 1,
     documents: records
       .filter((record) => ['article', 'entity', 'note', 'tool'].includes(record.kind))
-      .map((record) => ({ ...canonical(record), text: searchableText(record) }))
+      .map((record) => ({ ...canonical(record, locators), text: searchableText(record) }))
       .sort(byId)
   }
   const navigation = {
     schemaVersion: 1,
     items: records.map((record) => ({
-      ...canonical(record),
+      ...canonical(record, locators),
       route: record.routeLinks[0] ?? null
     })).sort(byId)
   }
@@ -234,7 +238,7 @@ function buildPayloads(core, sourceRecords, pulses) {
   const externalEmbeds = {
     schemaVersion: 1,
     embeds: records.filter((record) => record.kind === 'external-embed').map((record) => ({
-      ...canonical(record),
+      ...canonical(record, locators),
       provider: record.provider,
       url: record.url,
       embedUrl: record.embedUrl,
@@ -244,7 +248,7 @@ function buildPayloads(core, sourceRecords, pulses) {
   const features = {
     schemaVersion: 1,
     tools: records.filter((record) => record.kind === 'tool').map((record) => ({
-      ...canonical(record),
+      ...canonical(record, locators),
       slug: record.slug,
       privacy: record.privacy,
       inputKinds: record.inputKinds,
@@ -264,7 +268,8 @@ function buildPayloads(core, sourceRecords, pulses) {
     ['asset-map.json', assetMap],
     ['external-embeds.json', externalEmbeds],
     ['features.json', features],
-    ['pulses.json', pulses]
+    ['pulses.json', pulses],
+    ...hybrid.payloads
   ])
 }
 
@@ -279,7 +284,13 @@ function releaseManifest(payloads, policy) {
   return {
     schemaVersion: 1,
     buildHash,
-    compatibility: { minimumReaderVersion: 1, currentReaderVersion: 1, supportedSchemaVersions: [1] },
+    compatibility: {
+      minimumReaderVersion: 1,
+      currentReaderVersion: 2,
+      supportedSchemaVersions: [1],
+      preferredEntryPoint: 'hybrid-index.json',
+      legacyEntryPoints: ['content-index.json', 'content-records.json', 'relationship-graph.json', 'timelines.json']
+    },
     cache: {
       immutableReleasePath: `/data/knowledge/releases/${buildHash}/`,
       mutablePointer: '/data/knowledge/release.json',
@@ -293,7 +304,11 @@ function releaseManifest(payloads, policy) {
 
 async function writePayloadDirectory(directory, payloads, release) {
   await mkdir(directory, { recursive: true })
-  for (const [file, value] of payloads) await writeFile(path.join(directory, file), json(value))
+  for (const [file, value] of payloads) {
+    const target = path.join(directory, file)
+    await mkdir(path.dirname(target), { recursive: true })
+    await writeFile(target, json(value))
+  }
   await writeFile(path.join(directory, 'release.json'), json(release))
 }
 
@@ -356,6 +371,26 @@ async function pruneMediaForReleases(generatedRoot, retainedReleases) {
   }
 }
 
+async function hydrateRetainedObjects(generatedRoot, retainedReleases) {
+  const siteDataRoot = path.join(generatedRoot, 'site-data')
+  const objectRoot = path.join(siteDataRoot, 'objects')
+  await mkdir(objectRoot, { recursive: true })
+  for (const hash of retainedReleases) {
+    const release = await readJson(path.join(siteDataRoot, 'releases', hash, 'release.json'))
+    for (const descriptor of release?.files ?? []) {
+      if (!descriptor.file.startsWith('objects/')) continue
+      const source = path.join(siteDataRoot, 'releases', hash, descriptor.file)
+      const target = path.join(siteDataRoot, descriptor.file)
+      await mkdir(path.dirname(target), { recursive: true })
+      try {
+        await stat(target)
+      } catch {
+        await cp(source, target)
+      }
+    }
+  }
+}
+
 async function writeSiteData({ generatedRoot, payloads, release, policy, previousSiteDataRoot }) {
   const staging = path.join(generatedRoot, `.site-data-${process.pid}`)
   const target = path.join(generatedRoot, 'site-data')
@@ -375,6 +410,7 @@ async function writeSiteData({ generatedRoot, payloads, release, policy, previou
   })
   await rm(target, { recursive: true, force: true })
   await rename(staging, target)
+  await hydrateRetainedObjects(generatedRoot, retainedReleases)
   await pruneMediaForReleases(generatedRoot, retainedReleases)
   return retainedReleases
 }
@@ -456,10 +492,18 @@ export async function buildSiteData({
 
   const errors = []
   const sourceRecords = new Map(validation.records.map((record) => [record.document.id, record.document]))
-  const pulses = await resolvePulses(core.content.records, sourceRecords, pulseProvider, resolvedPulseSnapshotRoot, errors)
+  const hybrid = buildHybridIndex(core.content.records, validation.config.siteDataPolicy.hybridIndex)
+  const pulses = await resolvePulses(
+    core.content.records,
+    sourceRecords,
+    pulseProvider,
+    resolvedPulseSnapshotRoot,
+    hybrid.locators,
+    errors
+  )
   if (errors.length) return { ok: false, objectCount: core.objectCount, assetCount: core.assetCount, errors }
 
-  const payloads = buildPayloads(core, sourceRecords, pulses)
+  const payloads = buildPayloads(core, sourceRecords, pulses, hybrid)
   const release = releaseManifest(payloads, validation.config.siteDataPolicy)
   let retainedReleases = [release.buildHash]
   if (write) {

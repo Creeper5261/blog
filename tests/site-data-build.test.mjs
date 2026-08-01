@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import crypto from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -41,7 +42,8 @@ async function createFixture() {
     siteDataPolicy: {
       releaseRetention: 3,
       immutableCacheControl: 'public, max-age=31536000, immutable',
-      mutableCacheControl: 'public, max-age=0, must-revalidate'
+      mutableCacheControl: 'public, max-age=0, must-revalidate',
+      hybridIndex: { maxShardBytes: 2048, objectHashPrefixLength: 2 }
     }
   })
   await writeFile(path.join(root, 'assets', 'diagram.svg'), SVG)
@@ -99,10 +101,66 @@ test('site-data build keeps canonical fields consistent across every projection'
     assert.deepEqual(projection.assetUrls, article.assetUrls)
   }
   assert.equal(assetUrl, article.assetUrls[0])
+  assert.deepEqual(node.locator, article.locator)
+  assert.deepEqual(timelineTarget.locator, article.locator)
+  assert.deepEqual(search.locator, article.locator)
+  assert.equal(article.locator.strategy, 'content-addressed')
+  assert.equal(article.locator.url, `/data/knowledge/${article.locator.file}`)
+  assert.equal(result.bundle[article.locator.file].object.id, article.id)
+  assert.equal(result.bundle['hybrid-index.json'].locators.search.enhanced, false)
+  const idShard = result.bundle[result.bundle['catalog/manifest.json'].byId[0].file]
+  assert.equal(idShard.items.some((item) => item.id === article.id), true)
+  const adjacencyShard = result.bundle[result.bundle['relationships/manifest.json'].shards[0].file]
+  const articleAdjacency = adjacencyShard.items.find((item) => item.id === article.id)
+  assert.equal(articleAdjacency.incoming.some((edge) => edge.source === 'test.collection'), true)
+  assert.equal(articleAdjacency.incoming.some((edge) => edge.source === 'test.timeline'), true)
+  const augustBucket = result.bundle['timeline-buckets/manifest.json'].buckets.find((bucket) => bucket.bucket === '2026-08')
+  assert.equal(result.bundle[augustBucket.shards[0].file].items[0].target.id, article.id)
   assert.equal(result.bundle['pulses.json'].pulses[0].snapshotStatus, 'fallback')
   assert.equal(result.bundle['pulses.json'].pulses[0].fetchedAt, '2026-08-01T10:00:00Z')
   assert.equal(result.bundle['external-embeds.json'].embeds[0].url, 'https://example.com/embed')
   assert.equal(result.bundle['features.json'].tools[0].privacy, 'local-only')
+})
+
+test('hybrid catalog shards deterministically and preserves stable object locators across unrelated changes', async () => {
+  const root = await createFixture()
+  const configFile = path.join(root, 'knowledge-site.config.json')
+  const config = JSON.parse(await readFile(configFile, 'utf8'))
+  config.siteDataPolicy.hybridIndex.maxShardBytes = 512
+  await writeJson(configFile, config)
+  for (let index = 0; index < 20; index += 1) {
+    await writeJson(path.join(root, 'content', `note-${String(index).padStart(2, '0')}.json`), {
+      schemaVersion: 1,
+      id: `test.note-${String(index).padStart(2, '0')}`,
+      kind: 'note',
+      title: `Scale note ${index}`,
+      status: 'evergreen',
+      publishedAt: `2026-07-${String(index + 1).padStart(2, '0')}`,
+      updatedAt: '2026-08-01',
+      body: `Deterministic shard fixture ${index}`
+    })
+  }
+
+  const first = await buildSiteData({ root, write: true })
+  const catalog = first.bundle['catalog/manifest.json']
+  const article = first.bundle['content-index.json'].items.find((item) => item.id === 'test.article')
+  assert.ok(catalog.byId.length > 1)
+  assert.equal(catalog.byId.reduce((total, shard) => total + shard.count, 0), first.objectCount)
+  for (let index = 1; index < catalog.byId.length; index += 1) {
+    assert.ok(catalog.byId[index - 1].lastId.localeCompare(catalog.byId[index].firstId) < 0)
+  }
+  const objectBytes = await readFile(path.join(root, 'generated', 'site-data', article.locator.file))
+  assert.equal(crypto.createHash('sha256').update(objectBytes).digest('hex'), article.locator.hash)
+
+  const toolFile = path.join(root, 'content', 'tool.json')
+  const tool = JSON.parse(await readFile(toolFile, 'utf8'))
+  tool.title = 'Changed unrelated tool'
+  await writeJson(toolFile, tool)
+  const second = await buildSiteData({ root, write: true })
+  const unchangedArticle = second.bundle['content-index.json'].items.find((item) => item.id === 'test.article')
+  assert.notEqual(second.buildHash, first.buildHash)
+  assert.deepEqual(unchangedArticle.locator, article.locator)
+  assert.equal(await readFile(path.join(root, 'generated', 'site-data', article.locator.file), 'utf8'), objectBytes.toString())
 })
 
 test('incremental build reuses verified outputs and invalidates on source changes', async () => {
