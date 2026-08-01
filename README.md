@@ -80,6 +80,24 @@ Start the local-only writing client:
 pnpm run writer
 ```
 
+The writer opens a localhost-only visual console at `http://127.0.0.1:4126`. It can create front matter from a form, save Markdown into `source/_posts`, browse existing posts, show existing categories/tags, stage pasted or dragged images, and generate the exact publish command plan for the private-source pipeline.
+
+Images are staged locally under `.local/writer-assets` before any picbed upload. The planned public picbed path is:
+
+```text
+img/posts/<category-1>/<category-2>/<post-filename>/<image-name>
+```
+
+If an article has no category, the writer uses `未分类`. If an image is not manually named, the writer uses `YYYYMMDD-HHmmss-001.ext` style names.
+
+To upload staged images, clone `Creeper5261/picbed` locally and set:
+
+```bash
+PICBED_REPO_CHECKOUT=../picbed
+```
+
+The writer can then generate the picbed upload commands that add `img/posts`, commit, and push that checkout.
+
 Publish a generated `dist/` directory into a checked-out public output repository:
 
 ```bash
@@ -146,11 +164,14 @@ TENCENT_MAP_KEY
 QWEATHER_KEY
 WRITER_HOST
 WRITER_PORT
+PICBED_REPO_CHECKOUT
 ```
 
 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and Vercel KV's `KV_REST_API_URL` / `KV_REST_API_TOKEN` are equivalent storage choices for `/api/stats`; set one pair in Vercel. Vercel's Upstash marketplace connector may create prefixed KV names such as `UPSTASH_REDIS_REST_KV_REST_API_URL` / `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`; those are supported too. `STATS_HASH_SALT` is a private random string used to hash visitors for UV dedupe, and `STATS_BACKUP_TOKEN` protects the JSON export endpoint at `/api/stats?export=1`.
 
 Do not commit real app keys, tokens, private endpoints, `.vercel/`, or files under `secrets/`.
+
+`PICBED_REPO_CHECKOUT` is a local path, not a secret. It should point to a private local checkout of `Creeper5261/picbed` when using the writer's staged-image upload plan.
 
 GitHub Actions secrets for repository-owned automation:
 
@@ -196,6 +217,7 @@ PUBLIC_GISCUS_MAPPING=pathname
 - `source/js/service-fallbacks.js` remains a defensive layer so widgets do not stay blank forever.
 - `tools/backup-stats.mjs` exports the protected stats JSON into timestamped local files; `.github/workflows/stats-backup.yml` uploads those files as private workflow artifacts and commits them to the private `stats-backups` branch every day.
 - `tools/writer/server.mjs` starts a localhost-only writing client for Markdown validation and saving into `source/_posts`.
+- `tools/blog-ops/posts.mjs`, `tools/blog-ops/assets.mjs`, and `tools/blog-ops/publish.mjs` provide reusable article, image, taxonomy, and publish-plan APIs for the writer UI and future AI/MCP integrations.
 - `tools/publish-output.mjs` cleans and syncs generated `dist/` output into the public generated-output repository while preserving `.git` and `CNAME`.
 
 - welcome/location falls back only when `/api/location` has no key or no response;
