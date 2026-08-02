@@ -55,7 +55,7 @@ export async function buildRuntimeManifest({ targetRoot, outputRoot = path.join(
     runtimeVersion: version,
     generatedAt: 'build-time',
     entries,
-    precache: ['/lab/', '/runtime/manifest.json', ...entries.map((entry) => entry.url)]
+    precache: ['/lab/', '/tools/local-json/', '/runtime/manifest.json', ...entries.map((entry) => entry.url)]
   }
 
   await mkdir(outputRoot, { recursive: true })

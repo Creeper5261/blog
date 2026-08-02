@@ -27,7 +27,9 @@ test('S3 runtime exposes local storage, capability detection, worker tasks and s
   assert.match(worker, /state-step/)
   assert.match(worker, /type: 'progress'/)
   assert.match(serviceWorker, /manifest\.json/)
+  assert.match(serviceWorker, /tools\/local-json/)
   assert.match(runtime, /terminateWorker/)
+  assert.match(runtime, /scope = '\/lab\/'/)
   assert.match(page, /拖入 JSON 文件/)
   assert.match(page, /改用主线程/)
   assert.match(page, /主线程重试/)
@@ -56,7 +58,26 @@ test('runtime manifest records integrity metadata and offline precache entries',
   assert.ok(manifest.entries.every((entry) => entry.url.includes(manifest.runtimeVersion)))
   assert.ok(manifest.entries.some((entry) => entry.url === `/local-runtime-sw.${manifest.runtimeVersion}.js`))
   assert.ok(manifest.precache.includes('/lab/'))
+  assert.ok(manifest.precache.includes('/tools/local-json/'))
   await access(path.join(targetRoot, 'runtime', 'manifest.json'))
+})
+
+test('service worker registration allows S4 consumers to use their own scope', async () => {
+  const originalNavigator = globalThis.navigator
+  const calls = []
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { serviceWorker: { register: async (...args) => { calls.push(args); return {} } } }
+  })
+  try {
+    const runtime = await importRuntime()
+    const result = await runtime.registerRuntimeServiceWorker('/local-runtime-sw.test.js', { scope: '/tools/local-json/' })
+    assert.deepEqual(result, { registered: true, scope: '/tools/local-json/' })
+    assert.deepEqual(calls, [['/local-runtime-sw.test.js', { scope: '/tools/local-json/' }]])
+  } finally {
+    if (originalNavigator === undefined) delete globalThis.navigator
+    else Object.defineProperty(globalThis, 'navigator', { configurable: true, value: originalNavigator })
+  }
 })
 
 test('aborting a running task terminates the worker before rejecting', async () => {

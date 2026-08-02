@@ -8,7 +8,8 @@ if (!tool) throw new Error('tool.local-json manifest is missing')
 const runtimeManifest = JSON.parse(await readFile(path.resolve('.astro-static', 'runtime', 'manifest.json'), 'utf8'))
 const runtimeModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWith('/local-runtime.js'))?.url
 const workerModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWith('/local-runtime-worker.js'))?.url
-if (!runtimeModuleUrl || !workerModuleUrl) throw new Error('S3 runtime manifest is incomplete')
+const serviceWorkerUrl = runtimeManifest.entries.find((entry) => entry.file.includes('local-runtime-sw.'))?.url
+if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error('S3 runtime manifest is incomplete')
 ---
 
 <!doctype html>
@@ -39,7 +40,7 @@ if (!runtimeModuleUrl || !workerModuleUrl) throw new Error('S3 runtime manifest 
       progress { width: 100%; }
     </style>
   </head>
-  <body data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-max-bytes={tool.input.maxBytes}>
+  <body data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-max-bytes={tool.input.maxBytes}>
     <main>
       <p><a href="/">返回首页</a> · <a href="/lab/">S3 实验台</a></p>
       <h1>{tool.title}</h1>
@@ -85,7 +86,8 @@ if (!runtimeModuleUrl || !workerModuleUrl) throw new Error('S3 runtime manifest 
       try {
         const runtime = await import(document.body.dataset.runtimeModule)
         runner = runtime.createTaskRunner({ workerUrl: document.body.dataset.workerModule })
-        setStatus('本地任务壳已就绪；未建立网络上传通道。')
+        const sw = await runtime.registerRuntimeServiceWorker(document.body.dataset.serviceWorker, { scope: '/tools/local-json/' })
+        setStatus(`本地任务壳已就绪；离线缓存：${sw.registered ? '已注册' : '不可用'}；未建立网络上传通道。`)
       } catch (error) {
         setStatus(`运行时加载失败：${error.message}；仍可阅读本页契约`, true)
       }
