@@ -1,8 +1,9 @@
-import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { access, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { sanitizeLegacyScript } from '../src/legacy/html-transform.mjs'
+import { buildRuntimeManifest, RUNTIME_FILES } from './runtime/manifest.mjs'
 
 const DEFAULT_ASSET_DIRS = [
   'css',
@@ -123,6 +124,22 @@ export async function prepareAstroAssets({
     skipped,
     relativeBase: path.join('data', 'knowledge')
   })
+
+  const runtimeFiles = await Promise.all(RUNTIME_FILES.map(async (relativeFile) => {
+    try {
+      await access(path.join(targetRoot, relativeFile))
+      return true
+    } catch {
+      return false
+    }
+  }))
+  if (runtimeFiles.some(Boolean) && !runtimeFiles.every(Boolean)) {
+    throw new Error('runtime assets are incomplete; expected local-runtime.js, local-runtime-worker.js and local-runtime-sw.js')
+  }
+  if (runtimeFiles.every(Boolean)) {
+    await cp(path.join(targetRoot, 'js', 'local-runtime-sw.js'), path.join(targetRoot, 'local-runtime-sw.js'))
+    await buildRuntimeManifest({ targetRoot })
+  }
 
   await writeVercelConfig(generatedRoot, targetRoot)
 
