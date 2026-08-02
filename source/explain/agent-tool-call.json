@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "explain.agent-tool-call",
+  "title": "Agent 工具调用：声明到结果",
+  "description": "用同一 explain schema 展示一次受约束的 Agent 工具调用回放，不执行任意代码。",
+  "model": { "kind": "agent-tool" },
+  "actions": [
+    { "id": "advance", "type": "advance", "label": "下一步" },
+    { "id": "reset", "type": "reset", "label": "重置" },
+    { "id": "inspect", "type": "inspect", "label": "查看调用" }
+  ],
+  "views": [
+    { "id": "event", "kind": "event", "label": "调用声明" },
+    { "id": "state", "kind": "state", "label": "参数校验" },
+    { "id": "result", "kind": "result", "label": "静态结果" }
+  ],
+  "controls": { "step": "按步骤回放工具调用", "reset": "清除回放状态" },
+  "annotations": ["仅回放已声明动作", "不连接在线模型或任意代码执行器"],
+  "steps": [
+    { "id": "declare", "title": "声明工具", "text": "调用者选择已登记的工具 ID 与操作名。", "annotation": "工具能力来自静态 manifest。" },
+    { "id": "validate", "title": "校验参数", "text": "运行时检查输入类型与大小，再决定是否允许执行。", "annotation": "无效参数在本地停止。" },
+    { "id": "replay", "title": "回放结果", "text": "展示预先编译的结果说明，失败时仍可阅读静态回退。", "annotation": "本原型不发起在线调用。" }
+  ],
+  "staticFallback": {
+    "summary": "工具调用由声明、参数校验和静态结果回放组成，不执行任意代码。",
+    "steps": ["选择已登记工具", "校验输入契约", "显示可审计的结果说明"]
+  },
+  "accessibility": {
+    "instructions": "使用 Tab 聚焦控件，按 Enter 或空格回放下一步；结果会在状态区播报。",
+    "liveRegion": "当前工具调用步骤"
+  }
+}

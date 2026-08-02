@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "site.hybrid-indexing.article",
+  "kind": "article",
+  "title": "混合索引如何让主题关系保持可读",
+  "status": "evergreen",
+  "publishedAt": "2026-08-02",
+  "updatedAt": "2026-08-02",
+  "body": "混合索引把对象、列表、关系和时间线拆成适合各自访问形态的静态分片；详情页仍由 Astro 预渲染，探索页只读取当前需要的索引。",
+  "relations": [
+    { "type": "explains", "target": "site.hybrid-indexing.entity" }
+  ],
+  "media": [
+    { "path": "../../assets/examples/content-contract.svg", "alt": "混合索引对象与关系的静态派生图", "rights": "original" }
+  ]
+}

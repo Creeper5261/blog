@@ -1,0 +1,102 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+const dataRoot = path.resolve('generated', 'site-data')
+const [release, explainPayload] = await Promise.all([
+  readFile(path.join(dataRoot, 'release.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(dataRoot, 'explain.json'), 'utf8').then(JSON.parse)
+])
+const explainUrl = `${release.cache.immutableReleasePath}explain.json`
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="同一 explain schema 的队列与 Agent 工具调用教学回放" />
+    <title>Explain 教学回放</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 76rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.55; }
+      h1 { margin-bottom: .25rem; }
+      .lede, .muted { color: color-mix(in srgb, currentColor 72%, transparent); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
+      .card { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .8rem; padding: 1rem; }
+      .card h2 { margin-top: 0; font-size: 1.2rem; }
+      .step { border-left: 3px solid color-mix(in srgb, currentColor 25%, transparent); padding: .5rem .7rem; margin: .5rem 0; }
+      .step[data-current="true"] { border-left-color: Highlight; background: color-mix(in srgb, Highlight 12%, transparent); }
+      .step[hidden] { display: none; }
+      button { border: 1px solid color-mix(in srgb, currentColor 32%, transparent); border-radius: .45rem; background: Canvas; color: CanvasText; padding: .45rem .75rem; cursor: pointer; }
+      button + button { margin-left: .4rem; }
+      .status { min-height: 1.6rem; }
+      .error { color: #c62828; }
+      details { margin-top: .8rem; }
+      code { overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body data-explain-url={explainUrl}>
+    <main>
+      <p><a href="/">返回首页</a> · <a href="/lab/">查看 S3 任务壳</a></p>
+      <h1>Explain 教学回放</h1>
+      <p class="lede">两个单元都由同一个声明式 schema 编译：可步进、可重置；请求失败时保留下方静态结果，不执行任意 JavaScript 或在线模型调用。</p>
+      <p id="load-status" class="status" role="status">已预渲染 {explainPayload.units.length} 个解释单元；等待版本化 JSON 校验。</p>
+      <section class="grid" aria-label="解释单元">
+        {explainPayload.units.map((unit) => (
+          <article class="card explain-unit" data-unit-id={unit.id}>
+            <h2>{unit.title}</h2>
+            <p>{unit.description}</p>
+            <p class="muted"><code>{unit.id}</code> · 模型：{unit.model.kind}</p>
+            <ol class="steps" aria-label={unit.accessibility.liveRegion}>
+              {unit.steps.map((step, index) => (
+                <li class="step" data-step-index={index} data-current={index === 0 ? 'true' : 'false'} hidden={index > 0}>
+                  <strong>{step.title}</strong><br />{step.text}
+                  {step.annotation ? <small class="muted">说明：{step.annotation}</small> : null}
+                </li>
+              ))}
+            </ol>
+            <p class="muted">{unit.accessibility.instructions}</p>
+            <p>
+              <button type="button" data-action="advance" aria-label={unit.controls.step}>下一步</button>
+              <button type="button" data-action="reset" aria-label={unit.controls.reset}>重置</button>
+            </p>
+            <p class="unit-status" role="status" aria-live="polite">第 1/{unit.steps.length} 步：{unit.steps[0].title}</p>
+            <details>
+              <summary>静态回退说明</summary>
+              <p>{unit.staticFallback.summary}</p>
+              <ol>{unit.staticFallback.steps.map((step) => <li>{step}</li>)}</ol>
+            </details>
+          </article>
+        ))}
+      </section>
+      <noscript><p class="muted">JavaScript 已禁用；每个单元的第一步、完整静态回退、操作说明和可读文本仍在 HTML 中。</p></noscript>
+    </main>
+    <script is:inline type="module">
+      const status = document.querySelector('#load-status')
+      const units = [...document.querySelectorAll('.explain-unit')]
+      const render = (card, index) => {
+        const steps = [...card.querySelectorAll('.step')]
+        steps.forEach((step, stepIndex) => { step.hidden = stepIndex !== index; step.dataset.current = stepIndex === index ? 'true' : 'false' })
+        const title = steps[index]?.querySelector('strong')?.textContent || '当前步骤'
+        card.querySelector('.unit-status').textContent = `第 ${index + 1}/${steps.length} 步：${title}`
+        card.dataset.stepIndex = String(index)
+      }
+      units.forEach((card) => {
+        card.dataset.stepIndex = '0'
+        card.querySelector('[data-action="advance"]').addEventListener('click', () => { const total = card.querySelectorAll('.step').length; const next = (Number(card.dataset.stepIndex) + 1) % total; render(card, next) })
+        card.querySelector('[data-action="reset"]').addEventListener('click', () => render(card, 0))
+      })
+      try {
+        const response = await fetch(document.body.dataset.explainUrl, { cache: 'force-cache' })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const payload = await response.json()
+        if (!Array.isArray(payload.units) || payload.units.length !== units.length) throw new Error('schema payload mismatch')
+        status.textContent = `已校验版本化 explain JSON；${payload.units.length} 个单元共用同一 schema。`
+      } catch (error) {
+        status.classList.add('error')
+        status.textContent = `版本化 explain JSON 不可用，继续使用预渲染静态回退：${error.message}`
+      }
+    </script>
+  </body>
+</html>

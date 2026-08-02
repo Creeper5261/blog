@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "tool.local-json",
+  "kind": "tool",
+  "title": "本地 JSON 格式化",
+  "status": "evergreen",
+  "publishedAt": "2026-08-02",
+  "updatedAt": "2026-08-02",
+  "slug": "local-json",
+  "privacy": "local-only",
+  "inputKinds": ["application/json", "text/json"],
+  "outputKinds": ["application/json"]
+}

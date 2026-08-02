@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "site.hybrid-indexing.collection",
+  "kind": "collection",
+  "title": "混合索引实践集合",
+  "status": "evergreen",
+  "publishedAt": "2026-08-02",
+  "updatedAt": "2026-08-02",
+  "members": [
+    "site.hybrid-indexing.article",
+    "site.hybrid-indexing.entity"
+  ]
+}

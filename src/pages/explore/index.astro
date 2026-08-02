@@ -1,0 +1,136 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+const dataRoot = path.resolve('generated', 'site-data')
+const [contentIndex, graph, timelinesPayload, assetManifest] = await Promise.all([
+  readFile(path.join(dataRoot, 'content-index.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(dataRoot, 'relationship-graph.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(dataRoot, 'timelines.json'), 'utf8').then(JSON.parse),
+  readFile(path.join(dataRoot, 'asset-manifest.json'), 'utf8').then(JSON.parse)
+])
+const nodes = contentIndex.items
+const nodeById = new Map(nodes.map((node) => [node.id, node]))
+const outgoing = new Map()
+const incoming = new Map()
+for (const edge of graph.edges) {
+  if (!outgoing.has(edge.from)) outgoing.set(edge.from, [])
+  if (!incoming.has(edge.to)) incoming.set(edge.to, [])
+  outgoing.get(edge.from).push(edge)
+  incoming.get(edge.to).push(edge)
+}
+const assetsByUrl = new Map(assetManifest.assets.map((asset) => [asset.url, asset]))
+const collections = nodes.filter((node) => node.kind === 'collection')
+const timelines = timelinesPayload.timelines
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="主题集合、时间线和关系跳转的混合索引原型" />
+    <title>主题探索 · 混合索引</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 76rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.55; }
+      h1 { margin-bottom: .25rem; }
+      .lede, .muted { color: color-mix(in srgb, currentColor 72%, transparent); }
+      .layout { display: grid; grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+      .panel, .node { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .7rem; padding: .9rem; }
+      .panel { position: sticky; top: 1rem; }
+      .panel ul { margin: .5rem 0 0; padding-left: 1.1rem; }
+      .node { scroll-margin-top: 1rem; margin-bottom: .8rem; }
+      .node:target { outline: 2px solid Highlight; }
+      .node h2 { margin: 0 0 .2rem; font-size: 1.15rem; }
+      .kind { font-size: .8rem; opacity: .7; text-transform: uppercase; letter-spacing: .06em; }
+      .relations { display: flex; flex-wrap: wrap; gap: .35rem; padding: 0; list-style: none; }
+      .relations a { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: 999px; padding: .18rem .5rem; }
+      .timeline { border-left: 2px solid color-mix(in srgb, currentColor 28%, transparent); padding-left: 1rem; }
+      .timeline + .timeline { margin-top: 1rem; }
+      figure { margin: .8rem 0; }
+      figure img { max-width: min(100%, 24rem); height: auto; border-radius: .45rem; }
+      figcaption { font-size: .85rem; opacity: .72; }
+      code { overflow-wrap: anywhere; }
+      @media (max-width: 48rem) { .layout { grid-template-columns: 1fr; } .panel { position: static; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/">返回首页</a> · <a href="/knowledge-data/">查看索引 JSON</a></p>
+      <h1>主题探索</h1>
+      <p class="lede">首屏由 Astro 预渲染；关系跳转使用稳定 ID，图像直接使用 S1 的内容寻址派生物。</p>
+
+      <div class="layout">
+        <aside class="panel" aria-labelledby="catalog-title">
+          <h2 id="catalog-title">主题目录</h2>
+          <p class="muted">{nodes.length} 个对象 · {graph.edges.length} 条关系</p>
+          <ul>
+            {nodes.map((node) => <li><a href={`#topic-${node.id}`}>{node.title}</a></li>)}
+          </ul>
+        </aside>
+
+        <section aria-labelledby="topics-title">
+          <h2 id="topics-title">对象与关系</h2>
+          {nodes.map((node) => {
+            const links = [...(outgoing.get(node.id) ?? []), ...(incoming.get(node.id) ?? [])]
+            const images = (node.assetUrls ?? []).map((url) => ({ url, asset: assetsByUrl.get(url) }))
+            return (
+              <article class="node" id={`topic-${node.id}`}>
+                <span class="kind">{node.kind}</span>
+                <h2>{node.title}</h2>
+                <p class="muted"><code>{node.id}</code> · 更新于 {node.updatedAt || '未记录'}</p>
+                {images.map(({ url, asset }) => (
+                  <figure>
+                    <img src={url} alt={asset?.references?.[0]?.alt || node.title} loading="lazy" width={asset?.width || undefined} height={asset?.height || undefined} />
+                    <figcaption>S1 响应式资产派生：{asset?.bytes ?? '未知'} bytes · {asset?.format ?? 'image'}</figcaption>
+                  </figure>
+                ))}
+                {links.length ? (
+                  <>
+                    <h3>关系跳转</h3>
+                    <ul class="relations">
+                      {links.map((edge) => {
+                        const targetId = edge.from === node.id ? edge.to : edge.from
+                        const target = nodeById.get(targetId)
+                        return <li><a href={`#topic-${targetId}`} title={edge.type}>{target?.title || targetId} · {edge.type}</a></li>
+                      })}
+                    </ul>
+                  </>
+                ) : <p class="muted">暂无关系。</p>}
+              </article>
+            )
+          })}
+        </section>
+      </div>
+
+      <section aria-labelledby="collections-title">
+        <h2 id="collections-title">主题集合</h2>
+        {collections.length ? collections.map((collection) => (
+          <article class="node">
+            <h3>{collection.title}</h3>
+            <p class="muted"><code>{collection.id}</code></p>
+            <ul class="relations">
+              {(outgoing.get(collection.id) ?? []).filter((edge) => edge.type === 'contains').map((edge) => <li><a href={`#topic-${edge.to}`}>{nodeById.get(edge.to)?.title || edge.to}</a></li>)}
+            </ul>
+          </article>
+        )) : <p class="muted">暂无集合。</p>}
+      </section>
+
+      <section aria-labelledby="timeline-title">
+        <h2 id="timeline-title">时间线</h2>
+        {timelines.length ? timelines.map((timeline) => (
+          <article class="timeline">
+            <h3>{timeline.title}</h3>
+            <p class="muted"><code>{timeline.id}</code></p>
+            <ol>
+              {timeline.entries.map((entry) => <li><time datetime={entry.at}>{entry.at}</time>：{entry.title}{entry.target ? <> · <a href={`#topic-${entry.target.id}`}>{entry.target.title}</a></> : null}</li>)}
+            </ol>
+          </article>
+        )) : <p class="muted">暂无时间线。</p>}
+      </section>
+
+      <noscript><p class="muted">JavaScript 已禁用；目录、对象、图片、集合、时间线和关系跳转仍由完整 HTML 提供。</p></noscript>
+    </main>
+  </body>
+</html>

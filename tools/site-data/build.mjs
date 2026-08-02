@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 
 import { buildKnowledgeContent } from '../content-build/build.mjs'
 import { validateKnowledgeSite } from '../content-contracts/validate.mjs'
+import { compileExplainUnits } from '../explain/compiler.mjs'
+import { buildToolManifestPayload } from '../capabilities/manifests.mjs'
 import { buildHybridIndex } from './hybrid-index.mjs'
 
 const INPUT_CACHE_VERSION = 1
@@ -13,6 +15,9 @@ const BUILDER_INPUTS = [
   fileURLToPath(new URL('../content-build/build.mjs', import.meta.url)),
   fileURLToPath(new URL('../content-build/markdown.mjs', import.meta.url)),
   fileURLToPath(new URL('../content-contracts/validate.mjs', import.meta.url)),
+  fileURLToPath(new URL('../explain/compiler.mjs', import.meta.url)),
+  fileURLToPath(new URL('../capabilities/manifests.mjs', import.meta.url)),
+  fileURLToPath(new URL('../../schemas/v1/explain.schema.json', import.meta.url)),
   fileURLToPath(new URL('./hybrid-index.mjs', import.meta.url))
 ]
 
@@ -60,6 +65,10 @@ async function inputFingerprint(repositoryRoot, pulseSnapshotRoot) {
     const root = path.resolve(repositoryRoot, configured)
     if (!isInside(repositoryRoot, root)) continue
     for (const file of await walkFiles(root)) files.set(file, normalizePath(path.relative(repositoryRoot, file)))
+  }
+  const explainRoot = path.resolve(repositoryRoot, 'source', 'explain')
+  if (isInside(repositoryRoot, explainRoot)) {
+    for (const file of await walkFiles(explainRoot)) files.set(file, `@explain/${normalizePath(path.relative(explainRoot, file))}`)
   }
   for (const [index, file] of BUILDER_INPUTS.entries()) files.set(file, `@builder/${index}-${path.basename(file)}`)
   if (pulseSnapshotRoot) {
@@ -210,7 +219,7 @@ function isPulseSnapshot(snapshot) {
   )
 }
 
-function buildPayloads(core, sourceRecords, pulses, hybrid) {
+function buildPayloads(core, sourceRecords, pulses, hybrid, explain, toolManifests) {
   const records = core.content.records
   const locators = hybrid.locators
   const recordById = new Map(records.map((record) => [record.id, record]))
@@ -269,6 +278,8 @@ function buildPayloads(core, sourceRecords, pulses, hybrid) {
     ['external-embeds.json', externalEmbeds],
     ['features.json', features],
     ['pulses.json', pulses],
+    ['explain.json', explain],
+    ['tool-manifests.json', toolManifests],
     ...hybrid.payloads
   ])
 }
@@ -503,7 +514,12 @@ export async function buildSiteData({
   )
   if (errors.length) return { ok: false, objectCount: core.objectCount, assetCount: core.assetCount, errors }
 
-  const payloads = buildPayloads(core, sourceRecords, pulses, hybrid)
+  const explain = await compileExplainUnits({ root: repositoryRoot })
+  if (!explain.ok) return { ok: false, objectCount: core.objectCount, assetCount: core.assetCount, errors: explain.errors }
+  const explainPayload = explain.payload
+  const toolManifests = buildToolManifestPayload()
+
+  const payloads = buildPayloads(core, sourceRecords, pulses, hybrid, explainPayload, toolManifests)
   const release = releaseManifest(payloads, validation.config.siteDataPolicy)
   let retainedReleases = [release.buildHash]
   if (write) {

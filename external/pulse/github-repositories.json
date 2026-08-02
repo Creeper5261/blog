@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "pulse.github-repositories",
+  "kind": "pulse",
+  "title": "GitHub 开源项目热点快照",
+  "status": "evergreen",
+  "publishedAt": "2026-08-02",
+  "updatedAt": "2026-08-02",
+  "source": "github-repositories",
+  "query": "stars:>10000 language:javascript",
+  "schedule": "daily",
+  "enabled": true,
+  "ttlHours": 24,
+  "itemLimit": 5,
+  "accessRules": "构建时通过官方 GitHub API 获取；浏览器只读取已发布快照。失败时保留最近一次有效快照。",
+  "snapshot": {
+    "schemaVersion": 1,
+    "pulseId": "pulse.github-repositories",
+    "fetchedAt": "2026-08-02T00:00:00Z",
+    "expiresAt": "2026-08-03T00:00:00Z",
+    "query": "stars:>10000 language:javascript",
+    "sortBasis": { "field": "stars", "direction": "descending" },
+    "items": [
+      {
+        "id": "github:facebook/react",
+        "title": "facebook/react",
+        "url": "https://github.com/facebook/react",
+        "source": "github",
+        "summary": "The library for web and native user interfaces.",
+        "score": 235000
+      },
+      {
+        "id": "github:vercel/next.js",
+        "title": "vercel/next.js",
+        "url": "https://github.com/vercel/next.js",
+        "source": "github",
+        "summary": "The React Framework for the Web.",
+        "score": 128000
+      },
+      {
+        "id": "github:vuejs/core",
+        "title": "vuejs/core",
+        "url": "https://github.com/vuejs/core",
+        "source": "github",
+        "summary": "Vue.js is a progressive JavaScript framework.",
+        "score": 45000
+      }
+    ]
+  }
+}

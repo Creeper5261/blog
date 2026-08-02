@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://creeper5261.github.io/schemas/v1/explain.schema.json",
+  "title": "Declarative explain unit",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "description",
+    "model",
+    "actions",
+    "views",
+    "controls",
+    "annotations",
+    "steps",
+    "staticFallback",
+    "accessibility"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)+$" },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "model": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "enum": ["queue", "agent-tool"] } },
+      "additionalProperties": false
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "type": { "enum": ["advance", "reset", "inspect"] },
+          "label": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "views": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "label"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "kind": { "enum": ["state", "event", "result"] },
+          "label": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "controls": {
+      "type": "object",
+      "required": ["step", "reset"],
+      "properties": {
+        "step": { "type": "string", "minLength": 1 },
+        "reset": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "text"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "title": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 1 },
+          "annotation": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "staticFallback": {
+      "type": "object",
+      "required": ["summary", "steps"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "steps": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      },
+      "additionalProperties": false
+    },
+    "accessibility": {
+      "type": "object",
+      "required": ["instructions", "liveRegion"],
+      "properties": {
+        "instructions": { "type": "string", "minLength": 1 },
+        "liveRegion": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

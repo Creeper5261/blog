@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "site.hybrid-indexing.entity",
+  "kind": "entity",
+  "title": "混合索引",
+  "status": "evergreen",
+  "publishedAt": "2026-08-02",
+  "updatedAt": "2026-08-02",
+  "entityType": "architecture",
+  "body": "按资产类型选择内容对象、排序分片、邻接分片、时间桶和反向资产映射。",
+  "relations": [
+    { "type": "illustrated-by", "target": "site.hybrid-indexing.article" }
+  ]
+}
