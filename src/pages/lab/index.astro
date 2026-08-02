@@ -1,4 +1,12 @@
 ---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+const manifest = JSON.parse(await readFile(path.resolve('.astro-static', 'runtime', 'manifest.json'), 'utf8'))
+const runtimeModuleUrl = manifest.entries.find((entry) => entry.file.endsWith('/local-runtime.js'))?.url
+const workerModuleUrl = manifest.entries.find((entry) => entry.file.endsWith('/local-runtime-worker.js'))?.url
+const serviceWorkerUrl = manifest.entries.find((entry) => entry.file.includes('local-runtime-sw.'))?.url
+if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error('S3 runtime manifest is incomplete')
 ---
 
 <!doctype html>
@@ -34,7 +42,7 @@
       .queue { min-height: 5rem; padding: .5rem 1.2rem; background: color-mix(in srgb, currentColor 7%, transparent); border-radius: .45rem; }
     </style>
   </head>
-  <body>
+  <body data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl}>
     <main>
       <h1>本地实验台</h1>
       <p class="lede">S3 最小能力原型：文件始终留在浏览器本地，正文和静态说明不依赖 JavaScript。</p>
@@ -53,7 +61,7 @@
           <div id="dropzone" class="dropzone" tabindex="0">拖入 JSON 文件，或点击选择<input id="file-input" type="file" accept="application/json,.json,text/json" hidden /></div>
           <label for="json-input">也可以直接粘贴</label>
           <textarea id="json-input" spellcheck="false">&#123;"items":["A","B"],"ready":true&#125;</textarea>
-          <p><button id="format-json" type="button">格式化</button><button id="fallback-json" type="button" hidden>改用主线程</button><button id="download-json" type="button" disabled>下载结果</button><button id="cancel-json" type="button" disabled>取消</button></p>
+          <p><button id="format-json" type="button">格式化</button><button id="fallback-json" type="button" hidden>改用主线程</button><button id="reset-json" type="button" hidden>清空并重选小文件</button><button id="download-json" type="button" disabled>下载结果</button><button id="cancel-json" type="button" disabled>取消</button></p>
           <progress id="json-progress" value="0" max="1" hidden></progress>
           <p id="json-status" class="status" role="status"></p>
           <label for="json-output">输出</label>
@@ -73,11 +81,12 @@
       <noscript><p>JavaScript 已禁用。两个交互单元不可用，但本页的隐私说明和静态内容仍可阅读。</p></noscript>
     </main>
     <script is:inline type="module">
-      import { createLocalStore, createTaskRunner, detectCapabilities, registerRuntimeServiceWorker } from '/js/local-runtime.js'
+      const runtime = await import(document.body.dataset.runtimeModule)
+      const { createLocalStore, createTaskRunner, detectCapabilities, registerRuntimeServiceWorker } = runtime
 
       const $ = (selector) => document.querySelector(selector)
       const store = createLocalStore('s3-lab')
-      const runner = createTaskRunner()
+      const runner = createTaskRunner({ workerUrl: document.body.dataset.workerModule })
       const capabilities = detectCapabilities()
       const capabilityNames = { worker: 'Worker', dragDrop: '拖放', indexedDB: 'IndexedDB', opfs: 'OPFS', serviceWorker: '离线缓存', wasm: 'WASM', fileSystemAccess: '文件选择器' }
       const capabilityList = $('#capabilities')
@@ -87,7 +96,7 @@
         item.textContent = `${label}: ${capabilities[key] ? '可用' : '不可用'}`
         return item
       }))
-      const sw = await registerRuntimeServiceWorker()
+      const sw = await registerRuntimeServiceWorker(document.body.dataset.serviceWorker)
       $('#runtime-status').textContent = `运行时已就绪（存储：${store.mode}；离线缓存：${sw.registered ? '已注册' : '不可用或待构建'}）`
 
       const setStatus = (target, text, error = false) => { target.textContent = text; target.classList.toggle('error', error) }
@@ -109,6 +118,7 @@
         jsonProgress.hidden = false
         $('#cancel-json').disabled = false
         $('#fallback-json').hidden = true
+        $('#reset-json').hidden = true
         try {
           const result = await runner.run('format-json', { input: jsonInput.value }, {
             signal: jsonController.signal,
@@ -120,15 +130,23 @@
           setStatus(jsonStatus, `完成：${result.bytes} bytes`)
         } catch (error) {
           const cancelled = error.name === 'AbortError'
-          setStatus(jsonStatus, cancelled ? '已取消' : `处理失败：${error.message}；可改用主线程重试`, !cancelled)
-          $('#fallback-json').hidden = cancelled
+          const tooLarge = error.code === 'TASK_INPUT_TOO_LARGE'
+          const message = cancelled
+            ? '已取消，Worker 已停止'
+            : tooLarge
+              ? `${error.message}；请拆分或选择更小的文件`
+              : `处理失败：${error.message}；可改用主线程重试`
+          setStatus(jsonStatus, message, !cancelled)
+          $('#fallback-json').hidden = cancelled || tooLarge
+          $('#reset-json').hidden = !tooLarge
         } finally {
           $('#cancel-json').disabled = true
           jsonProgress.hidden = true
         }
       }
-      $('#format-json').addEventListener('click', formatJson)
+      $('#format-json').addEventListener('click', () => formatJson(false))
       $('#fallback-json').addEventListener('click', () => formatJson(true))
+      $('#reset-json').addEventListener('click', () => { jsonInput.value = ''; $('#json-output').value = ''; $('#download-json').disabled = true; $('#reset-json').hidden = true; setStatus(jsonStatus, '已清空，请重新选择小于 2 MB 的文件'); jsonInput.focus() })
       $('#download-json').addEventListener('click', () => downloadText('formatted.json', $('#json-output').value, 'application/json'))
       $('#cancel-json').addEventListener('click', () => jsonController?.abort())
       const readFile = async (file) => { jsonInput.value = await file.text(); await formatJson() }

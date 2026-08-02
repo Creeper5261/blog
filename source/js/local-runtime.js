@@ -131,19 +131,34 @@ export function createTaskRunner({ workerUrl = '/js/local-runtime-worker.js', ma
     }
     return worker
   }
+  const terminateWorker = (abortedId) => {
+    const activeWorker = worker
+    worker = undefined
+    activeWorker?.terminate()
+    for (const [id, task] of pending) {
+      pending.delete(id)
+      if (abortedId == null || id === abortedId) task.reject(new DOMException('任务已取消', 'AbortError'))
+      else task.reject(new Error('Worker 因另一任务取消而重启，请重试'))
+    }
+  }
   return {
     maxBytes,
     run(task, payload, { signal, onProgress, fallback, forceMainThread = false } = {}) {
       const inputBytes = payload?.input == null ? 0 : new TextEncoder().encode(String(payload.input)).byteLength
-      if (inputBytes > maxBytes) return Promise.reject(new Error(`输入超过 ${Math.round(maxBytes / 1024 / 1024)} MB 限制`))
+      if (inputBytes > maxBytes) {
+        const error = new Error(`输入超过 ${Math.round(maxBytes / 1024 / 1024)} MB 限制`)
+        error.name = 'TaskLimitError'
+        error.code = 'TASK_INPUT_TOO_LARGE'
+        return Promise.reject(error)
+      }
       const instance = forceMainThread ? undefined : ensureWorker()
       if (!instance || forceMainThread) {
         try { return Promise.resolve(fallback ? fallback(payload) : fallbackTask(task, payload)) } catch (error) { return Promise.reject(error) }
       }
       const id = `task-${++nextId}`
       return new Promise((resolve, reject) => {
-        const abort = () => { instance.postMessage({ type: 'cancel', id }); pending.delete(id); reject(new DOMException('任务已取消', 'AbortError')) }
-        if (signal?.aborted) return abort()
+        if (signal?.aborted) return reject(new DOMException('任务已取消', 'AbortError'))
+        const abort = () => terminateWorker(id)
         signal?.addEventListener('abort', abort, { once: true })
         pending.set(id, {
           resolve: (value) => { signal?.removeEventListener('abort', abort); resolve(value) },
@@ -153,15 +168,15 @@ export function createTaskRunner({ workerUrl = '/js/local-runtime-worker.js', ma
         instance.postMessage({ type: 'run', id, task, ...payload })
       })
     },
-    cancelAll() { for (const id of pending.keys()) worker?.postMessage({ type: 'cancel', id }) },
+    cancelAll() { terminateWorker() },
     dispose() { worker?.terminate(); worker = undefined; pending.clear() }
   }
 }
 
-export async function registerRuntimeServiceWorker() {
+export async function registerRuntimeServiceWorker(scriptUrl = '/local-runtime-sw.js') {
   if (typeof navigator === 'undefined' || !navigator.serviceWorker) return { registered: false, reason: 'unsupported' }
   try {
-    await navigator.serviceWorker.register('/local-runtime-sw.js', { scope: '/lab/' })
+    await navigator.serviceWorker.register(scriptUrl, { scope: '/lab/' })
     return { registered: true }
   } catch (error) {
     return { registered: false, reason: error.message }

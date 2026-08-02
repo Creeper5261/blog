@@ -136,10 +136,7 @@ export async function prepareAstroAssets({
   if (runtimeFiles.some(Boolean) && !runtimeFiles.every(Boolean)) {
     throw new Error('runtime assets are incomplete; expected local-runtime.js, local-runtime-worker.js and local-runtime-sw.js')
   }
-  if (runtimeFiles.every(Boolean)) {
-    await cp(path.join(targetRoot, 'js', 'local-runtime-sw.js'), path.join(targetRoot, 'local-runtime-sw.js'))
-    await buildRuntimeManifest({ targetRoot })
-  }
+  if (runtimeFiles.every(Boolean)) await buildRuntimeManifest({ targetRoot })
 
   await writeVercelConfig(generatedRoot, targetRoot)
 
