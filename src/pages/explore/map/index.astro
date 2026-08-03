@@ -1,0 +1,135 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import { layoutGraph, truncateLabel } from '../../../../tools/site-data/explore-map.mjs'
+
+const root = path.resolve('generated', 'site-data')
+const release = JSON.parse(await readFile(path.join(root, 'release.json'), 'utf8'))
+const graph = JSON.parse(await readFile(path.join(root, 'relationship-graph.json'), 'utf8'))
+const releasePath = release.cache.immutableReleasePath
+const map = layoutGraph(graph)
+const kinds = [...new Set(map.nodes.map((node) => node.kind))].sort()
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="由版本化关系图预渲染的知识对象探索地图" />
+    <title>探索地图</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 76rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.55; }
+      h1 { margin-bottom: .25rem; }
+      .lede, .muted { color: color-mix(in srgb, currentColor 72%, transparent); }
+      .map-shell { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .8rem; padding: .8rem; }
+      svg { width: 100%; height: auto; display: block; }
+      .edge { stroke: color-mix(in srgb, currentColor 34%, transparent); stroke-width: 1.5; transition: opacity .12s ease; }
+      .edge.active { stroke: Highlight; stroke-width: 2.5; opacity: 1; }
+      .edge.dimmed { opacity: .12; }
+      .node { cursor: default; transition: opacity .12s ease; }
+      .node.dimmed { opacity: .18; }
+      .node circle { fill: color-mix(in srgb, currentColor 14%, transparent); stroke: currentColor; stroke-width: 1.5; }
+      .node text { font-size: 13px; fill: currentColor; }
+      .kind-article circle { fill: #3f7ac0; }
+      .kind-note circle { fill: #7c4fbf; }
+      .kind-entity circle { fill: #b06a2f; }
+      .kind-timeline circle { fill: #2f8f6b; }
+      .kind-collection circle { fill: #b03a48; }
+      .kind-tool circle { fill: #4f7a8f; }
+      .kind-pulse circle { fill: #8f6bb0; }
+      .legend { display: flex; flex-wrap: wrap; gap: .6rem 1rem; padding: 0; list-style: none; margin: .8rem 0; }
+      .legend .dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; margin-right: .3rem; }
+      .index { columns: 2 18rem; column-gap: 2rem; padding: 0; list-style: none; }
+      .status { min-height: 1.5rem; }
+      .error { color: #c62828; }
+      @media (max-width: 48rem) { .index { columns: 1; } }
+      @media (prefers-reduced-motion: reduce) { .edge, .node { transition: none; } }
+    </style>
+  </head>
+  <body data-map-url={`${releasePath}relationship-graph.json`}>
+    <main>
+      <p><a href="/">返回首页</a> · <a href="/explore/">主题探索</a> · <a href="/topics/">主题展厅</a> · <a href="/paths/">知识路径</a></p>
+      <h1>探索地图</h1>
+      <p class="lede">整张地图由 Astro 在构建期从关系图预渲染为 SVG；悬停或聚焦节点会高亮邻接关系，禁用 JavaScript 时地图仍然可读。</p>
+      <p class="muted">{map.nodes.length} 个对象 · {map.edges.length} 条关系</p>
+
+      <div class="map-shell">
+        <svg viewBox={`0 0 ${map.size} ${map.size}`} role="img" aria-label="知识对象与关系地图" id="explore-map">
+          {map.edges.map((edge) => (
+            <line class="edge" x1={edge.from.x} y1={edge.from.y} x2={edge.to.x} y2={edge.to.y} data-from={edge.from.id} data-to={edge.to.id}>
+              <title>{edge.from.title} → {edge.to.title}（{edge.type}）</title>
+            </line>
+          ))}
+          {map.nodes.map((node) => (
+            <g class={`node kind-${node.kind}`} data-id={node.id} tabindex="0" transform={`translate(${node.x} ${node.y})`}>
+              <circle r="14" />
+              <title>{node.title}（{node.kind}）</title>
+              <text y="27" text-anchor="middle">{truncateLabel(node.title)}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <ul class="legend" aria-label="对象类型图例">
+        {kinds.map((kind) => (
+          <li><span class={`dot kind-${kind}`}></span>{kind}</li>
+        ))}
+      </ul>
+
+      <h2>对象索引</h2>
+      <ul class="index">
+        {map.nodes.map((node) => (
+          <li><a href={`/explore/#topic-${node.id}`}>{node.title}</a> <span class="muted">{node.kind}</span></li>
+        ))}
+      </ul>
+
+      <p id="status" class="status" role="status">地图与索引来自当前版本化发布包。</p>
+      <noscript><p class="muted">JavaScript 已禁用；上方地图为预渲染 SVG，仍可阅读，节点高亮交互不可用。</p></noscript>
+    </main>
+    <script is:inline type="module">
+      const mapElement = document.querySelector('#explore-map')
+      const status = document.querySelector('#status')
+      const url = document.body.dataset.mapUrl
+      if (mapElement) {
+        const nodes = [...mapElement.querySelectorAll('.node')]
+        const edges = [...mapElement.querySelectorAll('.edge')]
+        const neighbors = new Map(nodes.map((node) => [node.dataset.id, new Set()]))
+        for (const edge of edges) {
+          neighbors.get(edge.dataset.from)?.add(edge.dataset.to)
+          neighbors.get(edge.dataset.to)?.add(edge.dataset.from)
+        }
+        const highlight = (id) => {
+          edges.forEach((edge) => {
+            const active = edge.dataset.from === id || edge.dataset.to === id
+            edge.classList.toggle('active', Boolean(id) && active)
+            edge.classList.toggle('dimmed', Boolean(id) && !active)
+          })
+          nodes.forEach((node) => {
+            const active = !id || node.dataset.id === id || neighbors.get(node.dataset.id)?.has(id)
+            node.classList.toggle('dimmed', Boolean(id) && !active)
+          })
+        }
+        for (const node of nodes) {
+          node.addEventListener('mouseenter', () => highlight(node.dataset.id))
+          node.addEventListener('mouseleave', () => highlight(null))
+          node.addEventListener('focus', () => highlight(node.dataset.id))
+          node.addEventListener('blur', () => highlight(null))
+        }
+      }
+      if (url && status) {
+        try {
+          const response = await fetch(url, { cache: 'force-cache' })
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const fresh = await response.json()
+          status.textContent = `已确认版本化关系图（${fresh.nodes.length} 个对象 / ${fresh.edges.length} 条关系）；地图为预渲染静态 SVG。`
+        } catch (error) {
+          status.classList.add('error')
+          status.textContent = `版本化关系图请求失败，保留预渲染地图：${error.message}`
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,119 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+const root = path.resolve('generated', 'site-data')
+const release = JSON.parse(await readFile(path.join(root, 'release.json'), 'utf8'))
+const pathsPayload = JSON.parse(await readFile(path.join(root, 'paths.json'), 'utf8'))
+const releasePath = release.cache.immutableReleasePath
+const paths = pathsPayload.paths
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="从集合与实体关系派生的可读知识路径" />
+    <title>知识路径</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 70rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.55; }
+      h1 { margin-bottom: .25rem; }
+      .lede, .muted { color: color-mix(in srgb, currentColor 72%, transparent); }
+      .path { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .7rem; padding: 1rem; margin-bottom: .9rem; }
+      .path h2 { margin: .15rem 0 .25rem; font-size: 1.15rem; }
+      .kind { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; opacity: .72; }
+      .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: .4rem; padding: 0; list-style: none; margin: .7rem 0 0; }
+      .step { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .55rem; padding: .5rem .7rem; min-width: 8rem; flex: 0 1 auto; }
+      .step .kind { display: block; }
+      .step a { color: inherit; }
+      .step p { margin: .25rem 0 0; font-size: .8rem; opacity: .78; }
+      .arrow { align-self: center; opacity: .6; padding: 0 .15rem; }
+      .status { min-height: 1.5rem; }
+      .error { color: #c62828; }
+      @media (max-width: 48rem) { .flow { flex-direction: column; align-items: stretch; } .arrow { transform: rotate(90deg); text-align: center; } }
+    </style>
+  </head>
+  <body data-paths-url={`${releasePath}paths.json`}>
+    <main>
+      <p><a href="/">返回首页</a> · <a href="/explore/">主题探索</a> · <a href="/explore/map/">探索地图</a> · <a href="/topics/">主题展厅</a></p>
+      <h1>知识路径</h1>
+      <p class="lede">路径由构建期从集合成员与实体关系派生；每条路径按顺序预渲染，禁用 JavaScript 时仍可通读。</p>
+      <p class="muted">{paths.length} 条路径</p>
+
+      {paths.length > 0 ? (
+        <div id="path-list">
+          {paths.map((path) => (
+            <section class="path">
+              <span class="kind">{path.kind}</span>
+              <h2>{path.title}</h2>
+              <p class="muted">{path.description}</p>
+              <ol class="flow">
+                {path.steps.map((step, index) => (
+                  <>
+                    {index > 0 && <li class="arrow" aria-hidden="true">→</li>}
+                    <li class="step">
+                      <span class="kind">{step.kind}</span>
+                      <a href={`/explore/#topic-${step.id}`}>{step.title}</a>
+                      {path.edges[index - 1] && <p>关系：{path.edges[index - 1].type}</p>}
+                    </li>
+                  </>
+                ))}
+              </ol>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <section><h2>暂无路径</h2><p>路径数据尚未发布；此页仍保留导航与静态说明。</p></section>
+      )}
+
+      <p id="status" class="status" role="status">以上路径来自当前版本化发布包。</p>
+      <noscript><p class="muted">JavaScript 已禁用；上方路径列表仍可阅读。</p></noscript>
+    </main>
+    <script is:inline type="module">
+      const status = document.querySelector('#status')
+      const list = document.querySelector('#path-list')
+      const url = document.body.dataset.pathsUrl
+      const renderPath = (path) => {
+        const section = document.createElement('section'); section.className = 'path'
+        const kind = document.createElement('span'); kind.className = 'kind'; kind.textContent = path.kind
+        const heading = document.createElement('h2'); heading.textContent = path.title
+        const description = document.createElement('p'); description.className = 'muted'; description.textContent = path.description
+        const flow = document.createElement('ol'); flow.className = 'flow'
+        path.steps.forEach((step, index) => {
+          if (index > 0) {
+            const arrow = document.createElement('li'); arrow.className = 'arrow'; arrow.setAttribute('aria-hidden', 'true'); arrow.textContent = '→'
+            flow.append(arrow)
+          }
+          const item = document.createElement('li'); item.className = 'step'
+          const stepKind = document.createElement('span'); stepKind.className = 'kind'; stepKind.textContent = step.kind
+          const link = document.createElement('a'); link.href = `/explore/#topic-${step.id}`; link.textContent = step.title
+          item.append(stepKind, link)
+          if (path.edges[index - 1]) {
+            const edgeType = document.createElement('p'); edgeType.textContent = `关系：${path.edges[index - 1].type}`
+            item.append(edgeType)
+          }
+          flow.append(item)
+        })
+        section.append(kind, heading, description, flow)
+        return section
+      }
+      if (url && list) {
+        try {
+          const response = await fetch(url, { cache: 'force-cache' })
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const payload = await response.json()
+          const fresh = payload.paths
+          if (Array.isArray(fresh) && fresh.length) {
+            list.replaceChildren(...fresh.map(renderPath))
+            status.textContent = `已从版本化 JSON 更新 ${fresh.length} 条路径。`
+          }
+        } catch (error) {
+          status.classList.add('error')
+          status.textContent = `版本化路径数据请求失败，保留预渲染内容：${error.message}`
+        }
+      }
+    </script>
+  </body>
+</html>
