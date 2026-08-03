@@ -2,86 +2,72 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import ExperiencePage from '../../components/ExperiencePage.astro'
+
 const root = path.resolve('generated', 'site-data')
 const release = JSON.parse(await readFile(path.join(root, 'release.json'), 'utf8'))
 const pulsesPayload = JSON.parse(await readFile(path.join(root, 'pulses.json'), 'utf8'))
-const releasePath = release.cache.immutableReleasePath
 const pulse = pulsesPayload.pulses[0]
+const releasePath = release.cache.immutableReleasePath
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content="来自官方来源适配器的可追溯热点快照" />
-    <title>Pulse 热点快照</title>
-    <style>
-      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-      body { max-width: 70rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.55; }
-      h1 { margin-bottom: .25rem; }
-      .lede, .muted { color: color-mix(in srgb, currentColor 72%, transparent); }
-      .meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; padding: .75rem 0; border-block: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
-      .items { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: .8rem; padding: 0; list-style: none; }
-      .item { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .7rem; padding: .9rem; }
-      .item h2 { font-size: 1.05rem; margin: 0 0 .35rem; }
-      .item a { color: inherit; }
-      .score { font-variant-numeric: tabular-nums; opacity: .72; }
-      .status { min-height: 1.5rem; }
-      .error { color: #c62828; }
-      code { overflow-wrap: anywhere; }
-    </style>
-  </head>
-  <body data-pulse-url={`${releasePath}pulses.json`}>
-    <main>
-      <p><a href="/">返回首页</a> · <a href="/knowledge-data/">查看 site-data</a></p>
-      <h1>Pulse 热点快照</h1>
-      <p class="lede">构建侧调用来源适配器并规范化；浏览器只读取带 build hash 的静态 JSON，不在首屏调用 GitHub。</p>
-      {pulse ? (
-        <>
-          <p class="meta"><span>来源：{pulse.source}</span><span>查询：<code>{pulse.query}</code></span><span>状态：{pulse.snapshotStatus === 'fallback' ? '最近有效快照' : '已发布快照'}</span></p>
-          <p class="muted">抓取于 {pulse.fetchedAt}，有效至 {pulse.expiresAt}；排序依据 {pulse.sortBasis.field}（{pulse.sortBasis.direction}）。</p>
-          <ul class="items" id="pulse-items">
-            {pulse.items.map((item) => (
-              <li class="item">
+<ExperiencePage title="DAT · 热点" description="DAT 的热点阅读页" active="pulse">
+  <section class="reading-page" data-pulse-url={`${releasePath}pulses.json`} aria-labelledby="pulse-title">
+    <header class="reading-heading">
+      <p class="experience-eyebrow">DAT / 热点</p>
+      <h1 id="pulse-title">值得现在打开的东西</h1>
+      <p>热点由构建侧整理成可追溯快照，页面只负责阅读，不在浏览器里连接在线来源。</p>
+    </header>
+
+    {pulse ? (
+      <>
+        <div class="reading-meta"><span>来自 {pulse.source}</span><span>更新于 {pulse.fetchedAt}</span><span>{pulse.items.length} 条</span></div>
+        <ul class="reading-list pulse-list" id="pulse-items">
+          {pulse.items.map((item) => (
+            <li class="reading-row">
+              <div class="reading-row-main">
+                <span class="reading-row-label">{pulse.source}</span>
                 <h2><a href={item.url} target="_blank" rel="noreferrer">{item.title}</a></h2>
-                <p>{item.summary || '该项目没有摘要。'}</p>
-                <span class="score">{item.score !== undefined ? `score ${item.score}` : '无分数'}</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : (
-        <section><h2>暂无快照</h2><p>来源暂时不可用；此页仍保留导航和静态说明。</p></section>
-      )}
-      <p id="status" class="status" role="status">以上内容来自当前版本化发布包。</p>
-      <noscript><p class="muted">JavaScript 已禁用；上方快照仍可阅读。页面不会请求在线来源。</p></noscript>
-    </main>
-    <script is:inline type="module">
-      const status = document.querySelector('#status')
-      const list = document.querySelector('#pulse-items')
-      const url = document.body.dataset.pulseUrl
-      if (url && list) {
-        try {
-          const response = await fetch(url, { cache: 'force-cache' })
-          if (!response.ok) throw new Error(`HTTP ${response.status}`)
-          const payload = await response.json()
-          const fresh = payload.pulses?.[0]
-          if (fresh?.items?.length) {
-            list.replaceChildren(...fresh.items.map((item) => {
-              const li = document.createElement('li'); li.className = 'item'
-              const heading = document.createElement('h2'); const link = document.createElement('a'); link.href = item.url; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = item.title; heading.append(link)
-              const summary = document.createElement('p'); summary.textContent = item.summary || '该项目没有摘要。'
-              const score = document.createElement('span'); score.className = 'score'; score.textContent = item.score === undefined ? '无分数' : `score ${item.score}`
-              li.append(heading, summary, score); return li
-            }))
-            status.textContent = `已从版本化 JSON 更新 ${fresh.items.length} 条快照；未访问在线来源。`
-          }
-        } catch (error) {
-          status.classList.add('error')
-          status.textContent = `版本化快照请求失败，保留预渲染内容：${error.message}`
+                <p>{item.summary || '打开看看。'}</p>
+              </div>
+              <span class="pulse-score">{item.score !== undefined ? item.score : ''}</span>
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : (
+      <p class="reading-status">暂时没有热点。</p>
+    )}
+
+    <p class="reading-status" id="pulse-status" role="status">以上内容来自最近一次有效快照。</p>
+    <p class="reading-noscript"><noscript>JavaScript 已禁用；热点列表仍可阅读。</noscript></p>
+  </section>
+
+  <script is:inline>
+    const page = document.querySelector('.reading-page')
+    const list = document.querySelector('#pulse-items')
+    const status = document.querySelector('#pulse-status')
+    const url = page?.dataset.pulseUrl
+    if (url && list) {
+      try {
+        const response = await fetch(url, { cache: 'force-cache' })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const fresh = (await response.json()).pulses?.[0]
+        if (fresh?.items?.length) {
+          list.replaceChildren(...fresh.items.map((item) => {
+            const row = document.createElement('li'); row.className = 'reading-row'
+            const main = document.createElement('div'); main.className = 'reading-row-main'
+            const label = document.createElement('span'); label.className = 'reading-row-label'; label.textContent = fresh.source
+            const heading = document.createElement('h2'); const link = document.createElement('a'); link.href = item.url; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = item.title; heading.append(link)
+            const summary = document.createElement('p'); summary.textContent = item.summary || '打开看看。'
+            const score = document.createElement('span'); score.className = 'pulse-score'; score.textContent = item.score === undefined ? '' : item.score
+            main.append(label, heading, summary); row.append(main, score); return row
+          }))
+          if (status) status.textContent = `已更新 ${fresh.items.length} 条热点。`
         }
+      } catch (error) {
+        if (status) status.textContent = `更新失败，保留最近快照：${error.message}`
       }
-    </script>
-  </body>
-</html>
+    }
+  </script>
+</ExperiencePage>

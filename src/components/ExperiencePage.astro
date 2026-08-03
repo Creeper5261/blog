@@ -1,0 +1,56 @@
+---
+const { title, description, active = '' } = Astro.props
+const navItems = [
+  { id: 'tools', label: '工具', href: '/tools/' },
+  { id: 'knowledge', label: '知识库', href: '/knowledge/' },
+  { id: 'pulse', label: '热点', href: '/pulse/' }
+]
+---
+
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="stylesheet" href="/css/experience.css" />
+  </head>
+  <body>
+    <header class="experience-topbar">
+      <a class="experience-brand" href="/" aria-label="返回 DAT 博客">DAT<span>.</span></a>
+      <nav aria-label="体验入口">
+        {navItems.map((item) => (
+          <a class:list={[{ active: active === item.id }]} href={item.href}>{item.label}</a>
+        ))}
+      </nav>
+      <button class="experience-theme" id="experience-theme" type="button" aria-label="切换深色模式" aria-pressed="false">◐</button>
+    </header>
+
+    <main class="experience-main">
+      <slot />
+    </main>
+
+    <footer class="experience-footer">
+      <a href="/">DAT 博客</a><span>·</span><span>本地优先，轻量阅读</span>
+    </footer>
+
+    <script is:inline>
+      const root = document.documentElement
+      const themeButton = document.querySelector('#experience-theme')
+      const storedTheme = localStorage.getItem('dat-experience-theme')
+      if (storedTheme === 'dark') root.dataset.theme = 'dark'
+      const updateThemeButton = () => {
+        const dark = root.dataset.theme === 'dark'
+        themeButton?.setAttribute('aria-pressed', String(dark))
+        themeButton?.setAttribute('aria-label', dark ? '切换浅色模式' : '切换深色模式')
+      }
+      updateThemeButton()
+      themeButton?.addEventListener('click', () => {
+        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'
+        localStorage.setItem('dat-experience-theme', root.dataset.theme)
+        updateThemeButton()
+      })
+    </script>
+  </body>
+</html>

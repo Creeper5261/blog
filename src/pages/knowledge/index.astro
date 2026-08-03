@@ -2,121 +2,57 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import NativePageFrame from '../../components/NativePageFrame.astro'
+import ExperiencePage from '../../components/ExperiencePage.astro'
 
 const root = path.resolve('generated', 'site-data')
-const [release, routesPayload, topicsPayload, toolManifests, pulsesPayload, contentIndex] = await Promise.all([
-  readFile(path.join(root, 'release.json'), 'utf8').then(JSON.parse),
-  readFile(path.join(root, 'routes.json'), 'utf8').then(JSON.parse),
-  readFile(path.join(root, 'topics.json'), 'utf8').then(JSON.parse),
-  readFile(path.join(root, 'tool-manifests.json'), 'utf8').then(JSON.parse),
-  readFile(path.join(root, 'pulses.json'), 'utf8').then(JSON.parse),
-  readFile(path.join(root, 'content-index.json'), 'utf8').then(JSON.parse)
-])
-const releasePath = release.cache.immutableReleasePath
-const pulse = pulsesPayload.pulses[0] ?? null
+const topicsPayload = JSON.parse(await readFile(path.join(root, 'topics.json'), 'utf8'))
 const collections = topicsPayload.collections
-const tools = toolManifests.tools
-const siteRoutes = routesPayload.items.filter((item) => item.source === 'site-routes')
-const memberCount = collections.reduce((total, collection) => total + collection.members.length, 0)
-const featured = [
-  { title: '主题展厅', description: '按集合浏览主题成员与关系', href: '/topics/', icon: 'fa-solid fa-layer-group' },
-  { title: '探索地图', description: '构建期预渲染的知识关系地图', href: '/explore/map/', icon: 'fa-solid fa-compass' },
-  { title: '知识路径', description: '从集合与实体关系派生的阅读路径', href: '/paths/', icon: 'fa-solid fa-route' },
-  { title: '文字流', description: '把知识内容连成一条连续阅读流', href: '/flow/', icon: 'fa-solid fa-stream' },
-  { title: '专题叙事', description: '按专题顺序讲述对象与关系', href: '/narratives/', icon: 'fa-solid fa-book-open' },
-  { title: '工具目录', description: 'manifest 驱动的本地优先工具', href: '/tools/catalog/', icon: 'fa-solid fa-toolbox' },
-  { title: '本地实验台', description: 'S3 本地优先任务运行壳', href: '/lab/', icon: 'fa-solid fa-flask' },
-  { title: 'Explain 教学回放', description: '同一 schema 的可步进解释单元', href: '/explain/', icon: 'fa-solid fa-list-check' }
-]
 ---
 
-<NativePageFrame
-  title="DAT · 博客与知识站"
-  pageName="知识站"
-  description="DAT 的博客与知识站：主题展厅、探索地图、知识路径、文字流、专题叙事与本地优先工具。"
-  route="/knowledge/"
->
-  <div class="experience-page" data-pulse-url={`${releasePath}pulses.json`}>
-    <section class="experience-hero" aria-labelledby="knowledge-title">
-      <p class="experience-kicker"><i class="fas fa-compass" aria-hidden="true"></i> DAT · 新入口</p>
-      <h1 id="knowledge-title">博客之外，仍然是博客</h1>
-      <p class="experience-lede">知识站把 S1—S5 的数据、关系和本地工具放进原有 Butterfly 画布。文章、归档与关于页面保持原样；新入口在这里逐步长出来。</p>
-      <div class="experience-actions">
-        <a class="button--animated" href="/tools/"><i class="fas fa-toolbox" aria-hidden="true"></i> 进入实验场</a>
-        <a href="/archives/"><i class="fas fa-box-archive" aria-hidden="true"></i> 回到文章归档</a>
-      </div>
-    </section>
+<ExperiencePage title="DAT · 知识库" description="DAT 的个人知识库" active="knowledge">
+  <section class="reading-page" aria-labelledby="knowledge-title">
+    <header class="reading-heading">
+      <p class="experience-eyebrow">DAT / 知识库</p>
+      <h1 id="knowledge-title">把想记住的东西放在一起</h1>
+      <p>这里是可阅读的主题入口，不展示索引结构和构建细节。按主题浏览，找到一条适合现在的阅读线索。</p>
+    </header>
 
-    <ul class="experience-grid" aria-label="站点数据">
-      <li class="experience-card"><div class="experience-card-inner"><p class="experience-eyebrow">对象</p><h2>{contentIndex.items.length}</h2><p>当前版本化内容对象</p></div></li>
-      <li class="experience-card"><div class="experience-card-inner"><p class="experience-eyebrow">集合</p><h2>{collections.length}</h2><p>{memberCount} 个集合成员</p></div></li>
-      <li class="experience-card"><div class="experience-card-inner"><p class="experience-eyebrow">工具</p><h2>{tools.length}</h2><p>浏览器本地优先</p></div></li>
-      <li class="experience-card"><div class="experience-card-inner"><p class="experience-eyebrow">入口</p><h2>{siteRoutes.length}</h2><p>由发布包生成</p></div></li>
-    </ul>
+    <div class="reading-toolbar">
+      <input class="reading-filter" id="topic-filter" type="search" placeholder="筛选主题" aria-label="筛选主题" />
+    </div>
 
-    <h2>专题体验</h2>
-    <ul class="experience-grid" aria-label="专题体验">
-      {featured.map((item) => (
-        <li class="experience-card">
-          <a href={item.href}>
-            <p class="experience-eyebrow"><i class={item.icon} aria-hidden="true"></i> 入口</p>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-          </a>
-        </li>
-      ))}
-    </ul>
+    {collections.length > 0 ? (
+      <ul class="reading-list" id="topic-list">
+        {collections.map((collection) => (
+          <li class="reading-row" data-search={`${collection.title} ${collection.kind} ${collection.members.map((member) => member.title).join(' ')}`}>
+            <div class="reading-row-main">
+              <span class="reading-row-label">{collection.kind}</span>
+              <h2>{collection.title}</h2>
+              <p>{collection.members.slice(0, 4).map((member) => member.title).join(' · ') || '这个主题还没有成员。'}</p>
+              <div class="reading-meta"><span>{collection.members.length} 个成员</span><span>更新于 {collection.updatedAt}</span></div>
+            </div>
+            <a class="reading-row-action" href={`/narratives/${collection.id}/`}>阅读 →</a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="reading-status">暂时还没有主题。</p>
+    )}
 
-    <h2>最新快照</h2>
-    {pulse ? (
-      <section id="pulse-preview" aria-label="热点快照">
-        <p class="experience-muted">{pulse.title} · 抓取于 {pulse.fetchedAt}</p>
-        <ul class="experience-grid">
-          {pulse.items.slice(0, 3).map((item) => (
-            <li class="experience-card"><a href={item.url} target="_blank" rel="noreferrer"><h3>{item.title}</h3><p>{item.summary || '该项目没有摘要。'}</p></a></li>
-          ))}
-        </ul>
-      </section>
-    ) : <p class="experience-muted">暂无快照。</p>}
-
-    <h2>博客入口</h2>
-    <ul class="experience-relations">
-      <li><a href="/archives/">文章归档</a></li>
-      <li><a href="/categories/">分类</a></li>
-      <li><a href="/tags/">标签</a></li>
-      <li><a href="/about/">关于</a></li>
-    </ul>
-
-    <p id="status" class="experience-muted" role="status">以上内容来自当前版本化发布包。</p>
-    <noscript><p class="experience-muted">JavaScript 已禁用；页面内容已完整预渲染，仍可浏览全部入口。</p></noscript>
-  </div>
+    <p class="reading-status" id="topic-status" role="status">{collections.length} 个主题</p>
+    <p class="reading-noscript"><noscript>JavaScript 已禁用；主题列表仍可完整阅读。</noscript></p>
+    <p class="reading-status"><a href="/pulse/">去看最新热点 →</a></p>
+  </section>
 
   <script is:inline type="module">
-    const status = document.querySelector('#status')
-    const preview = document.querySelector('#pulse-preview')
-    const url = document.querySelector('.experience-page')?.dataset.pulseUrl
-    if (url && preview) {
-      try {
-        const response = await fetch(url, { cache: 'force-cache' })
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        const payload = await response.json()
-        const pulse = payload.pulses?.[0]
-        if (pulse?.items?.length) {
-          const list = document.createElement('ul'); list.className = 'experience-grid'
-          for (const item of pulse.items.slice(0, 3)) {
-            const entry = document.createElement('li'); entry.className = 'experience-card'
-            const link = document.createElement('a'); link.href = item.url; link.target = '_blank'; link.rel = 'noreferrer'
-            const heading = document.createElement('h3'); heading.textContent = item.title
-            const summary = document.createElement('p'); summary.textContent = item.summary || '该项目没有摘要。'
-            link.append(heading, summary); entry.append(link); list.append(entry)
-          }
-          preview.querySelector('.experience-grid')?.replaceWith(list)
-          status.textContent = '已从版本化 JSON 更新快照；未访问在线来源。'
-        }
-      } catch (error) {
-        status.textContent = `版本化快照请求失败，保留预渲染内容：${error.message}`
-      }
-    }
+    const filter = document.querySelector('#topic-filter')
+    const rows = [...document.querySelectorAll('#topic-list .reading-row')]
+    const status = document.querySelector('#topic-status')
+    filter?.addEventListener('input', () => {
+      const query = filter.value.trim().toLowerCase()
+      let visible = 0
+      rows.forEach((row) => { const match = !query || row.dataset.search.toLowerCase().includes(query); row.hidden = !match; if (match) visible += 1 })
+      if (status) status.textContent = `${visible} 个主题`
+    })
   </script>
-</NativePageFrame>
+</ExperiencePage>
