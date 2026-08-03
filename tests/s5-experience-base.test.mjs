@@ -6,8 +6,16 @@ import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 
-test('S5 legacy catch-all stops serving the home route now owned by the homepage', async () => {
-  const source = await readFile(path.join(repositoryRoot, 'src', 'pages', '[...slug].astro'), 'utf8')
+test('legacy homepage and toolbox remain available while S5 uses separate routes', async () => {
+  const homepage = await readFile(path.join(repositoryRoot, 'src', 'pages', 'index.astro'), 'utf8')
+  assert.match(homepage, /src', 'legacy', 'pages', 'index\.html'/)
+  assert.match(homepage, /applyPublicServices/)
 
+  const routes = await readFile(path.join(repositoryRoot, 'tools', 'site-data', 'routes.mjs'), 'utf8')
+  assert.match(routes, /route: '\/tools\/catalog\/'/)
+  assert.doesNotMatch(routes, /route: '\/tools\/', kind: 'tools'/)
+
+  const source = await readFile(path.join(repositoryRoot, 'src', 'pages', '[...slug].astro'), 'utf8')
   assert.match(source, /page\.kind !== 'not-found' && page\.kind !== 'home'/)
+  assert.match(source, /modernRouteSlugs/)
 })

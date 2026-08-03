@@ -42,7 +42,7 @@ if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error(
   </head>
   <body data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-max-bytes={tool.input.maxBytes}>
     <main>
-      <p><a href="/">返回首页</a> · <a href="/tools/">工具目录</a> · <a href="/lab/">S3 实验台</a></p>
+      <p><a href="/">返回首页</a> · <a href="/tools/catalog/">工具目录</a> · <a href="/lab/">S3 实验台</a></p>
       <h1>{tool.title}</h1>
       <p class="lede">输入文本或拖入文本文件，在浏览器本地计算 SHA-256；本工具复用 S3 的 Worker 任务壳，离线时仍可使用。</p>
 
