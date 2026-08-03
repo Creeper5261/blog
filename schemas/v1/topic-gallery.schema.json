@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://creeper5261.github.io/schemas/v1/topic-gallery.schema.json",
+  "title": "Topic gallery projection",
+  "type": "object",
+  "required": ["schemaVersion", "collections"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "collections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/collection" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": ["id", "kind", "title", "status", "publishedAt", "updatedAt", "assetUrls", "locator"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "enum": ["draft", "evergreen", "archived"] },
+        "publishedAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "assetUrls": { "type": "array", "items": { "type": "string" } },
+        "locator": { "$ref": "#/$defs/locator" }
+      },
+      "additionalProperties": false
+    },
+    "locator": {
+      "type": "object",
+      "required": ["strategy", "base", "file", "url", "hash", "bytes"],
+      "properties": {
+        "strategy": { "const": "content-addressed" },
+        "base": { "const": "site-data" },
+        "file": { "type": "string" },
+        "url": { "type": "string" },
+        "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "bytes": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "relation": {
+      "type": "object",
+      "required": ["from", "to", "type"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "collection": {
+      "type": "object",
+      "required": ["id", "kind", "title", "status", "publishedAt", "updatedAt", "assetUrls", "locator", "members", "relations"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "const": "collection" },
+        "title": { "type": "string" },
+        "status": { "enum": ["draft", "evergreen", "archived"] },
+        "publishedAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "assetUrls": { "type": "array", "items": { "type": "string" } },
+        "locator": { "$ref": "#/$defs/locator" },
+        "members": { "type": "array", "items": { "$ref": "#/$defs/summary" } },
+        "relations": { "type": "array", "items": { "$ref": "#/$defs/relation" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}
