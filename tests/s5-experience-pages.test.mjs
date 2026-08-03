@@ -31,3 +31,11 @@ test('S5 legacy catch-all defers routes owned by modern experience pages', async
   assert.match(source, /modernRouteSlugs/)
   assert.match(source, /page\.kind !== 'page' \|\| !modernRouteSlugs\.has\(page\.slug\)/)
 })
+
+test('experience shell inherits legacy theme preferences instead of embedding new visual assets', async () => {
+  const component = await readFile(path.join(repositoryRoot, 'src', 'components', 'ExperiencePage.astro'), 'utf8')
+  const stylesheet = await readFile(path.join(repositoryRoot, 'source', 'css', 'experience.css'), 'utf8')
+
+  for (const key of ['theme', 'themeColor', 'font', 'blogbg', 'web_bg']) assert.match(component, new RegExp(`localStorage\\.getItem\\('${key}'\\)`))
+  assert.doesNotMatch(stylesheet, /cdn\.jsdelivr\.net\/gh\/Creeper5261\/picbed.*(?:background|experience-bg-image)/)
+})
