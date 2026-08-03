@@ -7,7 +7,6 @@ export const SITE_ROUTES = [
   { id: 'site.tools', title: '工具', route: '/tools/', kind: 'tools' },
   { id: 'site.paths', title: '知识路径', route: '/paths/', kind: 'paths' },
   { id: 'site.lab', title: '本地实验台', route: '/lab/', kind: 'lab' },
-  { id: 'site.pulse', title: 'Pulse 热点快照', route: '/pulse/', kind: 'pulse' },
   { id: 'site.explain', title: '可执行解释层', route: '/explain/', kind: 'explain' },
   { id: 'site.knowledge-data', title: 'site-data 检视器', route: '/knowledge-data/', kind: 'knowledge-data' }
 ]

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 
-test('S5 pages consume only published static payloads and keep no-JavaScript fallbacks', async () => {
+test('S5 public pages consume only published static payloads and keep no-JavaScript fallbacks', async () => {
   const pages = {
     'src/pages/topics/index.astro': ['topics.json', 'immutableReleasePath', '<noscript>', '主题展厅'],
     'src/pages/tools/index.astro': ['tool-manifests.json', '<noscript>', '>工具<', '搜索工具'],
@@ -32,10 +32,15 @@ test('S5 legacy catch-all defers routes owned by modern experience pages', async
   assert.match(source, /page\.kind !== 'page' \|\| !modernRouteSlugs\.has\(page\.slug\)/)
 })
 
-test('experience shell inherits legacy theme preferences instead of embedding new visual assets', async () => {
-  const component = await readFile(path.join(repositoryRoot, 'src', 'components', 'ExperiencePage.astro'), 'utf8')
-  const stylesheet = await readFile(path.join(repositoryRoot, 'source', 'css', 'experience.css'), 'utf8')
+test('removed experience shell is not used by public tool surfaces', async () => {
+  const toolsPage = await readFile(path.join(repositoryRoot, 'src', 'pages', 'tools', 'index.astro'), 'utf8')
+  assert.match(toolsPage, /NativePageFrame/)
+  assert.doesNotMatch(toolsPage, /ExperiencePage/)
+})
 
-  for (const key of ['theme', 'themeColor', 'font', 'blogbg', 'web_bg']) assert.match(component, new RegExp(`localStorage\\.getItem\\('${key}'\\)`))
-  assert.doesNotMatch(stylesheet, /cdn\.jsdelivr\.net\/gh\/Creeper5261\/picbed.*(?:background|experience-bg-image)/)
+test('knowledge and pulse pages are removed from the public surface', async () => {
+  await assert.rejects(readFile(path.join(repositoryRoot, 'src', 'pages', 'knowledge', 'index.astro')), { code: 'ENOENT' })
+  await assert.rejects(readFile(path.join(repositoryRoot, 'src', 'pages', 'pulse', 'index.astro')), { code: 'ENOENT' })
+  const routes = await readFile(path.join(repositoryRoot, 'tools', 'site-data', 'routes.mjs'), 'utf8')
+  assert.doesNotMatch(routes, /\/pulse\//)
 })

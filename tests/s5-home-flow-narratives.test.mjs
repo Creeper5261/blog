@@ -6,9 +6,8 @@ import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 
-test('S5 knowledge and text-flow pages consume only published static payloads', async () => {
+test('S5 text-flow pages consume only published static payloads', async () => {
   const pages = {
-    'src/pages/knowledge/index.astro': ['ExperiencePage', '<noscript>', '知识库', '暂时还没有主题'],
     'src/pages/flow/index.astro': ['content-records.json', 'immutableReleasePath', '<noscript>', '文字流']
   }
   for (const [relative, patterns] of Object.entries(pages)) {
@@ -24,10 +23,8 @@ test('S5 knowledge and text-flow pages consume only published static payloads', 
 
 test('S5 does not expose the synthetic narrative prototype as a public route', async () => {
   const routes = await readFile(path.join(repositoryRoot, 'tools', 'site-data', 'routes.mjs'), 'utf8')
-  const knowledge = await readFile(path.join(repositoryRoot, 'src', 'pages', 'knowledge', 'index.astro'), 'utf8')
   const topics = await readFile(path.join(repositoryRoot, 'src', 'pages', 'topics', 'index.astro'), 'utf8')
 
   assert.doesNotMatch(routes, /site\.narratives/)
-  assert.doesNotMatch(knowledge, /narratives\//)
   assert.doesNotMatch(topics, /narratives\//)
 })

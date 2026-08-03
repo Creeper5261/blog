@@ -51,7 +51,6 @@ test('S4 Pulse page can publish the last valid snapshot when its source refresh 
 test('S4 pages consume versioned static payloads and retain no-JavaScript fallbacks', async () => {
   const pages = {
     'src/pages/tools/local-json/index.astro': ['tool-manifests.json', 'createTaskRunner', 'registerRuntimeServiceWorker', "scope: '/tools/local-json/'", '<noscript>'],
-    'src/pages/pulse/index.astro': ['immutableReleasePath', 'pulses.json', '最近一次有效快照'],
     'src/pages/explore/index.astro': ['relationship-graph.json', 'timelines.json', '稳定 ID'],
     'src/pages/explain/index.astro': ['explain.json', 'data-action="advance"', '静态回退']
   }
