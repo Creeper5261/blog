@@ -2,15 +2,22 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import { SITE_ROUTES } from '../../tools/site-data/routes.mjs'
 import { applyPublicServices, getPublicServices } from '../legacy/html-transform.mjs'
 import { listLegacyPages } from '../legacy/routes.mjs'
 
 export async function getStaticPaths() {
   const legacyRoot = path.resolve('src', 'legacy', 'pages')
   const pages = await listLegacyPages(legacyRoot)
+  const modernRouteSlugs = new Set(
+    SITE_ROUTES
+      .map((route) => route.route.replace(/^\/|\/$/g, ''))
+      .filter(Boolean)
+  )
 
   return pages
     .filter((page) => page.kind !== 'not-found')
+    .filter((page) => page.kind !== 'page' || !modernRouteSlugs.has(page.slug))
     .map((page) => ({
       params: { slug: page.slug },
       props: { outputPath: page.outputPath }
