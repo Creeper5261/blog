@@ -1,3 +1,5 @@
+import { hashTask } from './hash-task.js'
+
 function send(message) {
   self.postMessage(message)
 }
@@ -26,7 +28,14 @@ function stateStep(id, state, action) {
   return { items, action }
 }
 
-self.onmessage = (event) => {
+async function hashSha256(id, input) {
+  progress(id, 0.25, '读取输入')
+  const result = await hashTask(input)
+  progress(id, 1, '完成')
+  return result
+}
+
+self.onmessage = async (event) => {
   const message = event.data ?? {}
   if (message.type !== 'run' || !message.id) return
 
@@ -35,6 +44,8 @@ self.onmessage = (event) => {
       ? formatJson(message.id, message.input)
       : message.task === 'state-step'
         ? stateStep(message.id, message.state, message.action)
+        : message.task === 'hash-sha256'
+          ? await hashSha256(message.id, message.input)
         : (() => { throw new Error(`未知任务：${message.task}`) })()
     send({ type: 'result', id: message.id, result })
   } catch (error) {

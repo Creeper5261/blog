@@ -5,7 +5,8 @@ import path from 'node:path'
 export const RUNTIME_FILES = [
   'js/local-runtime.js',
   'js/local-runtime-worker.js',
-  'js/local-runtime-sw.js'
+  'js/local-runtime-sw.js',
+  'js/hash-task.js'
 ]
 
 function versionedFile(relativeFile, version) {

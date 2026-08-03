@@ -89,7 +89,7 @@ export async function saveToOpfs(name, blob) {
   return name
 }
 
-function fallbackTask(task, payload) {
+async function fallbackTask(task, payload) {
   if (task === 'format-json') {
     const output = JSON.stringify(JSON.parse(String(payload.input ?? '')), null, 2)
     return { output, bytes: new TextEncoder().encode(output).byteLength }
@@ -99,6 +99,14 @@ function fallbackTask(task, payload) {
     if (payload.action === 'enqueue') items.push(`项目 ${items.length + 1}`)
     if (payload.action === 'dequeue') items.shift()
     return { items, action: payload.action }
+  }
+  if (task === 'hash-sha256') {
+    if (typeof crypto?.subtle?.digest !== 'function') throw new Error('当前环境不支持 Web Crypto')
+    const text = String(payload.input ?? '')
+    const bytes = new TextEncoder().encode(text)
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    const output = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+    return { output, bytes: bytes.byteLength }
   }
   throw new Error(`未知任务：${task}`)
 }
