@@ -11,6 +11,19 @@ export const TOOL_MANIFESTS = [
     offline: { supported: true, requirements: ['versioned-runtime-cache', 'browser-storage'] },
     runtime: { shell: 's3-local-task-runner', worker: true, mainThreadFallback: true },
     accessibility: { staticDescription: true, statusRole: 'status', keyboardDropzone: true }
+  },
+  {
+    schemaVersion: 1,
+    id: 'tool.sha256',
+    title: '本地 SHA-256 哈希',
+    route: '/tools/sha256/',
+    task: 'hash-sha256',
+    input: { kinds: ['text/plain'], maxBytes: 2097152 },
+    output: { kinds: ['text/plain'], download: true },
+    privacy: { mode: 'local-only', uploads: false, thirdPartyProcessing: false },
+    offline: { supported: true, requirements: ['versioned-runtime-cache', 'browser-storage'] },
+    runtime: { shell: 's3-local-task-runner', worker: true, mainThreadFallback: true },
+    accessibility: { staticDescription: true, statusRole: 'status', keyboardDropzone: true }
   }
 ]
 
