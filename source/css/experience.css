@@ -1,0 +1,107 @@
+/* Shared visual language for the modern experience pages rendered in the Butterfly shell. */
+.experience-page {
+  --experience-accent: var(--btn-bg, #49b1f5);
+  --experience-accent-hover: var(--btn-hover-color, #ff7242);
+  --experience-border: var(--light-grey, rgba(128, 128, 128, .22));
+  --experience-muted: var(--font-color, #4c4948);
+}
+
+.experience-page .experience-kicker,
+.experience-page .experience-eyebrow {
+  margin: 0;
+  color: var(--experience-accent);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.experience-page .experience-lede {
+  max-width: 48rem;
+  color: var(--experience-muted);
+  font-size: 1.02rem;
+}
+
+.experience-page .experience-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.experience-page .experience-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--experience-border);
+  border-radius: 12px;
+  background: var(--card-bg, #fff);
+  box-shadow: var(--card-box-shadow, 0 3px 8px 6px rgba(7, 17, 27, .05));
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.experience-page .experience-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--card-hover-box-shadow, 0 3px 8px 6px rgba(7, 17, 27, .09));
+}
+
+.experience-page .experience-card > a,
+.experience-page .experience-card-inner {
+  display: block;
+  padding: 1rem 1.1rem;
+  color: inherit;
+}
+
+.experience-page .experience-card h2,
+.experience-page .experience-card h3 {
+  margin: .35rem 0 .4rem;
+}
+
+.experience-page .experience-card p {
+  color: var(--experience-muted);
+  font-size: .92rem;
+  line-height: 1.65;
+}
+
+.experience-page .experience-chip-list,
+.experience-page .experience-relations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: .75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.experience-page .experience-chip-list li,
+.experience-page .experience-relations li a {
+  display: inline-block;
+  padding: .16rem .5rem;
+  border: 1px solid var(--experience-border);
+  border-radius: 999px;
+  color: var(--experience-muted);
+  font-size: .78rem;
+}
+
+.experience-page .experience-hero {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  padding: clamp(1.3rem, 4vw, 2.5rem);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(73, 177, 245, .15), rgba(255, 114, 66, .1));
+  box-shadow: var(--card-box-shadow, 0 3px 8px 6px rgba(7, 17, 27, .05));
+}
+
+.experience-page .experience-hero h1 { margin: .35rem 0 .5rem; }
+.experience-page .experience-actions { display: flex; flex-wrap: wrap; gap: .8rem 1rem; align-items: center; margin-top: 1.2rem; }
+.experience-page .experience-actions a { color: var(--experience-accent); font-weight: 600; }
+.experience-page .experience-muted { color: var(--experience-muted); }
+
+[data-theme="dark"] .experience-page { --experience-muted: rgba(255, 255, 255, .72); }
+[data-theme="dark"] .experience-page .experience-hero { background: linear-gradient(135deg, rgba(73, 177, 245, .19), rgba(255, 114, 66, .14)); }
+
+@media (max-width: 768px) {
+  .experience-page .experience-hero { margin-inline: -.3rem; }
+}

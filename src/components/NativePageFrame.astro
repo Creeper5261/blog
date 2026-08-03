@@ -1,0 +1,9 @@
+---
+import { loadNativePageShell } from '../legacy/native-page.mjs'
+
+const shell = await loadNativePageShell(Astro.props)
+---
+
+<Fragment set:html={shell.before} />
+<slot />
+<Fragment set:html={shell.after} />

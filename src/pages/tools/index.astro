@@ -1,0 +1,166 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import NativePageFrame from '../../components/NativePageFrame.astro'
+
+const root = path.resolve('generated', 'site-data')
+const toolManifests = JSON.parse(await readFile(path.join(root, 'tool-manifests.json'), 'utf8'))
+const tools = toolManifests.tools
+const toolDescriptions = {
+  'tool.local-json': '在浏览器本地格式化、校验并下载 JSON。',
+  'tool.sha256': '用 Web Crypto 在本地计算文本的 SHA-256 摘要。'
+}
+const toolCountLabel = `${tools.length} 个本地工具`
+const experiments = [
+  { title: '主题展厅', description: '按集合查看主题成员与关系。', href: '/topics/', icon: 'fa-solid fa-layer-group' },
+  { title: '探索地图', description: '把关系图谱放进熟悉的博客画布。', href: '/explore/map/', icon: 'fa-solid fa-compass' },
+  { title: '本地实验台', description: '在浏览器本地运行可回放任务。', href: '/lab/', icon: 'fa-solid fa-flask' },
+  { title: '知识路径', description: '从集合和实体关系推导阅读路线。', href: '/paths/', icon: 'fa-solid fa-route' }
+]
+---
+
+<NativePageFrame
+  title="百宝箱 · 实验场 | DAT"
+  pageName="百宝箱"
+  description="DAT 的本地优先实验场：工具、知识入口与可回放任务。"
+  route="/tools/"
+>
+  <section class="tool-lab" aria-labelledby="tool-lab-title">
+    <div class="tool-lab-hero">
+      <p class="tool-lab-kicker"><i class="fas fa-sparkles" aria-hidden="true"></i> 原生视觉实验场 · S5</p>
+      <h1 id="tool-lab-title">把工具放回博客里</h1>
+      <p class="tool-lab-lede">这里沿用 DAT 原本的 Butterfly 导航、卡片、留白与昼夜切换。新能力先在百宝箱里试用，确认体验后再进入正式入口。</p>
+      <div class="tool-lab-actions" aria-label="实验场入口">
+        <a class="button--animated" href="/tools/catalog/"><i class="fas fa-toolbox" aria-hidden="true"></i> 浏览工具目录</a>
+        <a class="tool-lab-link" href="/knowledge/"><i class="fas fa-book-open" aria-hidden="true"></i> 查看知识入口</a>
+      </div>
+    </div>
+
+    <div class="tool-lab-section-head">
+      <div>
+        <p class="tool-lab-kicker">第一组 · 本地能力</p>
+        <h2>可以马上试用的工具</h2>
+      </div>
+      <span class="tool-lab-count">{toolCountLabel}</span>
+    </div>
+
+    <ul class="tool-lab-grid" aria-label="本地工具">
+      {tools.map((tool) => (
+        <li class="tool-lab-card">
+          <div class="tool-lab-card-icon" aria-hidden="true"><i class={tool.id.includes('sha') ? 'fas fa-hashtag' : 'fas fa-file-code'}></i></div>
+          <div class="tool-lab-card-body">
+            <p class="tool-lab-card-eyebrow">{tool.privacy.mode === 'local-only' ? '仅本地处理' : tool.privacy.mode}</p>
+            <h3><a href={tool.route}>{tool.title}</a></h3>
+            <p>{toolDescriptions[tool.id] ?? '由版本化 manifest 驱动的本地优先工具。'}</p>
+            <div class="tool-lab-tags">
+              <span>{tool.offline.supported ? '支持离线' : '需要网络'}</span>
+              <span>{tool.runtime.worker ? 'Worker' : '主线程'}</span>
+            </div>
+          </div>
+          <a class="tool-lab-card-arrow" href={tool.route} aria-label={`打开${tool.title}`}><i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="tool-lab-section-head">
+      <div>
+        <p class="tool-lab-kicker">第二组 · 内容入口</p>
+        <h2>沿用同一套博客语气</h2>
+      </div>
+    </div>
+    <ul class="tool-lab-grid tool-lab-grid--experiments" aria-label="知识体验入口">
+      {experiments.map((item) => (
+        <li class="tool-lab-card tool-lab-card--experiment">
+          <a class="tool-lab-card-body" href={item.href}>
+            <div class="tool-lab-card-icon" aria-hidden="true"><i class={item.icon}></i></div>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="tip info tool-lab-note">
+      <p><strong>实验约定：</strong>本页是新体验的落点，不会改变文章、归档和关于页面。每项能力先在这里完成视觉与交互验收，再决定是否提升为正式导航入口。</p>
+    </div>
+  </section>
+
+  <style is:global>
+    .tool-lab {
+      --tool-lab-accent: var(--btn-bg, #49b1f5);
+      --tool-lab-accent-hover: var(--btn-hover-color, #ff7242);
+      --tool-lab-border: var(--light-grey, rgba(128, 128, 128, .22));
+      --tool-lab-muted: var(--font-color, #4c4948);
+    }
+
+    .tool-lab-hero {
+      position: relative;
+      overflow: hidden;
+      margin: 0 0 2rem;
+      padding: clamp(1.4rem, 4vw, 2.8rem);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(73, 177, 245, .15), rgba(255, 114, 66, .1));
+      box-shadow: var(--card-box-shadow, 0 3px 8px 6px rgba(7, 17, 27, .05));
+    }
+
+    .tool-lab-hero::after {
+      position: absolute;
+      right: -3rem;
+      bottom: -4rem;
+      width: 13rem;
+      height: 13rem;
+      border: 1px solid rgba(73, 177, 245, .26);
+      border-radius: 50%;
+      content: '';
+      box-shadow: 0 0 0 1.5rem rgba(73, 177, 245, .06), 0 0 0 3rem rgba(73, 177, 245, .04);
+    }
+
+    .tool-lab-kicker,
+    .tool-lab-card-eyebrow {
+      margin: 0;
+      color: var(--tool-lab-accent);
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .tool-lab-hero h1,
+    .tool-lab-section-head h2,
+    .tool-lab-card h3 { margin-top: .35rem; }
+
+    .tool-lab-hero h1 { margin-bottom: .5rem; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .tool-lab-lede { max-width: 42rem; margin: 0; color: var(--tool-lab-muted); font-size: 1.05rem; }
+    .tool-lab-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1rem; margin-top: 1.4rem; }
+    .tool-lab-actions .button--animated { position: relative; z-index: 1; }
+    .tool-lab-link { color: var(--tool-lab-accent); font-weight: 600; }
+
+    .tool-lab-section-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .8rem; margin: 2rem 0 .8rem; }
+    .tool-lab-section-head h2 { margin-bottom: 0; }
+    .tool-lab-count { color: var(--tool-lab-muted); font-size: .9rem; }
+    .tool-lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+    .tool-lab-card { position: relative; display: flex; min-height: 9rem; overflow: hidden; border: 1px solid var(--tool-lab-border); border-radius: 12px; background: var(--card-bg, #fff); box-shadow: var(--card-box-shadow, 0 3px 8px 6px rgba(7, 17, 27, .05)); transition: transform .25s ease, box-shadow .25s ease; }
+    .tool-lab-card:hover { transform: translateY(-3px); box-shadow: var(--card-hover-box-shadow, 0 3px 8px 6px rgba(7, 17, 27, .09)); }
+    .tool-lab-card-body { flex: 1; padding: 1rem 1.1rem; }
+    .tool-lab-card-icon { display: grid; flex: 0 0 auto; place-items: center; width: 2.3rem; height: 2.3rem; margin-bottom: .65rem; border-radius: 9px; background: var(--text-bg-hover, rgba(73, 177, 245, .16)); color: var(--tool-lab-accent); }
+    .tool-lab-card h3 { margin-bottom: .35rem; font-size: 1.08rem; }
+    .tool-lab-card h3 a { color: inherit; }
+    .tool-lab-card p { margin: 0; color: var(--tool-lab-muted); font-size: .9rem; line-height: 1.65; }
+    .tool-lab-card-eyebrow { margin-bottom: .15rem; font-size: .68rem; }
+    .tool-lab-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .8rem; }
+    .tool-lab-tags span { padding: .15rem .48rem; border: 1px solid var(--tool-lab-border); border-radius: 999px; color: var(--tool-lab-muted); font-size: .72rem; }
+    .tool-lab-card-arrow { align-self: center; margin-right: 1rem; color: var(--tool-lab-accent); }
+    .tool-lab-grid--experiments .tool-lab-card-body { display: block; color: inherit; }
+    .tool-lab-grid--experiments .tool-lab-card-body:hover { color: inherit; }
+    .tool-lab-note { margin-top: 2rem; }
+
+    [data-theme="dark"] .tool-lab { --tool-lab-muted: rgba(255, 255, 255, .72); }
+    [data-theme="dark"] .tool-lab-hero { background: linear-gradient(135deg, rgba(73, 177, 245, .19), rgba(255, 114, 66, .14)); }
+
+    @media (max-width: 768px) {
+      .tool-lab-hero { margin-inline: -.3rem; }
+      .tool-lab-section-head { align-items: start; flex-direction: column; }
+    }
+  </style>
+</NativePageFrame>

@@ -10,7 +10,7 @@ export async function getStaticPaths() {
   const legacyRoot = path.resolve('src', 'legacy', 'pages')
   const pages = await listLegacyPages(legacyRoot)
   const modernRouteSlugs = new Set(
-    SITE_ROUTES
+    [...SITE_ROUTES, { route: '/tools/' }]
       .map((route) => route.route.replace(/^\/|\/$/g, ''))
       .filter(Boolean)
   )
