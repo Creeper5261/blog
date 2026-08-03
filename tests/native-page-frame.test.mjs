@@ -16,7 +16,7 @@ test('native page frame keeps Butterfly chrome while replacing toolbox article c
   assert.match(html, /id="page-header"/)
   assert.match(html, /id="aside-content"/)
   assert.match(html, /id="footer"/)
-  assert.match(html, /href="\/css\/experience\.css"/)
+  assert.match(html, /href="\/css\/tools-native\.css"/)
   assert.match(html, /实验内容/)
   assert.doesNotMatch(html, /常用工具放这里方便下载/)
 })

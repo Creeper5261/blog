@@ -27,6 +27,7 @@ export async function loadNativePageShell({
   description,
   route = '/tools/',
   templatePath = DEFAULT_TEMPLATE,
+  stylesheet = '/css/tools-native.css',
   services = getPublicServices()
 }) {
   const safeTitle = escapeHtml(title)
@@ -43,11 +44,11 @@ export async function loadNativePageShell({
   html = html.replaceAll('PAGE_NAME', safePageName)
   html = replaceFirst(html, /(<h1 id="site-title">)[^<]*(<\/h1>)/i, `$1${safePageName}$2`, 'page heading')
 
-  const withExperienceStyles = html.replace(
+  const withNativeStyles = html.replace(
     /<\/head>/i,
-    '<link rel="stylesheet" href="/css/experience.css"></head>'
+    `<link rel="stylesheet" href="${stylesheet}"></head>`
   )
-  const rendered = applyPublicServices(withExperienceStyles, services)
+  const rendered = applyPublicServices(withNativeStyles, services)
   const articleStart = rendered.indexOf(ARTICLE_MARKER)
   const articleContentStart = articleStart + ARTICLE_MARKER.length
   const articleEnd = rendered.indexOf(ARTICLE_END_MARKER, articleContentStart)

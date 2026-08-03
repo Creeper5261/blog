@@ -2,6 +2,8 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import NativePageFrame from '../../components/NativePageFrame.astro'
+
 const manifest = JSON.parse(await readFile(path.resolve('.astro-static', 'runtime', 'manifest.json'), 'utf8'))
 const runtimeModuleUrl = manifest.entries.find((entry) => entry.file.endsWith('/local-runtime.js'))?.url
 const workerModuleUrl = manifest.entries.find((entry) => entry.file.endsWith('/local-runtime-worker.js'))?.url
@@ -9,41 +11,14 @@ const serviceWorkerUrl = manifest.entries.find((entry) => entry.file.includes('l
 if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error('S3 runtime manifest is incomplete')
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content="S3 本地优先运行时能力演示" />
-    <title>本地实验台 · S3 Runtime</title>
-    <style>
-      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-      body { max-width: 68rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.55; }
-      h1 { margin-bottom: .25rem; }
-      .lede { color: color-mix(in srgb, currentColor 72%, transparent); }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-      .card { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .8rem; padding: 1rem; }
-      .card h2 { margin-top: 0; font-size: 1.15rem; }
-      label { display: block; font-weight: 650; margin: .65rem 0 .25rem; }
-      textarea { box-sizing: border-box; width: 100%; min-height: 9rem; resize: vertical; font: 0.92rem ui-monospace, monospace; }
-      button { border: 1px solid color-mix(in srgb, currentColor 32%, transparent); border-radius: .45rem; background: Canvas; color: CanvasText; padding: .45rem .75rem; cursor: pointer; }
-      button + button { margin-left: .4rem; }
-      button:disabled { cursor: not-allowed; opacity: .55; }
-      .dropzone { border: 1px dashed color-mix(in srgb, currentColor 42%, transparent); border-radius: .55rem; padding: .85rem; text-align: center; }
-      .dropzone[data-active="true"] { outline: 2px solid Highlight; }
-      progress { width: 100%; height: .7rem; }
-      .status { min-height: 1.6rem; margin: .75rem 0; }
-      .error { color: #c62828; }
-      .muted { opacity: .72; font-size: .9rem; }
-      .capabilities { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .4rem; padding: 0; list-style: none; }
-      .capabilities li { border-radius: .4rem; background: color-mix(in srgb, currentColor 8%, transparent); padding: .4rem .55rem; }
-      .ok::before { content: '✓ '; color: #2e7d32; }
-      .no::before { content: '— '; color: #9e9e9e; }
-      .queue { min-height: 5rem; padding: .5rem 1.2rem; background: color-mix(in srgb, currentColor 7%, transparent); border-radius: .45rem; }
-    </style>
-  </head>
-  <body data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl}>
-    <main>
+<NativePageFrame title="本地实验台 · DAT" pageName="本地实验台" description="S3 本地优先运行时能力演示" route="/lab/">
+    <main
+      id="runtime-lab"
+      class="runtime-lab"
+      data-runtime-module={runtimeModuleUrl}
+      data-worker-module={workerModuleUrl}
+      data-service-worker={serviceWorkerUrl}
+    >
       <h1>本地实验台</h1>
       <p class="lede">S3 最小能力原型：文件始终留在浏览器本地，正文和静态说明不依赖 JavaScript。</p>
       <p id="runtime-status" class="status" role="status">正在检测本地能力…</p>
@@ -81,12 +56,13 @@ if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error(
       <noscript><p>JavaScript 已禁用。两个交互单元不可用，但本页的隐私说明和静态内容仍可阅读。</p></noscript>
     </main>
     <script is:inline type="module">
-      const runtime = await import(document.body.dataset.runtimeModule)
+      const root = document.querySelector('#runtime-lab')
+      const runtime = await import(root.dataset.runtimeModule)
       const { createLocalStore, createTaskRunner, detectCapabilities, registerRuntimeServiceWorker } = runtime
 
       const $ = (selector) => document.querySelector(selector)
       const store = createLocalStore('s3-lab')
-      const runner = createTaskRunner({ workerUrl: document.body.dataset.workerModule })
+      const runner = createTaskRunner({ workerUrl: root.dataset.workerModule })
       const capabilities = detectCapabilities()
       const capabilityNames = { worker: 'Worker', dragDrop: '拖放', indexedDB: 'IndexedDB', opfs: 'OPFS', serviceWorker: '离线缓存', wasm: 'WASM', fileSystemAccess: '文件选择器' }
       const capabilityList = $('#capabilities')
@@ -96,7 +72,7 @@ if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error(
         item.textContent = `${label}: ${capabilities[key] ? '可用' : '不可用'}`
         return item
       }))
-      const sw = await registerRuntimeServiceWorker(document.body.dataset.serviceWorker)
+      const sw = await registerRuntimeServiceWorker(root.dataset.serviceWorker)
       $('#runtime-status').textContent = `运行时已就绪（存储：${store.mode}；离线缓存：${sw.registered ? '已注册' : '不可用或待构建'}）`
 
       const setStatus = (target, text, error = false) => { target.textContent = text; target.classList.toggle('error', error) }
@@ -179,5 +155,4 @@ if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error(
       $('#export-state').addEventListener('click', () => downloadText('queue-state.json', JSON.stringify(state, null, 2), 'application/json'))
       $('#clear-local').addEventListener('click', async () => { await store.clear(); state = { items: [] }; renderState(); setStatus($('#state-status'), '本站本地数据已清除') })
     </script>
-  </body>
-</html>
+</NativePageFrame>

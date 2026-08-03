@@ -44,6 +44,8 @@ const RUNTIME_SCRIPTS = [
 
 const SINGLE_SCRIPT_WITH_GITCALENDAR = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:GitCalendarInit|gitcalendar_injector_config)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
 const SINGLE_SCRIPT_WITH_LEGACY_TWIKOO = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:twikoo\.init|twikoo@1\.6\.8)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
+const LIST_MENU_GROUP = /<div class="menus_item">\s*<a class="site-page group[\s\S]*?<ul class="menus_item_child">[\s\S]*?<\/ul>\s*<\/div>/gi
+const TOOLS_MENU_CHILD = /<li>(<a\b[^>]*href=(['"])\/tools\/\2[^>]*>[\s\S]*?<span>\s*百宝箱\s*<\/span>[\s\S]*?<\/a>)<\/li>/i
 
 function normalizeServices(services = getPublicServices()) {
   return Object.fromEntries(
@@ -131,8 +133,24 @@ function repairLegacyReferences(html) {
     .replace(/href=(["'])\/movies\/\1/gi, 'href=$1/movie/$1')
 }
 
+function promoteToolsMenu(html) {
+  return html.replace(LIST_MENU_GROUP, (group) => {
+    const match = group.match(TOOLS_MENU_CHILD)
+    if (!match) return group
+
+    const toolAnchor = match[1]
+      .replace(/\s+child(?=\s|\")/i, '')
+      .replace(/(<span>\s*)百宝箱(\s*<\/span>)/i, '$1工具$2')
+    const listGroup = group.replace(match[0], '')
+    const standalone = `<div class="menus_item">${toolAnchor}</div>`
+    return /<ul class="menus_item_child">\s*<\/ul>/i.test(listGroup)
+      ? standalone
+      : `${listGroup}${standalone}`
+  })
+}
+
 function removeDeadRuntimeBootstraps(html) {
-  return repairLegacyReferences(removeLegacyWeatherBootstraps(removeLegacyTwikoo(removeDeadGitCalendar(html))))
+  return promoteToolsMenu(repairLegacyReferences(removeLegacyWeatherBootstraps(removeLegacyTwikoo(removeDeadGitCalendar(html)))))
 }
 
 export function sanitizeLegacyHtml(html) {

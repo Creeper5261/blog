@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import ExperiencePage from '../../components/ExperiencePage.astro'
+import NativePageFrame from '../../components/NativePageFrame.astro'
 
 const root = path.resolve('generated', 'site-data')
 const toolManifests = JSON.parse(await readFile(path.join(root, 'tool-manifests.json'), 'utf8'))
@@ -14,7 +14,7 @@ const tools = toolManifests.tools.map((tool) => ({
 }))
 ---
 
-<ExperiencePage title="DAT · 工具" description="DAT 的个性化本地工具首页" active="tools">
+<NativePageFrame title="工具 · DAT" pageName="工具" description="DAT 工具" route="/tools/">
   <section class="tool-home" aria-labelledby="tool-home-title">
     <div class="tool-home-intro">
       <p class="experience-eyebrow">DAT / 工具台</p>
@@ -103,4 +103,4 @@ const tools = toolManifests.tools.map((tool) => ({
     }))
     updateFavoriteButtons(); sortItems(); filter()
   </script>
-</ExperiencePage>
+</NativePageFrame>

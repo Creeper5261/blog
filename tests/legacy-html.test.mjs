@@ -82,6 +82,22 @@ test('sanitizeLegacyHtml repairs recovered search and movie references', () => {
   assert.match(sanitized, /\/js\/search\/local-search\.js/)
 })
 
+test('applyPublicServices promotes the toolbox to a standalone tool menu entry', () => {
+  const rendered = applyPublicServices(`
+    <div class="menus_item">
+      <a class="site-page group" href="javascript:void(0);"><span> 列表</span></a>
+      <ul class="menus_item_child">
+        <li><a class="site-page child" href="/music/"><span> 音乐</span></a></li>
+        <li><a class="site-page child" href="/tools/"><span> 百宝箱</span></a></li>
+      </ul>
+    </div>
+  `)
+
+  assert.match(rendered, /<div class="menus_item"><a class="site-page"[^>]*href="\/tools\/"[\s\S]*?<span> 工具<\/span>/)
+  assert.ok(rendered.indexOf('href="/tools/"') > rendered.indexOf('</ul>'))
+  assert.doesNotMatch(rendered, /百宝箱/)
+})
+
 test('sanitizeLegacyScript removes Tencent map key literals from copied scripts', () => {
   const script = `
     $.ajax({

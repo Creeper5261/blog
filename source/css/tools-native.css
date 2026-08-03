@@ -1,0 +1,430 @@
+/* Tool surfaces keep the Butterfly page shell and only style their content area. */
+.tool-home,
+.workspace-page {
+  width: min(100%, 900px);
+  margin: 0 auto;
+}
+
+.tool-home-intro {
+  padding: 1rem 0 1.8rem;
+}
+
+.tool-home-intro h1,
+.workspace-heading h1 {
+  margin: .2rem 0 .55rem;
+  color: var(--text-highlight-color);
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -.04em;
+}
+
+.tool-home-intro p,
+.workspace-heading p {
+  margin: 0;
+  color: var(--font-color);
+}
+
+.tool-search {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  max-width: 42rem;
+  margin: 1.25rem 0 0;
+  padding: .45rem .7rem;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.tool-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  color: var(--font-color);
+  background: transparent;
+}
+
+.tool-search kbd {
+  padding: .1rem .35rem;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 4px;
+  color: var(--font-color);
+  font-size: .75rem;
+}
+
+.tool-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: .9rem;
+  color: var(--font-color);
+  font-size: .85rem;
+}
+
+.tool-list-section {
+  margin-top: 1rem;
+}
+
+.tool-list-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: .45rem;
+}
+
+.tool-list-header h2,
+.workspace h2 {
+  margin: 0;
+  color: var(--text-highlight-color);
+  font-size: 1.15rem;
+}
+
+.tool-list-header span,
+.tool-item-desc,
+.tool-item-meta,
+.tool-empty,
+.workspace-status,
+.workspace-contract,
+.reading-noscript {
+  color: var(--font-color);
+  opacity: .78;
+}
+
+.tool-list {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tool-item {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .75rem .85rem;
+  border: 1px solid transparent;
+  border-bottom-color: var(--text-bg-hover);
+}
+
+.tool-item:hover {
+  border-color: var(--text-bg-hover);
+  background: var(--card-bg);
+}
+
+.tool-item-icon {
+  display: grid;
+  flex: 0 0 2.25rem;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  color: var(--theme-color);
+  background: color-mix(in srgb, var(--theme-color) 14%, transparent);
+  font-size: 1rem;
+}
+
+.tool-item-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.tool-item-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.tool-item-desc {
+  margin: .1rem 0 0;
+  overflow: hidden;
+  font-size: .84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-item-meta {
+  display: flex;
+  gap: .6rem;
+  margin-top: .2rem;
+  font-size: .72rem;
+}
+
+.tool-favorite {
+  width: 1.8rem;
+  padding: .15rem;
+  border: 0;
+  color: var(--font-color);
+  background: transparent;
+  cursor: pointer;
+}
+
+.tool-favorite[aria-pressed="true"] {
+  color: var(--theme-color);
+}
+
+.tool-item-open {
+  color: var(--font-color);
+  font-size: 1.15rem;
+}
+
+.workspace-back {
+  margin: 0 0 1.5rem;
+  color: var(--font-color);
+  font-size: .85rem;
+}
+
+.workspace {
+  margin-top: 1.6rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 10px;
+  background: var(--card-bg);
+}
+
+.workspace-contract {
+  margin: .75rem 0 1.1rem;
+  font-size: .82rem;
+}
+
+.workspace-contract summary {
+  cursor: pointer;
+  color: var(--theme-color);
+}
+
+.workspace-contract ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  margin: .6rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.workspace label {
+  display: block;
+  margin: .75rem 0 .3rem;
+  color: var(--font-color);
+  font-size: .82rem;
+}
+
+.workspace textarea {
+  width: 100%;
+  min-height: 9rem;
+  padding: .75rem;
+  resize: vertical;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--font-color);
+  background: var(--global-bg);
+  font: .9rem ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.workspace textarea:focus {
+  border-color: var(--theme-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 20%, transparent);
+}
+
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin: .8rem 0;
+}
+
+.workspace-actions button {
+  padding: .45rem .7rem;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 6px;
+  color: var(--font-color);
+  background: var(--card-bg);
+  cursor: pointer;
+}
+
+.workspace-actions button:hover:not(:disabled) {
+  border-color: var(--theme-color);
+  color: var(--theme-color);
+}
+
+.workspace-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.workspace-dropzone {
+  padding: .75rem;
+  border: 1px dashed var(--text-bg-hover);
+  border-radius: 7px;
+  color: var(--font-color);
+  text-align: center;
+}
+
+.workspace-dropzone[data-active="true"] {
+  border-color: var(--theme-color);
+  background: color-mix(in srgb, var(--theme-color) 12%, transparent);
+}
+
+.workspace-status {
+  min-height: 1.5rem;
+  margin: .45rem 0;
+  font-size: .82rem;
+}
+
+.workspace progress {
+  width: 100%;
+}
+
+.tool-empty {
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.runtime-lab {
+  width: min(100%, 980px);
+  margin: 0 auto;
+}
+
+.runtime-lab > h1 {
+  margin: .2rem 0 .55rem;
+  color: var(--text-highlight-color);
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -.04em;
+}
+
+.runtime-lab .lede,
+.runtime-lab .muted {
+  color: var(--font-color);
+  opacity: .78;
+}
+
+.runtime-lab .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.runtime-lab .card {
+  padding: 1rem;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 10px;
+  background: var(--card-bg);
+}
+
+.runtime-lab .card h2 {
+  margin-top: 0;
+  color: var(--text-highlight-color);
+  font-size: 1.15rem;
+}
+
+.runtime-lab label {
+  display: block;
+  margin: .65rem 0 .25rem;
+  color: var(--font-color);
+  font-weight: 650;
+}
+
+.runtime-lab textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 9rem;
+  padding: .7rem;
+  resize: vertical;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--font-color);
+  background: var(--global-bg);
+  font: .92rem ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.runtime-lab textarea:focus {
+  border-color: var(--theme-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 20%, transparent);
+}
+
+.runtime-lab button {
+  padding: .45rem .75rem;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 6px;
+  color: var(--font-color);
+  background: var(--card-bg);
+  cursor: pointer;
+}
+
+.runtime-lab button + button {
+  margin-left: .4rem;
+}
+
+.runtime-lab button:hover:not(:disabled) {
+  border-color: var(--theme-color);
+  color: var(--theme-color);
+}
+
+.runtime-lab button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.runtime-lab .dropzone {
+  padding: .85rem;
+  border: 1px dashed var(--text-bg-hover);
+  border-radius: 7px;
+  color: var(--font-color);
+  text-align: center;
+}
+
+.runtime-lab .dropzone[data-active="true"] {
+  border-color: var(--theme-color);
+  background: color-mix(in srgb, var(--theme-color) 12%, transparent);
+}
+
+.runtime-lab progress {
+  width: 100%;
+  height: .7rem;
+}
+
+.runtime-lab .status {
+  min-height: 1.6rem;
+  margin: .75rem 0;
+}
+
+.runtime-lab .error {
+  color: #c62828;
+}
+
+.runtime-lab .capabilities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: .4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.runtime-lab .capabilities li {
+  padding: .4rem .55rem;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--font-color) 8%, transparent);
+}
+
+.runtime-lab .ok::before {
+  content: '✓ ';
+  color: #2e7d32;
+}
+
+.runtime-lab .no::before {
+  content: '— ';
+  color: #9e9e9e;
+}
+
+.runtime-lab .queue {
+  min-height: 5rem;
+  padding: .5rem 1.2rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--font-color) 7%, transparent);
+}
+
+@media (max-width: 640px) {
+  .tool-item {
+    align-items: flex-start;
+  }
+}
