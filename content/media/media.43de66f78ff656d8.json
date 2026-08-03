@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.43de66f78ff656d8",
+  "kind": "media",
+  "title": "nyaruko.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/nyaruko.png",
+    "alt": "nyaruko.png",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/nyaruko.png"
+}

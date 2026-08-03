@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.e77a898719051eb2",
+  "kind": "media",
+  "title": "2j20.jpg",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/cover/2j20.jpg",
+    "alt": "2j20.jpg",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/cover/2j20.jpg"
+}

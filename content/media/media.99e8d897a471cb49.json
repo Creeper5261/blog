@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.99e8d897a471cb49",
+  "kind": "media",
+  "title": "interlude_50.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/cover/interlude_50.png",
+    "alt": "interlude_50.png",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/cover/interlude_50.png"
+}

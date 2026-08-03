@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.816efe45554283bf",
+  "kind": "media",
+  "title": "friend_404.gif",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/friend_404.gif",
+    "alt": "friend_404.gif",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/friend_404.gif"
+}

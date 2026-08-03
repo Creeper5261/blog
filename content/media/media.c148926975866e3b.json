@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.c148926975866e3b",
+  "kind": "media",
+  "title": "QRCode.jpg",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/QRCode.jpg",
+    "alt": "QRCode.jpg",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/QRCode.jpg"
+}

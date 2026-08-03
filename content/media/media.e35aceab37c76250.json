@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.e35aceab37c76250",
+  "kind": "media",
+  "title": "res.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/temp_classify/1dcnns/res.png",
+    "alt": "ClassificationSummary",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/temp_classify/1dcnns/res.png"
+}

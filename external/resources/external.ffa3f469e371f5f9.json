@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "external.ffa3f469e371f5f9",
+  "kind": "external-embed",
+  "title": "https://github.com/hexojs/hexo/issues",
+  "status": "archived",
+  "provider": "source-link",
+  "url": "https://github.com/hexojs/hexo/issues",
+  "source": "source/_posts/hello-world.md#resource-3"
+}

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.57f2b0e95c3aee83",
+  "kind": "media",
+  "title": "m.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/temp_classify/1dcnns/m.png",
+    "alt": "ClassificationSummary",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/temp_classify/1dcnns/m.png"
+}

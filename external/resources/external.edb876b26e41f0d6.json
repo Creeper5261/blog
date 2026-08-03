@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "external.edb876b26e41f0d6",
+  "kind": "external-embed",
+  "title": "https://dldir1.qq.com/weixin/Windows/WeChatSetup.exe",
+  "status": "archived",
+  "provider": "source-link",
+  "url": "https://dldir1.qq.com/weixin/Windows/WeChatSetup.exe",
+  "source": "source/tools/index.md#resource-8"
+}

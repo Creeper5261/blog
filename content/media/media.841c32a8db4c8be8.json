@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.841c32a8db4c8be8",
+  "kind": "media",
+  "title": "1.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/cover/1.png",
+    "alt": "1.png",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/cover/1.png"
+}

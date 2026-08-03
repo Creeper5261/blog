@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "article.d11716eda43d8854",
+  "kind": "article",
+  "title": "标签",
+  "status": "archived",
+  "body": "",
+  "source": "source/tags/index.md",
+  "media": [],
+  "relations": [
+    {
+      "type": "references",
+      "target": "external.ca9dda46a94e499e"
+    }
+  ],
+  "publishedAt": "2023-05-15T10:26:19.000Z",
+  "updatedAt": "2023-05-18T05:46:17.666Z"
+}

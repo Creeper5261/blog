@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.a29e9133c24ea866",
+  "kind": "media",
+  "title": "coconut.ico",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/coconut.ico",
+    "alt": "coconut.ico",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/coconut.ico"
+}

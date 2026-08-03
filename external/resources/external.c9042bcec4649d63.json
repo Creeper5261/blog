@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "external.c9042bcec4649d63",
+  "kind": "external-embed",
+  "title": "https://hexo.io/",
+  "status": "archived",
+  "provider": "source-link",
+  "url": "https://hexo.io/",
+  "source": "source/_posts/hello-world.md#resource-0"
+}

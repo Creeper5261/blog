@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.36fbd553c5b99c81",
+  "kind": "media",
+  "title": "interlude_halloween4.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/cover/interlude_halloween4.png",
+    "alt": "interlude_halloween4.png",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/cover/interlude_halloween4.png"
+}

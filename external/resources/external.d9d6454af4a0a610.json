@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "external.d9d6454af4a0a610",
+  "kind": "external-embed",
+  "title": "https://hexo.io/docs/writing.html",
+  "status": "archived",
+  "provider": "source-link",
+  "url": "https://hexo.io/docs/writing.html",
+  "source": "source/_posts/hello-world.md#resource-4"
+}

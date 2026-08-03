@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "external.2a2d69ab2e3fa957",
+  "kind": "external-embed",
+  "title": "https://hexo.io/zh-cn/",
+  "status": "archived",
+  "provider": "source-link",
+  "url": "https://hexo.io/zh-cn/",
+  "source": "source/link/index.md#resource-3"
+}

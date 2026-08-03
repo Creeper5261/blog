@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.9d52ba89664d670e",
+  "kind": "media",
+  "title": "favicon.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/favicon.png",
+    "alt": "favicon.png",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/favicon.png"
+}

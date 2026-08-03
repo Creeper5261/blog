@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "external.c1acf232f588b024",
+  "kind": "external-embed",
+  "title": "https://go.microsoft.com/fwlink/?linkid=2109047&Channel=Stable&language=zh-cn&Consent=1&brand=M100",
+  "status": "archived",
+  "provider": "source-link",
+  "url": "https://go.microsoft.com/fwlink/?linkid=2109047&Channel=Stable&language=zh-cn&Consent=1&brand=M100",
+  "source": "source/tools/index.md#resource-3"
+}

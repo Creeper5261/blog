@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "external.449bb6970ec0ff0a",
+  "kind": "external-embed",
+  "title": "https://d.apkpure.com/b/APK/com.android.vending?version=latest",
+  "status": "archived",
+  "provider": "source-link",
+  "url": "https://d.apkpure.com/b/APK/com.android.vending?version=latest",
+  "source": "source/tools/index.md#resource-9"
+}

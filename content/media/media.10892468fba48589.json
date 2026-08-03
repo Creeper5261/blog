@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.10892468fba48589",
+  "kind": "media",
+  "title": "train_curve.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/temp_classify/1dcnns/train_curve.png",
+    "alt": "ClassificationSummary",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/temp_classify/1dcnns/train_curve.png"
+}

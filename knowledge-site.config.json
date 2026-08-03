@@ -9,9 +9,25 @@
     "generated": "generated"
   },
   "allowedExternalHosts": [
+    "blog.csdn.net",
+    "cdn.jsdelivr.net",
+    "d.apkpure.com",
+    "d33wubrfki0l68.cloudfront.net",
+    "dldir1.qq.com",
+    "fomal.cc",
     "github.com",
+    "go.microsoft.com",
+    "hexo.io",
+    "ikuuu.eu",
+    "im.qq.com",
+    "mhexo.github.io",
+    "npm.elemecdn.com",
+    "pc.weixin.qq.com",
     "player.bilibili.com",
+    "shinki0325.github.io",
     "www.bilibili.com",
+    "www.fomal.cc",
+    "www.microsoft.com",
     "www.youtube.com",
     "youtu.be"
   ],
@@ -21,6 +37,7 @@
     "allowedExtensions": [
       ".avif",
       ".gif",
+      ".ico",
       ".jpeg",
       ".jpg",
       ".mp3",

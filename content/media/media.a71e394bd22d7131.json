@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "media.a71e394bd22d7131",
+  "kind": "media",
+  "title": "interlude_maimai.png",
+  "status": "archived",
+  "asset": {
+    "path": "../../assets/migrated/img/cover/interlude_maimai.png",
+    "alt": "interlude_maimai.png",
+    "rights": "source asset; provenance retained in source field"
+  },
+  "source": "source/img/cover/interlude_maimai.png"
+}

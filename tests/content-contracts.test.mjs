@@ -72,7 +72,7 @@ test('the repository S0 content contract validates without generated data', asyn
   const result = await validateKnowledgeSite({ root: repositoryRoot })
 
   assert.equal(result.ok, true)
-  assert.equal(result.objectCount, 8)
+  assert.equal(result.objectCount, 132)
   assert.deepEqual(result.errors, [])
 })
 
