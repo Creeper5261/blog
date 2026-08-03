@@ -12,8 +12,8 @@ test('legacy homepage and toolbox remain available while S5 uses separate routes
   assert.match(homepage, /applyPublicServices/)
 
   const routes = await readFile(path.join(repositoryRoot, 'tools', 'site-data', 'routes.mjs'), 'utf8')
-  assert.match(routes, /route: '\/tools\/catalog\/'/)
-  assert.doesNotMatch(routes, /route: '\/tools\/', kind: 'tools'/)
+  assert.match(routes, /route: '\/tools\/', kind: 'tools'/)
+  assert.doesNotMatch(routes, /route: '\/tools\/catalog\/'/)
 
   const source = await readFile(path.join(repositoryRoot, 'src', 'pages', '[...slug].astro'), 'utf8')
   assert.match(source, /page\.kind !== 'not-found' && page\.kind !== 'home'/)

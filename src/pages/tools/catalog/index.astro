@@ -1,94 +1,15 @@
 ---
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-
-import NativePageFrame from '../../../components/NativePageFrame.astro'
-
-const root = path.resolve('generated', 'site-data')
-const release = JSON.parse(await readFile(path.join(root, 'release.json'), 'utf8'))
-const toolManifests = JSON.parse(await readFile(path.join(root, 'tool-manifests.json'), 'utf8'))
-const routesPayload = JSON.parse(await readFile(path.join(root, 'routes.json'), 'utf8'))
-const releasePath = release.cache.immutableReleasePath
-const tools = toolManifests.tools
-const siteRoutes = routesPayload.items.filter((item) => item.source === 'site-routes')
+// Compatibility URL retained for old bookmarks. The public tools experience lives at /tools/.
 ---
-
-<NativePageFrame
-  title="工具目录 | DAT"
-  pageName="工具目录"
-  description="由工具 manifest 驱动的本地优先工具目录。"
-  route="/tools/catalog/"
->
-  <div class="experience-page" data-tools-url={`${releasePath}tool-manifests.json`}>
-    <section class="experience-hero" aria-labelledby="tools-title">
-      <p class="experience-kicker"><i class="fas fa-toolbox" aria-hidden="true"></i> 百宝箱 · 目录</p>
-      <h1 id="tools-title">本地优先的工具目录</h1>
-      <p class="experience-lede">每个工具都由 manifest 声明输入、输出、隐私与离线能力；默认在浏览器本地处理，不上传文件。</p>
-      <div class="experience-actions">
-        <a class="button--animated" href="/tools/"><i class="fas fa-flask" aria-hidden="true"></i> 回到实验场</a>
-        <a href="/knowledge-data/"><i class="fas fa-database" aria-hidden="true"></i> 查看发布数据</a>
-      </div>
-    </section>
-
-    {tools.length > 0 ? (
-      <ul class="experience-grid" id="tool-cards" aria-label="工具列表">
-        {tools.map((tool) => (
-          <li class="experience-card">
-            <a href={tool.route}>
-              <p class="experience-eyebrow"><i class={tool.id.includes('sha') ? 'fas fa-hashtag' : 'fas fa-file-code'} aria-hidden="true"></i> {tool.privacy.mode === 'local-only' ? '仅本地处理' : tool.privacy.mode}</p>
-              <h2>{tool.title}</h2>
-              <p>{tool.id === 'tool.local-json' ? '在浏览器本地格式化、校验并下载 JSON。' : '用 Web Crypto 在本地计算文本的 SHA-256 摘要。'}</p>
-              <ul class="experience-chip-list">
-                <li>{tool.offline.supported ? '支持离线' : '需要网络'}</li>
-                <li>{tool.runtime.worker ? 'Worker 执行' : '主线程执行'}</li>
-              </ul>
-            </a>
-          </li>
-        ))}
-      </ul>
-    ) : (
-      <section class="tip info"><h2>暂无工具</h2><p>工具 manifest 尚未发布；此页仍保留导航与静态说明。</p></section>
-    )}
-
-    <h2>站点导航</h2>
-    <ul class="experience-relations">
-      {siteRoutes.map((route) => <li><a href={route.route}>{route.title}</a></li>)}
-    </ul>
-
-    <p id="status" class="experience-muted" role="status">以上内容来自当前版本化发布包。</p>
-    <noscript><p class="experience-muted">JavaScript 已禁用；上方工具列表仍可阅读。页面不会上传或请求在线处理服务。</p></noscript>
-  </div>
-
-  <script is:inline type="module">
-    const status = document.querySelector('#status')
-    const cards = document.querySelector('#tool-cards')
-    const url = document.querySelector('.experience-page')?.dataset.toolsUrl
-    const renderTool = (tool) => {
-      const item = document.createElement('li'); item.className = 'experience-card'
-      const link = document.createElement('a'); link.href = tool.route
-      const eyebrow = document.createElement('p'); eyebrow.className = 'experience-eyebrow'; eyebrow.textContent = tool.privacy.mode === 'local-only' ? '仅本地处理' : tool.privacy.mode
-      const heading = document.createElement('h2'); heading.textContent = tool.title
-      const summary = document.createElement('p'); summary.textContent = tool.id === 'tool.local-json' ? '在浏览器本地格式化、校验并下载 JSON。' : '用 Web Crypto 在本地计算文本的 SHA-256 摘要。'
-      const chips = document.createElement('ul'); chips.className = 'experience-chip-list'
-      for (const label of [tool.offline.supported ? '支持离线' : '需要网络', tool.runtime.worker ? 'Worker 执行' : '主线程执行']) {
-        const chip = document.createElement('li'); chip.textContent = label; chips.append(chip)
-      }
-      link.append(eyebrow, heading, summary, chips); item.append(link)
-      return item
-    }
-    if (url && cards) {
-      try {
-        const response = await fetch(url, { cache: 'force-cache' })
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        const payload = await response.json()
-        const fresh = payload.tools
-        if (Array.isArray(fresh) && fresh.length) {
-          cards.replaceChildren(...fresh.map(renderTool))
-          status.textContent = `已从版本化 JSON 更新 ${fresh.length} 个工具；未上传任何文件。`
-        }
-      } catch (error) {
-        status.textContent = `版本化工具数据请求失败，保留预渲染内容：${error.message}`
-      }
-    }
-  </script>
-</NativePageFrame>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0;url=/tools/" />
+    <meta name="robots" content="noindex" />
+    <title>跳转到工具 · DAT</title>
+  </head>
+  <body>
+    <p>正在前往 <a href="/tools/">DAT 工具</a>…</p>
+  </body>
+</html>

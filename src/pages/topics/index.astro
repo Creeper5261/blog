@@ -37,7 +37,7 @@ const memberCount = collections.reduce((total, collection) => total + collection
   </head>
   <body data-topics-url={`${releasePath}topics.json`}>
     <main>
-      <p><a href="/">返回首页</a> · <a href="/explore/">主题探索</a> · <a href="/tools/catalog/">工具目录</a> · <a href="/knowledge-data/">查看 site-data</a></p>
+      <p><a href="/">返回首页</a> · <a href="/explore/">主题探索</a> · <a href="/tools/">工具</a> · <a href="/knowledge-data/">查看 site-data</a></p>
       <h1>主题展厅</h1>
       <p class="lede">集合、成员与关系均由 Astro 从版本化 site-data 预渲染；浏览器只读取 <code>topics.json</code>，不接触私有源结构。</p>
       <p class="muted">{collections.length} 个集合 · {memberCount} 个成员</p>

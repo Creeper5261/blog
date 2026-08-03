@@ -8,7 +8,7 @@ const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 
 test('S5 homepage, text flow and narrative pages consume only published static payloads', async () => {
   const pages = {
-    'src/pages/knowledge/index.astro': ['routes.json', 'topics.json', 'tool-manifests.json', 'pulses.json', '<noscript>', '博客与知识站'],
+    'src/pages/knowledge/index.astro': ['topics.json', 'ExperiencePage', '<noscript>', '知识库'],
     'src/pages/flow/index.astro': ['content-records.json', 'immutableReleasePath', '<noscript>', '文字流'],
     'src/pages/narratives/index.astro': ['topics.json', '<noscript>', '专题叙事'],
     'src/pages/narratives/[id].astro': ['topics.json', 'explain.json', '<noscript>', 'explain-unit', 'getStaticPaths']
