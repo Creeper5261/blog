@@ -2,6 +2,8 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import NativePageFrame from '../../../components/NativePageFrame.astro'
+
 const payload = JSON.parse(await readFile(path.resolve('generated', 'site-data', 'tool-manifests.json'), 'utf8'))
 const tool = payload.tools.find((entry) => entry.id === 'tool.local-json')
 if (!tool) throw new Error('tool.local-json manifest is missing')
@@ -12,117 +14,91 @@ const serviceWorkerUrl = runtimeManifest.entries.find((entry) => entry.file.incl
 if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error('S3 runtime manifest is incomplete')
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content={tool.title} />
-    <title>{tool.title} · 本地工具</title>
-    <style>
-      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-      body { max-width: 62rem; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.55; }
-      h1 { margin-bottom: .25rem; }
-      .lede { color: color-mix(in srgb, currentColor 72%, transparent); }
-      .card { border: 1px solid color-mix(in srgb, currentColor 24%, transparent); border-radius: .8rem; padding: 1rem; margin: 1rem 0; }
-      .contract { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .65rem; padding: 0; list-style: none; }
-      .contract li { background: color-mix(in srgb, currentColor 8%, transparent); border-radius: .45rem; padding: .55rem .7rem; }
-      .label { display: block; font-size: .8rem; opacity: .7; }
-      textarea { box-sizing: border-box; width: 100%; min-height: 13rem; resize: vertical; font: .92rem ui-monospace, monospace; }
-      button { border: 1px solid color-mix(in srgb, currentColor 32%, transparent); border-radius: .45rem; background: Canvas; color: CanvasText; padding: .45rem .75rem; cursor: pointer; }
-      button:disabled { cursor: not-allowed; opacity: .55; }
-      button + button { margin-left: .4rem; }
-      .dropzone { border: 1px dashed color-mix(in srgb, currentColor 42%, transparent); border-radius: .55rem; padding: .8rem; text-align: center; }
-      .dropzone[data-active="true"] { outline: 2px solid Highlight; }
-      .status { min-height: 1.6rem; }
-      .error { color: #c62828; }
-      .muted { opacity: .72; font-size: .9rem; }
-      progress { width: 100%; }
-    </style>
-  </head>
-  <body data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-max-bytes={tool.input.maxBytes}>
-    <main>
-      <p><a href="/">返回首页</a> · <a href="/lab/">S3 实验台</a></p>
-      <h1>{tool.title}</h1>
-      <p class="lede">文件和文本始终留在当前浏览器；本工具复用 S3 的 Worker 任务壳，离线时仍可使用。</p>
+<NativePageFrame title={`${tool.title} · 本地工具`} pageName={tool.title} description={tool.title} route="/tools/local-json/">
+  <div class="experience-page" data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-max-bytes={tool.input.maxBytes}>
+    <p><a href="/tools/">返回实验场</a> · <a href="/tools/catalog/">工具目录</a> · <a href="/lab/">S3 实验台</a></p>
+    <p class="experience-kicker"><i class="fas fa-file-code" aria-hidden="true"></i> 本地工具</p>
+    <h1>{tool.title}</h1>
+    <p class="experience-lede">文件和文本始终留在当前浏览器；本工具复用 S3 的 Worker 任务壳，离线时仍可使用。</p>
 
-      <section class="card" aria-labelledby="contract-title">
-        <h2 id="contract-title">工具契约</h2>
-        <ul class="contract">
-          <li><span class="label">输入</span>{tool.input.kinds.join('、')}</li>
-          <li><span class="label">输出</span>{tool.output.kinds.join('、')}（可下载）</li>
-          <li><span class="label">隐私</span>仅本地处理，不上传、不经过第三方</li>
-          <li><span class="label">离线</span>{tool.offline.supported ? '支持（版本化 runtime 缓存）' : '不支持'}</li>
-          <li><span class="label">上限</span>{(tool.input.maxBytes / 1024 / 1024).toFixed(0)} MB</li>
-        </ul>
+    <section class="experience-tool-card" aria-labelledby="contract-title">
+      <h2 id="contract-title">工具契约</h2>
+      <ul class="experience-contract">
+        <li><span class="experience-label">输入</span>{tool.input.kinds.join('、')}</li>
+        <li><span class="experience-label">输出</span>{tool.output.kinds.join('、')}（可下载）</li>
+        <li><span class="experience-label">隐私</span>仅本地处理，不上传、不经过第三方</li>
+        <li><span class="experience-label">离线</span>{tool.offline.supported ? '支持（版本化 runtime 缓存）' : '不支持'}</li>
+        <li><span class="experience-label">上限</span>{(tool.input.maxBytes / 1024 / 1024).toFixed(0)} MB</li>
+      </ul>
+    </section>
+
+    <section class="experience-tool-card" aria-labelledby="tool-title">
+      <h2 id="tool-title">处理 JSON</h2>
+      <div id="dropzone" class="experience-dropzone" tabindex="0">拖入 JSON 文件，或点击选择<input id="file-input" type="file" accept="application/json,.json,text/json" hidden /></div>
+      <label for="json-input">输入</label>
+      <textarea id="json-input" spellcheck="false">&#123;"items":["A","B"],"ready":true&#125;</textarea>
+      <p><button id="format" type="button">格式化</button><button id="fallback" type="button" hidden>改用主线程</button><button id="reset" type="button" hidden>清空并重选</button><button id="download" type="button" disabled>下载结果</button><button id="cancel" type="button" disabled>取消</button></p>
+      <progress id="progress" value="0" max="1" hidden></progress>
+      <p id="status" class="experience-status" role="status"></p>
+      <label for="output">输出</label>
+      <textarea id="output" readonly aria-live="polite"></textarea>
+    </section>
+
+    <noscript>
+      <section class="experience-tool-card">
+        <h2>无 JavaScript 时</h2>
+        <p>本地工具需要浏览器 Worker 执行；你仍可阅读上面的隐私、输入、输出和离线契约。文件不会被发送到服务器。</p>
       </section>
+    </noscript>
+  </div>
 
-      <section class="card" aria-labelledby="tool-title">
-        <h2 id="tool-title">处理 JSON</h2>
-        <div id="dropzone" class="dropzone" tabindex="0">拖入 JSON 文件，或点击选择<input id="file-input" type="file" accept="application/json,.json,text/json" hidden /></div>
-        <label for="json-input">输入</label>
-        <textarea id="json-input" spellcheck="false">&#123;"items":["A","B"],"ready":true&#125;</textarea>
-        <p><button id="format" type="button">格式化</button><button id="fallback" type="button" hidden>改用主线程</button><button id="reset" type="button" hidden>清空并重选</button><button id="download" type="button" disabled>下载结果</button><button id="cancel" type="button" disabled>取消</button></p>
-        <progress id="progress" value="0" max="1" hidden></progress>
-        <p id="status" class="status" role="status"></p>
-        <label for="output">输出</label>
-        <textarea id="output" readonly aria-live="polite"></textarea>
-      </section>
-
-      <noscript>
-        <section class="card">
-          <h2>无 JavaScript 时</h2>
-          <p>本地工具需要浏览器 Worker 执行；你仍可阅读上面的隐私、输入、输出和离线契约。文件不会被发送到服务器。</p>
-        </section>
-      </noscript>
-    </main>
-    <script is:inline type="module">
-      const $ = (selector) => document.querySelector(selector)
-      const status = $('#status')
-      const setStatus = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error) }
-      const downloadText = (text) => { const url = URL.createObjectURL(new Blob([text], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = 'formatted.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0) }
-      let runner
-      let controller
+  <script is:inline type="module">
+    const $ = (selector) => document.querySelector(selector)
+    const root = document.querySelector('.experience-page')
+    const status = $('#status')
+    const setStatus = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error) }
+    const downloadText = (text) => { const url = URL.createObjectURL(new Blob([text], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = 'formatted.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0) }
+    let runner
+    let controller
+    try {
+      const runtime = await import(root.dataset.runtimeModule)
+      runner = runtime.createTaskRunner({ workerUrl: root.dataset.workerModule })
+      const sw = await runtime.registerRuntimeServiceWorker(root.dataset.serviceWorker, { scope: '/tools/local-json/' })
+      setStatus(`本地任务壳已就绪；离线缓存：${sw.registered ? '已注册' : '不可用'}；未建立网络上传通道。`)
+    } catch (error) {
+      setStatus(`运行时加载失败：${error.message}；仍可阅读本页契约`, true)
+    }
+    const input = $('#json-input')
+    const run = async (forceMainThread = false) => {
+      if (!runner) return
+      controller?.abort()
+      controller = new AbortController()
+      $('#progress').hidden = false
+      $('#cancel').disabled = false
+      $('#fallback').hidden = true
+      $('#reset').hidden = true
       try {
-        const runtime = await import(document.body.dataset.runtimeModule)
-        runner = runtime.createTaskRunner({ workerUrl: document.body.dataset.workerModule })
-        const sw = await runtime.registerRuntimeServiceWorker(document.body.dataset.serviceWorker, { scope: '/tools/local-json/' })
-        setStatus(`本地任务壳已就绪；离线缓存：${sw.registered ? '已注册' : '不可用'}；未建立网络上传通道。`)
+        const result = await runner.run('format-json', { input: input.value }, { signal: controller.signal, forceMainThread, onProgress: (value, label) => { $('#progress').value = value; setStatus(label) } })
+        $('#output').value = result.output
+        $('#download').disabled = false
+        setStatus(`完成：${result.bytes} bytes；数据未离开浏览器。`)
       } catch (error) {
-        setStatus(`运行时加载失败：${error.message}；仍可阅读本页契约`, true)
-      }
-      const input = $('#json-input')
-      const run = async (forceMainThread = false) => {
-        if (!runner) return
-        controller?.abort()
-        controller = new AbortController()
-        $('#progress').hidden = false
-        $('#cancel').disabled = false
-        $('#fallback').hidden = true
-        $('#reset').hidden = true
-        try {
-          const result = await runner.run('format-json', { input: input.value }, { signal: controller.signal, forceMainThread, onProgress: (value, label) => { $('#progress').value = value; setStatus(label) } })
-          $('#output').value = result.output
-          $('#download').disabled = false
-          setStatus(`完成：${result.bytes} bytes；数据未离开浏览器。`)
-        } catch (error) {
-          if (error.name === 'AbortError') setStatus('已取消，Worker 已停止。')
-          else if (error.code === 'TASK_INPUT_TOO_LARGE') { setStatus(`${error.message}；请选择更小的文件。`, true); $('#reset').hidden = false }
-          else { setStatus(`处理失败：${error.message}；可以主线程重试。`, true); $('#fallback').hidden = false }
-        } finally { $('#cancel').disabled = true; $('#progress').hidden = true }
-      }
-      $('#format').addEventListener('click', () => run())
-      $('#fallback').addEventListener('click', () => run(true))
-      $('#reset').addEventListener('click', () => { input.value = ''; $('#output').value = ''; $('#download').disabled = true; $('#reset').hidden = true; setStatus('已清空，请重新选择文件。'); input.focus() })
-      $('#download').addEventListener('click', () => downloadText($('#output').value))
-      $('#cancel').addEventListener('click', () => controller?.abort())
-      const readFile = async (file) => { input.value = await file.text(); await run() }
-      $('#file-input').addEventListener('change', (event) => { const [file] = event.target.files; if (file) readFile(file) })
-      $('#dropzone').addEventListener('click', () => $('#file-input').click())
-      $('#dropzone').addEventListener('dragover', (event) => { event.preventDefault(); $('#dropzone').dataset.active = 'true' })
-      $('#dropzone').addEventListener('dragleave', () => { delete $('#dropzone').dataset.active })
-      $('#dropzone').addEventListener('drop', (event) => { event.preventDefault(); delete $('#dropzone').dataset.active; const [file] = event.dataTransfer.files; if (file) readFile(file) })
-      $('#dropzone').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#file-input').click() } })
-    </script>
-  </body>
-</html>
+        if (error.name === 'AbortError') setStatus('已取消，Worker 已停止。')
+        else if (error.code === 'TASK_INPUT_TOO_LARGE') { setStatus(`${error.message}；请选择更小的文件。`, true); $('#reset').hidden = false }
+        else { setStatus(`处理失败：${error.message}；可以主线程重试。`, true); $('#fallback').hidden = false }
+      } finally { $('#cancel').disabled = true; $('#progress').hidden = true }
+    }
+    $('#format').addEventListener('click', () => run())
+    $('#fallback').addEventListener('click', () => run(true))
+    $('#reset').addEventListener('click', () => { input.value = ''; $('#output').value = ''; $('#download').disabled = true; $('#reset').hidden = true; setStatus('已清空，请重新选择文件。'); input.focus() })
+    $('#download').addEventListener('click', () => downloadText($('#output').value))
+    $('#cancel').addEventListener('click', () => controller?.abort())
+    const readFile = async (file) => { input.value = await file.text(); await run() }
+    $('#file-input').addEventListener('change', (event) => { const [file] = event.target.files; if (file) readFile(file) })
+    $('#dropzone').addEventListener('click', () => $('#file-input').click())
+    $('#dropzone').addEventListener('dragover', (event) => { event.preventDefault(); $('#dropzone').dataset.active = 'true' })
+    $('#dropzone').addEventListener('dragleave', () => { delete $('#dropzone').dataset.active })
+    $('#dropzone').addEventListener('drop', (event) => { event.preventDefault(); delete $('#dropzone').dataset.active; const [file] = event.dataTransfer.files; if (file) readFile(file) })
+    $('#dropzone').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#file-input').click() } })
+  </script>
+</NativePageFrame>
