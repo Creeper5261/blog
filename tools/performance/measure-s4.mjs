@@ -86,6 +86,19 @@ async function enableClient(client) {
   })()` })
 }
 
+async function applyEmulation(client, emulation) {
+  if (!emulation) return
+  await client.send('Emulation.setDeviceMetricsOverride', {
+    width: emulation.width ?? 375,
+    height: emulation.height ?? 812,
+    deviceScaleFactor: emulation.deviceScaleFactor ?? 1,
+    mobile: emulation.mobile ?? true
+  })
+  if (typeof emulation.cpuThrottlingRate === 'number') {
+    await client.send('Emulation.setCPUThrottlingRate', { rate: emulation.cpuThrottlingRate })
+  }
+}
+
 async function evaluate(client, expression, awaitPromise = false) {
   const result = await client.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise })
   if (result.exceptionDetails) throw new Error(result.exceptionDetails.text ?? 'browser evaluation failed')
@@ -144,9 +157,10 @@ async function attachChrome(cdpBaseUrl) {
   return { client, version, cleanup: async () => client.close() }
 }
 
-export async function measureS4({ baseUrl = process.argv[2] ?? 'http://127.0.0.1:4321', routes = DEFAULT_ROUTES } = {}) {
+export async function measureS4({ baseUrl = process.argv[2] ?? 'http://127.0.0.1:4321', routes = DEFAULT_ROUTES, emulation } = {}) {
   const browser = await attachChrome(process.env.S4_CDP_URL ?? 'http://127.0.0.1:9222')
   try {
+    await applyEmulation(browser.client, emulation)
     const cold = []
     const hot = []
     for (const route of routes) cold.push(await measureNavigation(browser.client, baseUrl, route))
@@ -158,6 +172,7 @@ export async function measureS4({ baseUrl = process.argv[2] ?? 'http://127.0.0.1
       baseUrl,
       browser: browser.version.Browser,
       routes,
+      emulation,
       cold,
       hot,
       comparison: {

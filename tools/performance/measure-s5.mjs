@@ -12,8 +12,19 @@ const ROUTES = [
   '/narratives/site.hybrid-indexing.collection/'
 ]
 
-const result = await measureS4({
+const desktop = await measureS4({
   baseUrl: process.argv[2] ?? 'http://127.0.0.1:4321',
   routes: ROUTES
 })
-process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+const degraded = await measureS4({
+  baseUrl: process.argv[2] ?? 'http://127.0.0.1:4321',
+  routes: ROUTES,
+  emulation: {
+    width: 375,
+    height: 812,
+    deviceScaleFactor: 2,
+    mobile: true,
+    cpuThrottlingRate: 6
+  }
+})
+process.stdout.write(`${JSON.stringify({ desktop, degraded }, null, 2)}\n`)
