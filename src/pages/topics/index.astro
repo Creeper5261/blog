@@ -61,6 +61,7 @@ const memberCount = collections.reduce((total, collection) => total + collection
                   ))}
                 </ul>
               )}
+              <p><a href={`/narratives/${collection.id}/`}>阅读专题叙事</a></p>
             </li>
           ))}
         </ul>
@@ -92,8 +93,12 @@ const memberCount = collections.reduce((total, collection) => total + collection
           const chip = document.createElement('li'); chip.className = 'relation'; chip.title = `${edge.from} → ${edge.to}`; chip.textContent = edge.type
           relations.append(chip)
         }
+        const narrative = document.createElement('p')
+        const narrativeLink = document.createElement('a'); narrativeLink.href = `/narratives/${collection.id}/`; narrativeLink.textContent = '阅读专题叙事'
+        narrative.append(narrativeLink)
         item.append(kind, heading, meta, members)
         if (relations.children.length) item.append(relations)
+        item.append(narrative)
         return item
       }
       if (url && gallery) {

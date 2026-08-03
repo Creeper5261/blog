@@ -1,0 +1,87 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+const root = path.resolve('generated', 'site-data')
+const release = JSON.parse(await readFile(path.join(root, 'release.json'), 'utf8'))
+const records = JSON.parse(await readFile(path.join(root, 'content-records.json'), 'utf8')).records
+const releasePath = release.cache.immutableReleasePath
+const items = records
+  .filter((record) => ['article', 'note'].includes(record.kind) && typeof record.body === 'string' && record.body.length > 0)
+  .sort((left, right) => (right.publishedAt ?? '').localeCompare(left.publishedAt ?? '') || left.id.localeCompare(right.id))
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="把知识内容连成一条连续可读的文字流" />
+    <title>文字流</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem 5rem; line-height: 1.75; }
+      h1 { margin-bottom: .25rem; }
+      .lede, .muted { color: color-mix(in srgb, currentColor 72%, transparent); }
+      #flow-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: Highlight; transition: width .08s linear; z-index: 10; }
+      article { border-bottom: 1px solid color-mix(in srgb, currentColor 16%, transparent); padding: 1.4rem 0; }
+      article:first-of-type { padding-top: .4rem; }
+      article h2 { margin: 0 0 .3rem; font-size: 1.35rem; }
+      .meta { font-size: .85rem; margin-bottom: .7rem; }
+      p { margin: .55rem 0; overflow-wrap: anywhere; }
+      .status { min-height: 1.5rem; margin-top: 1rem; }
+      .error { color: #c62828; }
+      @media (prefers-reduced-motion: reduce) { #flow-progress { transition: none; } }
+    </style>
+  </head>
+  <body data-flow-url={`${releasePath}content-records.json`}>
+    <div id="flow-progress" aria-hidden="true"></div>
+    <main>
+      <p><a href="/">返回首页</a> · <a href="/explore/">主题探索</a></p>
+      <h1>文字流</h1>
+      <p class="lede">文章与札记按发布时间连成一条连续阅读流；正文由 Astro 预渲染，进度条只是增强。</p>
+      <p class="muted">{items.length} 篇 · 来自版本化内容记录</p>
+
+      {items.length > 0 ? (
+        items.map((item) => (
+          <article id={`flow-${item.id}`}>
+            <h2><a href={`/explore/#topic-${item.id}`}>{item.title}</a></h2>
+            <p class="meta muted">{item.kind} · {item.publishedAt}</p>
+            {item.body.split(/\n+/).filter((line) => line.trim().length > 0).map((paragraph) => (
+              <p>{paragraph}</p>
+            ))}
+          </article>
+        ))
+      ) : (
+        <section><h2>暂无内容</h2><p>文字流尚未发布；此页仍保留导航与静态说明。</p></section>
+      )}
+
+      <p id="status" class="status" role="status">以上内容来自当前版本化发布包。</p>
+      <noscript><p class="muted">JavaScript 已禁用；上方文字流仍可完整阅读，仅阅读进度条不可用。</p></noscript>
+    </main>
+    <script is:inline type="module">
+      const progress = document.querySelector('#flow-progress')
+      const status = document.querySelector('#status')
+      const updateProgress = () => {
+        if (!progress) return
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight
+        progress.style.width = `${scrollable > 0 ? Math.min(100, (window.scrollY / scrollable) * 100) : 0}%`
+      }
+      window.addEventListener('scroll', updateProgress, { passive: true })
+      updateProgress()
+      const url = document.body.dataset.flowUrl
+      if (url && status) {
+        try {
+          const response = await fetch(url, { cache: 'force-cache' })
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          const payload = await response.json()
+          const fresh = Array.isArray(payload.records) ? payload.records.filter((record) => ['article', 'note'].includes(record.kind) && typeof record.body === 'string') : []
+          status.textContent = `已确认版本化内容记录（${fresh.length} 篇正文）；正文为预渲染 HTML。`
+        } catch (error) {
+          status.classList.add('error')
+          status.textContent = `版本化内容记录请求失败，保留预渲染正文：${error.message}`
+        }
+      }
+    </script>
+  </body>
+</html>
