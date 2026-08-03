@@ -8,6 +8,7 @@ import { validateKnowledgeSite } from '../content-contracts/validate.mjs'
 import { compileExplainUnits } from '../explain/compiler.mjs'
 import { buildToolManifestPayload } from '../capabilities/manifests.mjs'
 import { buildHybridIndex } from './hybrid-index.mjs'
+import { buildKnowledgePaths } from './paths.mjs'
 import { buildRoutesPayload } from './routes.mjs'
 import { buildTopicsPayload } from './topics.mjs'
 
@@ -21,6 +22,7 @@ const BUILDER_INPUTS = [
   fileURLToPath(new URL('../capabilities/manifests.mjs', import.meta.url)),
   fileURLToPath(new URL('../../schemas/v1/explain.schema.json', import.meta.url)),
   fileURLToPath(new URL('./hybrid-index.mjs', import.meta.url)),
+  fileURLToPath(new URL('./paths.mjs', import.meta.url)),
   fileURLToPath(new URL('./routes.mjs', import.meta.url)),
   fileURLToPath(new URL('./topics.mjs', import.meta.url))
 ]
@@ -270,6 +272,7 @@ function buildPayloads(core, sourceRecords, pulses, hybrid, explain, toolManifes
   }
   const topics = buildTopicsPayload(records, locators)
   const routes = buildRoutesPayload(toolManifests)
+  const paths = buildKnowledgePaths(records, locators)
 
   return new Map([
     ['asset-manifest.json', core.manifest],
@@ -288,6 +291,7 @@ function buildPayloads(core, sourceRecords, pulses, hybrid, explain, toolManifes
     ['tool-manifests.json', toolManifests],
     ['topics.json', topics],
     ['routes.json', routes],
+    ['paths.json', paths],
     ...hybrid.payloads
   ])
 }

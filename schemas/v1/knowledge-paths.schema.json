@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://creeper5261.github.io/schemas/v1/knowledge-paths.schema.json",
+  "title": "Knowledge path projection",
+  "type": "object",
+  "required": ["schemaVersion", "paths"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "paths": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/path" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "required": ["id", "kind", "title", "status", "publishedAt", "updatedAt", "assetUrls", "locator"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "enum": ["draft", "evergreen", "archived"] },
+        "publishedAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "assetUrls": { "type": "array", "items": { "type": "string" } },
+        "locator": { "$ref": "#/$defs/locator" }
+      },
+      "additionalProperties": false
+    },
+    "locator": {
+      "type": "object",
+      "required": ["strategy", "base", "file", "url", "hash", "bytes"],
+      "properties": {
+        "strategy": { "const": "content-addressed" },
+        "base": { "const": "site-data" },
+        "file": { "type": "string" },
+        "url": { "type": "string" },
+        "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "bytes": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "edge": {
+      "type": "object",
+      "required": ["from", "to", "type"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "path": {
+      "type": "object",
+      "required": ["id", "title", "description", "kind", "steps", "edges"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "kind": { "enum": ["collection", "entity"] },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/summary" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/edge" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
