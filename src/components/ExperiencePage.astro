@@ -38,16 +38,44 @@ const navItems = [
     <script is:inline>
       const root = document.documentElement
       const themeButton = document.querySelector('#experience-theme')
-      const storedTheme = localStorage.getItem('dat-experience-theme')
-      if (storedTheme === 'dark') root.dataset.theme = 'dark'
+      const themeColors = {
+        red: 'rgb(241, 71, 71)', orange: 'rgb(241, 162, 71)', yellow: 'rgb(241, 238, 71)',
+        purple: 'rgb(179, 71, 241)', blue: 'rgb(102, 204, 255)', gray: 'rgb(226, 226, 226)',
+        green: 'rgb(57, 197, 187)', whitegray: 'rgb(241, 241, 241)', pink: 'rgb(237, 112, 155)',
+        black: 'rgb(0, 0, 0)', darkblue: 'rgb(97, 100, 159)', heoblue: 'rgb(66, 90, 239)'
+      }
+      const configuredColor = themeColors[localStorage.getItem('themeColor')]
+      if (configuredColor) root.style.setProperty('--theme-color', configuredColor)
+      const configuredFont = localStorage.getItem('font')
+      if (configuredFont === 'default') root.style.setProperty('--global-font', '-apple-system')
+      else if (configuredFont) root.style.setProperty('--global-font', configuredFont)
+      const configuredBackground = localStorage.getItem('blogbg') || localStorage.getItem('web_bg')
+      if (configuredBackground?.startsWith('#')) {
+        root.style.setProperty('--experience-bg', configuredBackground)
+        root.style.setProperty('--experience-bg-image', 'none')
+      } else if (configuredBackground?.startsWith('url(')) {
+        root.style.setProperty('--experience-bg-image', configuredBackground)
+      }
+      const readTheme = () => {
+        try {
+          const stored = JSON.parse(localStorage.getItem('theme') || 'null')
+          return stored?.value || stored || localStorage.getItem('dat-experience-theme')
+        } catch {
+          return localStorage.getItem('dat-experience-theme')
+        }
+      }
+      const storedTheme = readTheme()
+      if (storedTheme === 'dark' || storedTheme === 'light') root.dataset.theme = storedTheme
       const updateThemeButton = () => {
         const dark = root.dataset.theme === 'dark'
         themeButton?.setAttribute('aria-pressed', String(dark))
         themeButton?.setAttribute('aria-label', dark ? '切换浅色模式' : '切换深色模式')
+        if (themeButton) themeButton.textContent = dark ? '☼' : '☾'
       }
       updateThemeButton()
       themeButton?.addEventListener('click', () => {
         root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'
+        localStorage.setItem('theme', JSON.stringify({ value: root.dataset.theme, expiry: Date.now() + 2 * 86400000 }))
         localStorage.setItem('dat-experience-theme', root.dataset.theme)
         updateThemeButton()
       })
