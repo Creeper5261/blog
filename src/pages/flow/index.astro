@@ -7,7 +7,7 @@ const release = JSON.parse(await readFile(path.join(root, 'release.json'), 'utf8
 const records = JSON.parse(await readFile(path.join(root, 'content-records.json'), 'utf8')).records
 const releasePath = release.cache.immutableReleasePath
 const items = records
-  .filter((record) => ['article', 'note'].includes(record.kind) && typeof record.body === 'string' && record.body.length > 0)
+  .filter((record) => record.status !== 'archived' && ['article', 'note'].includes(record.kind) && typeof record.body === 'string' && record.body.length > 0)
   .sort((left, right) => (right.publishedAt ?? '').localeCompare(left.publishedAt ?? '') || left.id.localeCompare(right.id))
 ---
 
@@ -75,7 +75,7 @@ const items = records
           const response = await fetch(url, { cache: 'force-cache' })
           if (!response.ok) throw new Error(`HTTP ${response.status}`)
           const payload = await response.json()
-          const fresh = Array.isArray(payload.records) ? payload.records.filter((record) => ['article', 'note'].includes(record.kind) && typeof record.body === 'string') : []
+          const fresh = Array.isArray(payload.records) ? payload.records.filter((record) => record.status !== 'archived' && ['article', 'note'].includes(record.kind) && typeof record.body === 'string') : []
           status.textContent = `已确认版本化内容记录（${fresh.length} 篇正文）；正文为预渲染 HTML。`
         } catch (error) {
           status.classList.add('error')

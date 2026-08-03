@@ -9,7 +9,7 @@ const [contentIndex, graph, timelinesPayload, assetManifest] = await Promise.all
   readFile(path.join(dataRoot, 'timelines.json'), 'utf8').then(JSON.parse),
   readFile(path.join(dataRoot, 'asset-manifest.json'), 'utf8').then(JSON.parse)
 ])
-const nodes = contentIndex.items
+const nodes = contentIndex.items.filter((node) => node.status !== 'archived')
 const nodeById = new Map(nodes.map((node) => [node.id, node]))
 const outgoing = new Map()
 const incoming = new Map()
