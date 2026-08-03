@@ -16,7 +16,7 @@ export async function getStaticPaths() {
   )
 
   return pages
-    .filter((page) => page.kind !== 'not-found')
+    .filter((page) => page.kind !== 'not-found' && page.kind !== 'home')
     .filter((page) => page.kind !== 'page' || !modernRouteSlugs.has(page.slug))
     .map((page) => ({
       params: { slug: page.slug },
