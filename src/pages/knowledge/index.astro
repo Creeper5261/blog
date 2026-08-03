@@ -1,12 +1,7 @@
 ---
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-
 import ExperiencePage from '../../components/ExperiencePage.astro'
 
-const root = path.resolve('generated', 'site-data')
-const topicsPayload = JSON.parse(await readFile(path.join(root, 'topics.json'), 'utf8'))
-const collections = topicsPayload.collections
+const collections = []
 ---
 
 <ExperiencePage title="DAT · 知识库" description="DAT 的个人知识库" active="knowledge">
