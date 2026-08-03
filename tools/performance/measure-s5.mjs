@@ -8,8 +8,6 @@ const ROUTES = [
   '/explore/map/',
   '/paths/',
   '/flow/',
-  '/narratives/',
-  '/narratives/site.hybrid-indexing.collection/'
 ]
 
 const desktop = await measureS4({

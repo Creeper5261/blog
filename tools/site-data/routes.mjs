@@ -5,7 +5,6 @@ export const SITE_ROUTES = [
   { id: 'site.flow', title: '文字流', route: '/flow/', kind: 'flow' },
   { id: 'site.topics', title: '主题展厅', route: '/topics/', kind: 'topics' },
   { id: 'site.tools', title: '工具', route: '/tools/', kind: 'tools' },
-  { id: 'site.narratives', title: '专题叙事', route: '/narratives/', kind: 'narratives' },
   { id: 'site.paths', title: '知识路径', route: '/paths/', kind: 'paths' },
   { id: 'site.lab', title: '本地实验台', route: '/lab/', kind: 'lab' },
   { id: 'site.pulse', title: 'Pulse 热点快照', route: '/pulse/', kind: 'pulse' },

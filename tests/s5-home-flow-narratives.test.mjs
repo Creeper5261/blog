@@ -6,12 +6,10 @@ import { fileURLToPath } from 'node:url'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 
-test('S5 homepage, text flow and narrative pages consume only published static payloads', async () => {
+test('S5 knowledge and text-flow pages consume only published static payloads', async () => {
   const pages = {
     'src/pages/knowledge/index.astro': ['topics.json', 'ExperiencePage', '<noscript>', '知识库'],
-    'src/pages/flow/index.astro': ['content-records.json', 'immutableReleasePath', '<noscript>', '文字流'],
-    'src/pages/narratives/index.astro': ['topics.json', '<noscript>', '专题叙事'],
-    'src/pages/narratives/[id].astro': ['topics.json', 'explain.json', '<noscript>', 'explain-unit', 'getStaticPaths']
+    'src/pages/flow/index.astro': ['content-records.json', 'immutableReleasePath', '<noscript>', '文字流']
   }
   for (const [relative, patterns] of Object.entries(pages)) {
     const source = await readFile(path.join(repositoryRoot, relative), 'utf8')
@@ -24,14 +22,12 @@ test('S5 homepage, text flow and narrative pages consume only published static p
   }
 })
 
-test('S5 explain units share one runtime script across explain and narrative pages', async () => {
-  const explainPage = await readFile(path.join(repositoryRoot, 'src', 'pages', 'explain', 'index.astro'), 'utf8')
-  const narrativePage = await readFile(path.join(repositoryRoot, 'src', 'pages', 'narratives', '[id].astro'), 'utf8')
-  const runtime = await readFile(path.join(repositoryRoot, 'source', 'js', 'explain-runtime.js'), 'utf8')
+test('S5 does not expose the synthetic narrative prototype as a public route', async () => {
+  const routes = await readFile(path.join(repositoryRoot, 'tools', 'site-data', 'routes.mjs'), 'utf8')
+  const knowledge = await readFile(path.join(repositoryRoot, 'src', 'pages', 'knowledge', 'index.astro'), 'utf8')
+  const topics = await readFile(path.join(repositoryRoot, 'src', 'pages', 'topics', 'index.astro'), 'utf8')
 
-  assert.match(explainPage, /src="\/js\/explain-runtime\.js"/)
-  assert.match(narrativePage, /src="\/js\/explain-runtime\.js"/)
-  assert.match(runtime, /data-action="advance"/)
-  assert.match(runtime, /data-action="reset"/)
-  assert.match(runtime, /explain-unit/)
+  assert.doesNotMatch(routes, /site\.narratives/)
+  assert.doesNotMatch(knowledge, /narratives\//)
+  assert.doesNotMatch(topics, /narratives\//)
 })

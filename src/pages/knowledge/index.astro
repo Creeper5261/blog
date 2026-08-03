@@ -31,7 +31,7 @@ const collections = topicsPayload.collections
               <p>{collection.members.slice(0, 4).map((member) => member.title).join(' · ') || '这个主题还没有成员。'}</p>
               <div class="reading-meta"><span>{collection.members.length} 个成员</span><span>更新于 {collection.updatedAt}</span></div>
             </div>
-            <a class="reading-row-action" href={`/narratives/${collection.id}/`}>阅读 →</a>
+            <a class="reading-row-action" href={`/topics/#topic-${collection.id}`}>查看主题 →</a>
           </li>
         ))}
       </ul>
