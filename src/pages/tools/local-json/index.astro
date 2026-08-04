@@ -3,8 +3,15 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import NativePageFrame from '../../../components/NativePageFrame.astro'
+import { buildToolManifestPayload } from '../../../../tools/capabilities/manifests.mjs'
 
-const payload = JSON.parse(await readFile(path.resolve('generated', 'site-data', 'tool-manifests.json'), 'utf8'))
+let payload
+try {
+  payload = JSON.parse(await readFile(path.resolve('generated', 'site-data', 'tool-manifests.json'), 'utf8'))
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+  payload = buildToolManifestPayload()
+}
 const tool = payload.tools.find((entry) => entry.id === 'tool.local-json')
 if (!tool) throw new Error('tool.local-json manifest is missing')
 const runtimeManifest = JSON.parse(await readFile(path.resolve('.astro-static', 'runtime', 'manifest.json'), 'utf8'))

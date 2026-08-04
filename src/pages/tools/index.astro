@@ -3,9 +3,16 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import NativePageFrame from '../../components/NativePageFrame.astro'
+import { buildToolManifestPayload } from '../../../tools/capabilities/manifests.mjs'
 
 const root = path.resolve('generated', 'site-data')
-const toolManifests = JSON.parse(await readFile(path.join(root, 'tool-manifests.json'), 'utf8'))
+let toolManifests
+try {
+  toolManifests = JSON.parse(await readFile(path.join(root, 'tool-manifests.json'), 'utf8'))
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+  toolManifests = buildToolManifestPayload()
+}
 const tools = toolManifests.tools.map((tool) => ({
   ...tool,
   description: tool.id === 'tool.local-json' ? '格式化、校验并下载 JSON' : '在本地计算 SHA-256 摘要',
