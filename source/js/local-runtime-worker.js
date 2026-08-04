@@ -37,6 +37,10 @@ async function hashSha256(id, input) {
 
 self.onmessage = async (event) => {
   const message = event.data ?? {}
+  if (message.type === 'ping' && message.id) {
+    send({ type: 'pong', id: message.id })
+    return
+  }
   if (message.type !== 'run' || !message.id) return
 
   try {

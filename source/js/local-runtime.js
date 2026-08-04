@@ -115,11 +115,20 @@ export function createTaskRunner({ workerUrl = '/js/local-runtime-worker.js', ma
   let worker
   let nextId = 0
   const pending = new Map()
+  const probes = new Map()
   const ensureWorker = () => {
     if (worker || typeof Worker === 'undefined') return worker
     worker = new Worker(workerUrl, { type: 'module' })
     worker.onmessage = (event) => {
       const message = event.data ?? {}
+      if (message.type === 'pong') {
+        const probe = probes.get(message.id)
+        if (!probe) return
+        probes.delete(message.id)
+        clearTimeout(probe.timer)
+        probe.resolve({ available: true })
+        return
+      }
       const task = pending.get(message.id)
       if (!task) return
       if (message.type === 'progress') task.onProgress?.(message.value, message.label)
@@ -134,6 +143,11 @@ export function createTaskRunner({ workerUrl = '/js/local-runtime-worker.js', ma
     worker.onerror = () => {
       for (const task of pending.values()) task.reject(new Error('Worker 运行失败，可使用主线程降级'))
       pending.clear()
+      for (const probe of probes.values()) {
+        clearTimeout(probe.timer)
+        probe.resolve({ available: false, reason: 'worker-error' })
+      }
+      probes.clear()
       worker?.terminate()
       worker = undefined
     }
@@ -176,8 +190,33 @@ export function createTaskRunner({ workerUrl = '/js/local-runtime-worker.js', ma
         instance.postMessage({ type: 'run', id, task, ...payload })
       })
     },
+    probe({ timeout = 1500 } = {}) {
+      const instance = ensureWorker()
+      if (!instance) return Promise.resolve({ available: false, reason: 'unsupported' })
+      const id = `probe-${++nextId}`
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          probes.delete(id)
+          resolve({ available: false, reason: 'timeout' })
+        }, timeout)
+        probes.set(id, { resolve, timer })
+        try {
+          instance.postMessage({ type: 'ping', id })
+        } catch {
+          clearTimeout(timer)
+          probes.delete(id)
+          resolve({ available: false, reason: 'post-message' })
+        }
+      })
+    },
     cancelAll() { terminateWorker() },
-    dispose() { worker?.terminate(); worker = undefined; pending.clear() }
+    dispose() {
+      worker?.terminate()
+      worker = undefined
+      pending.clear()
+      for (const probe of probes.values()) clearTimeout(probe.timer)
+      probes.clear()
+    }
   }
 }
 

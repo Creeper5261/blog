@@ -57,8 +57,9 @@ SHA-256</textarea>
     try {
       const runtime = await import(root.dataset.runtimeModule)
       runner = runtime.createTaskRunner({ workerUrl: root.dataset.workerModule })
+      const worker = await runner.probe()
       const sw = await runtime.registerRuntimeServiceWorker(root.dataset.serviceWorker, { scope: '/tools/sha256/' })
-      setStatus(`已就绪；离线缓存：${sw.registered ? '已注册' : '不可用'}。`)
+      setStatus(`已就绪；Worker：${worker.available ? '已加载' : '不可用，主线程计算'}；离线缓存：${sw.registered ? '已注册' : '不可用'}。`)
     } catch (error) { setStatus(`运行时加载失败：${error.message}`, true) }
     const input = $('#text-input')
     const hashDirect = async () => {

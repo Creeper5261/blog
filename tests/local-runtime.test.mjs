@@ -20,12 +20,14 @@ test('S3 runtime exposes local storage, capability detection, worker tasks and s
   assert.match(runtime, /indexedDB/)
   assert.match(runtime, /getDirectory/)
   assert.match(runtime, /new Worker/)
+  assert.match(runtime, /probe\(/)
   assert.match(runtime, /signal\?\.aborted/)
   assert.match(runtime, /MAX_TASK_BYTES/)
   assert.match(runtime, /registerRuntimeServiceWorker/)
   assert.match(worker, /format-json/)
   assert.match(worker, /state-step/)
   assert.match(worker, /type: 'progress'/)
+  assert.match(worker, /type: 'pong'/)
   assert.match(serviceWorker, /manifest\.json/)
   assert.match(serviceWorker, /request\.mode === 'navigate'/)
   assert.match(runtime, /terminateWorker/)
@@ -103,6 +105,24 @@ test('aborting a running task terminates the worker before rejecting', async () 
     assert.equal(workers.length, 2, 'the next task must receive a fresh worker')
     runner.cancelAll()
     await assert.rejects(nextTask, (error) => error.name === 'AbortError')
+  } finally {
+    if (originalWorker === undefined) delete globalThis.Worker
+    else globalThis.Worker = originalWorker
+  }
+})
+
+test('worker probe reports module availability before task execution', async () => {
+  const originalWorker = globalThis.Worker
+  globalThis.Worker = class {
+    postMessage(message) {
+      if (message.type === 'ping') queueMicrotask(() => this.onmessage?.({ data: { type: 'pong', id: message.id } }))
+    }
+    terminate() {}
+  }
+  try {
+    const { createTaskRunner } = await importRuntime()
+    const runner = createTaskRunner({ workerUrl: '/runtime-worker.test.js' })
+    assert.deepEqual(await runner.probe({ timeout: 50 }), { available: true })
   } finally {
     if (originalWorker === undefined) delete globalThis.Worker
     else globalThis.Worker = originalWorker
