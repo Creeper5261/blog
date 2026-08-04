@@ -2,7 +2,7 @@ export const TOOL_MANIFESTS = [
   {
     schemaVersion: 1,
     id: 'tool.local-json',
-    title: '本地 JSON 格式化',
+    title: 'JSON 格式化',
     route: '/tools/local-json/',
     task: 'format-json',
     input: { kinds: ['application/json', 'text/json'], maxBytes: 2097152 },
@@ -15,7 +15,7 @@ export const TOOL_MANIFESTS = [
   {
     schemaVersion: 1,
     id: 'tool.sha256',
-    title: '本地 SHA-256 哈希',
+    title: 'SHA-256',
     route: '/tools/sha256/',
     task: 'hash-sha256',
     input: { kinds: ['text/plain'], maxBytes: 2097152 },
