@@ -17,12 +17,13 @@ const tools = toolManifests.tools.map((tool) => ({
 <NativePageFrame title="工具 · DAT" pageName="工具" description="DAT 工具" route="/tools/">
   <section class="tool-home" aria-labelledby="tool-home-title">
     <div class="tool-home-intro">
-      <p class="experience-eyebrow">DAT / 工具台</p>
-      <h1 id="tool-home-title">工具</h1>
-      <form class="tool-search" id="tool-search-form" role="search">
-        <span aria-hidden="true">⌕</span>
-        <input id="tool-search" type="search" autocomplete="off" placeholder="搜索工具" aria-label="搜索工具" />
-        <kbd>/</kbd>
+      <p class="experience-eyebrow">DAT / 工具</p>
+      <h1 id="tool-home-title">今天想查什么？</h1>
+      <p class="tool-home-lede">从这里打开 Google，或直接使用下方工具。</p>
+      <form class="tool-search" action="https://www.google.com/search" method="get" target="_blank" role="search">
+        <span class="tool-search-mark" aria-hidden="true">⌕</span>
+        <input id="tool-search" name="q" type="search" autocomplete="off" placeholder="在 Google 中搜索工具或网页" aria-label="在 Google 中搜索工具或网页" />
+        <button type="submit">Google 搜索</button>
       </form>
       <div class="tool-quick-links" aria-label="其他入口">
         <a href="/">回到博客</a>
@@ -31,33 +32,36 @@ const tools = toolManifests.tools.map((tool) => ({
 
     <section class="tool-list-section" aria-labelledby="tool-list-title">
       <div class="tool-list-header">
-        <h2 id="tool-list-title">工具</h2>
+        <div>
+          <h2 id="tool-list-title">本地工具</h2>
+          <p>文件只在当前浏览器处理，不上传。</p>
+        </div>
         <span id="tool-list-count">{tools.length} 个</span>
       </div>
       <ul class="tool-list" id="tool-list">
         {tools.map((tool) => (
           <li class="tool-item" data-search={`${tool.title} ${tool.description} ${tool.keywords}`}>
-            <div class="tool-item-icon" aria-hidden="true">{tool.icon}</div>
-            <div class="tool-item-main">
-              <h3 class="tool-item-title"><a class="tool-open" href={tool.route} data-tool-id={tool.id}>{tool.title}</a></h3>
-              <p class="tool-item-desc">{tool.description}</p>
-              <div class="tool-item-meta"><span>仅本地</span><span>{tool.offline.supported ? '离线可用' : '需要网络'}</span></div>
-            </div>
+            <a class="tool-item-link" href={tool.route} data-tool-id={tool.id}>
+              <span class="tool-item-icon" aria-hidden="true">{tool.icon}</span>
+              <span class="tool-item-main">
+                <span class="tool-item-title">{tool.title}</span>
+                <span class="tool-item-desc">{tool.description}</span>
+                <span class="tool-item-meta">{tool.offline.supported ? '离线可用' : '需要网络'}</span>
+              </span>
+              <span class="tool-item-open" aria-hidden="true">↗</span>
+            </a>
             <button class="tool-favorite" type="button" data-favorite={tool.id} aria-label={`收藏${tool.title}`} aria-pressed="false">☆</button>
-            <a class="tool-item-open" href={tool.route} data-tool-id={tool.id} aria-label={`打开${tool.title}`}>→</a>
           </li>
         ))}
       </ul>
-      <p class="tool-empty" id="tool-empty" hidden>没有匹配的工具。</p>
-      <p class="tool-noscript"><noscript>JavaScript 已禁用；工具列表仍可直接打开，文件不会上传。</noscript></p>
+      <p class="tool-empty" id="tool-empty" hidden>没有可用工具。</p>
+      <p class="tool-noscript"><noscript>JavaScript 已禁用；工具仍可直接打开，文件不会上传。</noscript></p>
     </section>
   </section>
 
   <script is:inline type="module">
-    const search = document.querySelector('#tool-search')
     const list = document.querySelector('#tool-list')
     const count = document.querySelector('#tool-list-count')
-    const empty = document.querySelector('#tool-empty')
     const items = [...document.querySelectorAll('.tool-item')]
     const favoritesKey = 'dat-tool-favorites'
     const recentKey = 'dat-tool-recent'
@@ -74,23 +78,6 @@ const tools = toolManifests.tools.map((tool) => ({
       const rank = (item) => (favorites.has(item.querySelector('[data-favorite]')?.dataset.favorite) ? 2 : recent.has(item.querySelector('[data-favorite]')?.dataset.favorite) ? 1 : 0)
       items.sort((left, right) => rank(right) - rank(left)).forEach((item) => list.append(item))
     }
-    const filter = () => {
-      const query = search.value.trim().toLowerCase()
-      let visible = 0
-      items.forEach((item) => {
-        const matches = !query || item.dataset.search.toLowerCase().includes(query)
-        item.hidden = !matches
-        if (matches) visible += 1
-      })
-      count.textContent = `${visible} 个`
-      empty.hidden = visible !== 0
-    }
-    search.addEventListener('input', filter)
-    document.querySelector('#tool-search-form').addEventListener('submit', (event) => event.preventDefault())
-    document.addEventListener('keydown', (event) => {
-      if (event.key === '/' && document.activeElement !== search && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) { event.preventDefault(); search.focus() }
-      if (event.key === 'Escape' && document.activeElement === search) { search.value = ''; filter(); search.blur() }
-    })
     document.querySelectorAll('[data-favorite]').forEach((button) => button.addEventListener('click', () => {
       const id = button.dataset.favorite
       if (favorites.has(id)) favorites.delete(id); else favorites.add(id)
@@ -99,6 +86,6 @@ const tools = toolManifests.tools.map((tool) => ({
     document.querySelectorAll('[data-tool-id]').forEach((link) => link.addEventListener('click', () => {
       const recent = readSet(recentKey); recent.delete(link.dataset.toolId); recent.add(link.dataset.toolId); writeSet(recentKey, recent)
     }))
-    updateFavoriteButtons(); sortItems(); filter()
+    count.textContent = `${items.length} 个`; updateFavoriteButtons(); sortItems()
   </script>
 </NativePageFrame>
