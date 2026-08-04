@@ -14,30 +14,17 @@ const tools = toolManifests.tools.map((tool) => ({
 }))
 ---
 
-<NativePageFrame title="工具 · DAT" pageName="工具" description="DAT 工具" route="/tools/">
-  <section class="tool-home" aria-labelledby="tool-home-title">
+<NativePageFrame title="工具 · DAT" pageName="工具" description="DAT 工具" route="/tools/" comments={false}>
+  <section class="tool-home" aria-label="工具与搜索">
     <div class="tool-home-intro">
-      <p class="experience-eyebrow">DAT / 工具</p>
-      <h1 id="tool-home-title">今天想查什么？</h1>
-      <p class="tool-home-lede">从这里打开 Google，或直接使用下方工具。</p>
       <form class="tool-search" action="https://www.google.com/search" method="get" target="_blank" role="search">
         <span class="tool-search-mark" aria-hidden="true">⌕</span>
-        <input id="tool-search" name="q" type="search" autocomplete="off" placeholder="在 Google 中搜索工具或网页" aria-label="在 Google 中搜索工具或网页" />
-        <button type="submit">Google 搜索</button>
+        <input id="tool-search" name="q" type="search" autocomplete="off" placeholder="搜索 Google" aria-label="Google 搜索" />
+        <button type="submit">搜索</button>
       </form>
-      <div class="tool-quick-links" aria-label="其他入口">
-        <a href="/">回到博客</a>
-      </div>
     </div>
 
-    <section class="tool-list-section" aria-labelledby="tool-list-title">
-      <div class="tool-list-header">
-        <div>
-          <h2 id="tool-list-title">本地工具</h2>
-          <p>文件只在当前浏览器处理，不上传。</p>
-        </div>
-        <span id="tool-list-count">{tools.length} 个</span>
-      </div>
+    <section class="tool-list-section" aria-label="工具列表">
       <ul class="tool-list" id="tool-list">
         {tools.map((tool) => (
           <li class="tool-item" data-search={`${tool.title} ${tool.description} ${tool.keywords}`}>
@@ -61,7 +48,6 @@ const tools = toolManifests.tools.map((tool) => ({
 
   <script is:inline type="module">
     const list = document.querySelector('#tool-list')
-    const count = document.querySelector('#tool-list-count')
     const items = [...document.querySelectorAll('.tool-item')]
     const favoritesKey = 'dat-tool-favorites'
     const recentKey = 'dat-tool-recent'
@@ -86,6 +72,6 @@ const tools = toolManifests.tools.map((tool) => ({
     document.querySelectorAll('[data-tool-id]').forEach((link) => link.addEventListener('click', () => {
       const recent = readSet(recentKey); recent.delete(link.dataset.toolId); recent.add(link.dataset.toolId); writeSet(recentKey, recent)
     }))
-    count.textContent = `${items.length} 个`; updateFavoriteButtons(); sortItems()
+    updateFavoriteButtons(); sortItems()
   </script>
 </NativePageFrame>

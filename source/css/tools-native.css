@@ -24,12 +24,6 @@
   letter-spacing: -.04em;
 }
 
-.tool-home-lede {
-  margin-top: -.1rem !important;
-  font-size: 1.02rem;
-  opacity: .8;
-}
-
 .tool-home-intro p,
 .workspace-heading p {
   margin: 0;
@@ -85,42 +79,16 @@
   opacity: .65;
 }
 
-.tool-quick-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: .9rem;
-  color: var(--font-color);
-  font-size: .85rem;
-}
-
 .tool-list-section {
   margin: 1rem auto 0;
   max-width: 1120px;
 }
 
-.tool-list-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.tool-list-header h2,
 .workspace h2 {
   margin: 0;
   color: var(--text-highlight-color);
   font-size: 1.15rem;
 }
-
-.tool-list-header p {
-  margin: .25rem 0 0;
-  color: var(--font-color);
-  font-size: .82rem;
-  opacity: .72;
-}
-
-.tool-list-header span,
 .tool-item-desc,
 .tool-item-meta,
 .tool-empty,

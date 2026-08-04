@@ -9,7 +9,7 @@ const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 test('S5 public pages consume only published static payloads and keep no-JavaScript fallbacks', async () => {
   const pages = {
     'src/pages/topics/index.astro': ['topics.json', 'immutableReleasePath', '<noscript>', '主题展厅'],
-    'src/pages/tools/index.astro': ['tool-manifests.json', '<noscript>', 'https://www.google.com/search', '本地工具'],
+    'src/pages/tools/index.astro': ['tool-manifests.json', '<noscript>', 'https://www.google.com/search', 'comments={false}', 'tool-item'],
     'src/pages/explore/map/index.astro': ['relationship-graph.json', 'immutableReleasePath', '<noscript>', '探索地图', '<svg'],
     'src/pages/paths/index.astro': ['paths.json', 'immutableReleasePath', '<noscript>', '知识路径']
   }

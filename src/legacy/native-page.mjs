@@ -26,6 +26,7 @@ export async function loadNativePageShell({
   pageName,
   description,
   route = '/tools/',
+  comments = true,
   templatePath = DEFAULT_TEMPLATE,
   stylesheet = '/css/tools-native.css',
   services = getPublicServices()
@@ -56,8 +57,16 @@ export async function loadNativePageShell({
     throw new Error('Native page template is missing its article content boundary')
   }
 
+  let after = rendered.slice(articleEnd)
+  if (!comments) {
+    const commentStart = after.indexOf('<hr/><div id="post-comment">')
+    const asideStart = after.indexOf('<div class="aside-content" id="aside-content">', commentStart)
+    if (commentStart < 0 || asideStart < 0) throw new Error('Native page template is missing its comment boundary')
+    after = after.slice(0, commentStart) + after.slice(asideStart)
+  }
+
   return {
     before: rendered.slice(0, articleContentStart),
-    after: rendered.slice(articleEnd)
+    after
   }
 }
