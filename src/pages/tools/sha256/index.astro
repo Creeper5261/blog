@@ -23,20 +23,18 @@ if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error(
 
 <NativePageFrame title={`${tool.title} · DAT`} pageName={tool.title} description={tool.title} route="/tools/sha256/">
   <section class="workspace-page" data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-max-bytes={tool.input.maxBytes}>
-    <p class="workspace-back"><a href="/tools/">← 工具</a> <span>·</span> <a href="/tools/local-json/">JSON 格式化</a></p>
     <header class="workspace-heading">
-      <p class="experience-eyebrow">SHA-256</p>
       <h1>{tool.title}</h1>
-      <p>计算文本的 SHA-256 摘要。</p>
     </header>
 
     <section class="workspace" aria-labelledby="workspace-title">
       <h2 id="workspace-title">计算摘要</h2>
       <details class="workspace-contract">
         <summary>说明</summary>
-        <ul><li>输入：{tool.input.kinds.join('、')}</li><li>输出：十六进制摘要</li><li>上限：{(tool.input.maxBytes / 1024 / 1024).toFixed(0)} MB</li><li>支持离线，不上传文件</li></ul>
+        <ul><li>输入：{tool.input.kinds.join('、')}</li><li>输出：十六进制摘要</li><li>上限：{(tool.input.maxBytes / 1024 / 1024).toFixed(0)} MB</li></ul>
       </details>
-      <div id="dropzone" class="workspace-dropzone" tabindex="0" role="button" aria-controls="file-input">拖入文本文件，或 <label class="workspace-file-button" for="file-input">选择文件</label><input id="file-input" class="workspace-file-input" type="file" accept="text/plain,.txt" /></div>
+      <label id="dropzone" class="workspace-dropzone" tabindex="0" for="file-input">文件上传</label>
+      <input id="file-input" class="workspace-file-input" type="file" accept="text/plain,.txt" hidden />
       <label for="text-input">文本输入</label>
       <textarea id="text-input" spellcheck="false" placeholder="输入文本">DAT tools
 SHA-256</textarea>
@@ -78,6 +76,6 @@ SHA-256</textarea>
     $('#hash').addEventListener('click', () => run()); $('#fallback').addEventListener('click', () => run(true)); $('#download').addEventListener('click', () => downloadText($('#output').value)); $('#cancel').addEventListener('click', () => controller?.abort())
     $('#reset').addEventListener('click', () => { input.value = ''; $('#output').value = ''; $('#download').disabled = true; $('#reset').hidden = true; setStatus('已清空。'); input.focus() })
     const readFile = async (file) => { input.value = await file.text(); await run() }
-    $('#file-input').addEventListener('change', (event) => { const [file] = event.target.files; if (file) readFile(file) }); $('#dropzone').addEventListener('click', (event) => { if (event.target.closest('label')) return; $('#file-input').click() }); $('#dropzone').addEventListener('dragover', (event) => { event.preventDefault(); $('#dropzone').dataset.active = 'true' }); $('#dropzone').addEventListener('dragleave', () => delete $('#dropzone').dataset.active); $('#dropzone').addEventListener('drop', (event) => { event.preventDefault(); delete $('#dropzone').dataset.active; const [file] = event.dataTransfer.files; if (file) readFile(file) }); $('#dropzone').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#file-input').click() } })
+    $('#file-input').addEventListener('change', (event) => { const [file] = event.target.files; if (file) readFile(file) }); $('#dropzone').addEventListener('dragover', (event) => { event.preventDefault(); $('#dropzone').dataset.active = 'true' }); $('#dropzone').addEventListener('dragleave', () => delete $('#dropzone').dataset.active); $('#dropzone').addEventListener('drop', (event) => { event.preventDefault(); delete $('#dropzone').dataset.active; const [file] = event.dataTransfer.files; if (file) readFile(file) }); $('#dropzone').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#file-input').click() } })
   </script>
 </NativePageFrame>

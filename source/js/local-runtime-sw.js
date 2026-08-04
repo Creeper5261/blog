@@ -11,7 +11,7 @@ self.addEventListener('install', (event) => {
       const versionedCache = await caches.open(cacheName)
       await versionedCache.addAll(manifest.precache)
     } catch {
-      await cache.addAll(['/lab/', '/tools/local-json/'])
+      // Documents stay network-first so page edits are not hidden by an old cache.
     }
     await self.skipWaiting()
   })())
@@ -28,7 +28,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return
+  const isDocument = request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')
   event.respondWith((async () => {
+    if (isDocument) return fetch(request)
     const cached = await caches.match(request)
     if (cached) return cached
     try {
@@ -40,8 +42,7 @@ self.addEventListener('fetch', (event) => {
       }
       return response
     } catch {
-      const fallback = new URL(request.url).pathname.startsWith('/tools/local-json') ? '/tools/local-json/' : '/lab/'
-      return caches.match(fallback)
+      return Response.error()
     }
   })())
 })

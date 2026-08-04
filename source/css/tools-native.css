@@ -306,18 +306,6 @@ body:has(.tool-home) #to_comment {
   text-align: center;
 }
 
-.workspace-file-button {
-  color: var(--theme-color);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: .15em;
-}
-
-.workspace-file-button:hover,
-.workspace-file-button:focus-visible {
-  color: var(--text-highlight-color);
-}
-
 .workspace-file-input {
   position: absolute;
   width: 1px;
