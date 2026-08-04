@@ -61,8 +61,17 @@ SHA-256</textarea>
       setStatus(`已就绪；离线缓存：${sw.registered ? '已注册' : '不可用'}。`)
     } catch (error) { setStatus(`运行时加载失败：${error.message}`, true) }
     const input = $('#text-input')
+    const hashDirect = async () => {
+      if (!globalThis.crypto?.subtle) throw new Error('当前浏览器不支持 SHA-256')
+      const bytes = new TextEncoder().encode(input.value)
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
+      const output = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+      $('#output').value = output
+      $('#download').disabled = false
+      setStatus(`完成：${bytes.byteLength} bytes 输入。`)
+    }
     const run = async (forceMainThread = false) => {
-      if (!runner) return
+      if (!runner) { try { await hashDirect() } catch (error) { setStatus(`处理失败：${error.message}`, true) }; return }
       controller?.abort(); controller = new AbortController(); $('#progress').hidden = false; $('#cancel').disabled = false; $('#fallback').hidden = true; $('#reset').hidden = true
       try {
         const result = await runner.run('hash-sha256', { input: input.value }, { signal: controller.signal, forceMainThread, onProgress: (value, label) => { $('#progress').value = value; setStatus(label) } })
@@ -70,7 +79,10 @@ SHA-256</textarea>
       } catch (error) {
         if (error.name === 'AbortError') setStatus('已取消。')
         else if (error.code === 'TASK_INPUT_TOO_LARGE') { setStatus(`${error.message}；请选择更小的文件。`, true); $('#reset').hidden = false }
-        else { setStatus(`处理失败：${error.message}；可以主线程重试。`, true); $('#fallback').hidden = false }
+        else {
+          try { await hashDirect() }
+          catch (fallbackError) { setStatus(`处理失败：${fallbackError.message}`, true); $('#fallback').hidden = false }
+        }
       } finally { $('#cancel').disabled = true; $('#progress').hidden = true }
     }
     $('#hash').addEventListener('click', () => run()); $('#fallback').addEventListener('click', () => run(true)); $('#download').addEventListener('click', () => downloadText($('#output').value)); $('#cancel').addEventListener('click', () => controller?.abort())
