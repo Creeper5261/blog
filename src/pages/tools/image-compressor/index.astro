@@ -1,0 +1,39 @@
+---
+import NativePageFrame from '../../../components/NativePageFrame.astro'
+---
+
+<NativePageFrame title="图片压缩 · DAT" pageName="图片压缩" description="本地图片压缩与格式转换" route="/tools/image-compressor/" comments={false}>
+  <section class="workspace-page image-tool-page" data-max-bytes="16777216">
+    <header class="workspace-heading">
+      <h1>图片压缩</h1>
+    </header>
+    <section class="workspace" aria-labelledby="image-tool-title">
+      <h2 id="image-tool-title">本地处理</h2>
+      <p class="workspace-contract">图片只在当前浏览器处理，不上传；支持 JPEG、PNG、WebP。</p>
+      <label id="image-dropzone" class="workspace-dropzone" tabindex="0" for="image-file">文件上传</label>
+      <input id="image-file" class="workspace-file-input" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+      <div class="image-tool-options">
+        <label for="image-quality">质量 <output id="image-quality-value" for="image-quality">0.8</output></label>
+        <input id="image-quality" type="range" min="0.1" max="1" step="0.05" value="0.8" />
+        <label for="image-format">输出格式</label>
+        <select id="image-format"><option value="auto">保持原格式</option><option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select>
+        <label for="image-width">最大宽度</label>
+        <input id="image-width" type="number" min="320" max="8192" step="1" value="2400" />
+      </div>
+      <div class="workspace-actions"><button id="image-download" type="button" disabled>下载结果</button><button id="image-reset" type="button">清空</button></div>
+      <p id="image-status" class="workspace-status" role="status">选择图片后开始处理。</p>
+      <div class="image-tool-preview" aria-live="polite">
+        <figure>
+          <img id="image-before" alt="原图预览" hidden />
+          <figcaption id="image-before-caption">原图</figcaption>
+        </figure>
+        <figure>
+          <img id="image-after" alt="压缩结果预览" hidden />
+          <figcaption id="image-after-caption">结果</figcaption>
+        </figure>
+      </div>
+    </section>
+    <p class="reading-noscript"><noscript>无 JavaScript 时仍可阅读工具说明；图片不会上传。</noscript></p>
+  </section>
+  <script src="../../../scripts/tools-image-compressor.js"></script>
+</NativePageFrame>

@@ -24,6 +24,40 @@ const STATIC_HOST_PACKAGE = {
   }
 }
 
+const VDITOR_FILES = [
+  'index.min.js',
+  'index.css',
+  'css/content-theme/light.css',
+  'css/content-theme/dark.css',
+  'js/i18n/zh_CN.js',
+  'js/icons/material.js',
+  'js/lute/lute.min.js',
+  'js/katex/katex.min.js',
+  'js/katex/katex.min.css',
+  'js/katex/mhchem.min.js',
+  'js/highlight.js/highlight.min.js',
+  'js/highlight.js/styles/github.min.css',
+  'images/img-loading.svg'
+]
+
+async function copyVditorAssets(targetRoot) {
+  const packageRoot = path.resolve('node_modules', 'vditor', 'dist')
+  for (const relativeFile of VDITOR_FILES) {
+    const sourceFile = path.join(packageRoot, relativeFile)
+    const targetFile = path.join(targetRoot, 'vendor', 'vditor', 'dist', relativeFile)
+    await mkdir(path.dirname(targetFile), { recursive: true })
+    await cp(sourceFile, targetFile)
+  }
+
+  const katexFonts = path.join(packageRoot, 'js', 'katex', 'fonts')
+  await copyDir({
+    sourceDir: katexFonts,
+    targetDir: path.join(targetRoot, 'vendor', 'vditor', 'dist', 'js', 'katex', 'fonts'),
+    skipped: [],
+    relativeBase: 'vendor/vditor/dist/js/katex/fonts'
+  })
+}
+
 async function writeVercelConfig(generatedRoot, targetRoot) {
   let release
   try { release = JSON.parse(await readFile(path.join(generatedRoot, 'site-data', 'release.json'), 'utf8')) } catch { return }
@@ -117,6 +151,8 @@ export async function prepareAstroAssets({
     skipped,
     relativeBase: 'media'
   })
+
+  await copyVditorAssets(targetRoot)
 
   await copyDir({
     sourceDir: path.join(generatedRoot, 'site-data'),

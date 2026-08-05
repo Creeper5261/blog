@@ -13,12 +13,12 @@ try {
   if (error.code !== 'ENOENT') throw error
   toolManifests = buildToolManifestPayload()
 }
-const tools = toolManifests.tools.map((tool) => ({
-  ...tool,
-  description: tool.id === 'tool.local-json' ? '格式化并下载 JSON' : '计算文本摘要',
-  icon: tool.id === 'tool.local-json' ? '⌘' : '#',
-  keywords: tool.id === 'tool.local-json' ? 'json 格式化 prettify 校验' : 'sha256 hash 哈希 摘要'
-}))
+const toolPresentation = {
+  'tool.codec': { description: 'JSON、摘要与文本编码转换', icon: '⌘', keywords: 'json sha256 hash base64 url unicode mdx 编码' },
+  'tool.markdown-editor': { description: 'Markdown / MDX 分屏编辑与数学预览', icon: '✎', keywords: 'markdown mdx latex katex math 编辑器' },
+  'tool.image-compressor': { description: '本地压缩图片并转换格式', icon: '▧', keywords: 'image jpeg png webp 压缩转换 squoosh compressor' }
+}
+const tools = toolManifests.tools.map((tool) => ({ ...tool, ...toolPresentation[tool.id] }))
 ---
 
 <NativePageFrame title="工具 · DAT" pageName="工具" description="DAT 工具" route="/tools/" comments={false}>

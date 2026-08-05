@@ -37,6 +37,7 @@
     "recovery:note": "node -e \"console.log('Recovery harness lives outside this repo at ../tools in the original workspace.')\""
   },
   "dependencies": {
+    "compressorjs": "1.3.0",
     "hexo": "6.3.0",
     "hexo-generator-archive": "^2.0.0",
     "hexo-generator-category": "^2.0.0",
@@ -48,7 +49,8 @@
     "hexo-renderer-stylus": "^3.0.1",
     "hexo-server": "^3.0.0",
     "hexo-theme-butterfly": "4.10.0",
-    "hexo-wordcount": "^6.0.1"
+    "hexo-wordcount": "^6.0.1",
+    "vditor": "3.11.2"
   },
   "devDependencies": {
     "ajv": "^8.20.0",

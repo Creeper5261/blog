@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "tool.image-compressor",
+  "kind": "tool",
+  "title": "图片压缩",
+  "status": "evergreen",
+  "publishedAt": "2026-08-05",
+  "updatedAt": "2026-08-05",
+  "slug": "image-compressor",
+  "privacy": "local-only",
+  "inputKinds": ["image/jpeg", "image/png", "image/webp"],
+  "outputKinds": ["image/jpeg", "image/png", "image/webp"]
+}
