@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "id": "tool.local-json",
+  "id": "tool.codec",
   "kind": "tool",
-  "title": "本地 JSON 格式化",
+  "title": "编码与摘要",
   "status": "evergreen",
-  "publishedAt": "2026-08-02",
-  "updatedAt": "2026-08-02",
-  "slug": "local-json",
+  "publishedAt": "2026-08-05",
+  "updatedAt": "2026-08-05",
+  "slug": "codec",
   "privacy": "local-only",
-  "inputKinds": ["application/json", "text/json"],
-  "outputKinds": ["application/json"]
+  "inputKinds": ["application/json", "text/plain", "text/markdown", "text/mdx"],
+  "outputKinds": ["application/json", "text/plain", "text/markdown"]
 }

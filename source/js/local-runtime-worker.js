@@ -1,4 +1,5 @@
 import { hashTask } from './hash-task.js'
+import { transformResult } from './codec-task.js'
 
 function send(message) {
   self.postMessage(message)
@@ -28,6 +29,13 @@ function stateStep(id, state, action) {
   return { items, action }
 }
 
+function transformText(id, input, mode) {
+  progress(id, 0.25, '读取输入')
+  const result = transformResult(input, mode)
+  progress(id, 1, '完成')
+  return result
+}
+
 async function hashSha256(id, input) {
   progress(id, 0.25, '读取输入')
   const result = await hashTask(input)
@@ -48,6 +56,8 @@ self.onmessage = async (event) => {
       ? formatJson(message.id, message.input)
       : message.task === 'state-step'
         ? stateStep(message.id, message.state, message.action)
+        : message.task === 'text-transform'
+          ? transformText(message.id, message.input, message.mode)
         : message.task === 'hash-sha256'
           ? await hashSha256(message.id, message.input)
         : (() => { throw new Error(`未知任务：${message.task}`) })()

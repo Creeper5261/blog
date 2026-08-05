@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
     try {
       const response = await fetch(request)
       const pathname = new URL(request.url).pathname
-      if (response.ok && (pathname.startsWith('/lab') || pathname.startsWith('/tools/local-json'))) {
+      if (response.ok && (pathname.startsWith('/lab') || pathname.startsWith('/tools/codec'))) {
         const cache = await caches.open(cacheName)
         await cache.put(request, response.clone())
       }

@@ -6,7 +6,8 @@ export const RUNTIME_FILES = [
   'js/local-runtime.js',
   'js/local-runtime-worker.js',
   'js/local-runtime-sw.js',
-  'js/hash-task.js'
+  'js/hash-task.js',
+  'js/codec-task.js'
 ]
 
 function versionedFile(relativeFile, version) {

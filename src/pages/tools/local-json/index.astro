@@ -1,80 +1,13 @@
 ---
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-
-import NativePageFrame from '../../../components/NativePageFrame.astro'
-import { buildToolManifestPayload } from '../../../../tools/capabilities/manifests.mjs'
-
-let payload
-try {
-  payload = JSON.parse(await readFile(path.resolve('generated', 'site-data', 'tool-manifests.json'), 'utf8'))
-} catch (error) {
-  if (error.code !== 'ENOENT') throw error
-  payload = buildToolManifestPayload()
-}
-const tool = payload.tools.find((entry) => entry.id === 'tool.local-json')
-if (!tool) throw new Error('tool.local-json manifest is missing')
-const runtimeManifest = JSON.parse(await readFile(path.resolve('.astro-static', 'runtime', 'manifest.json'), 'utf8'))
-const runtimeModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWith('/local-runtime.js'))?.url
-const workerModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWith('/local-runtime-worker.js'))?.url
-const serviceWorkerUrl = runtimeManifest.entries.find((entry) => entry.file.includes('local-runtime-sw.'))?.url
-if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl) throw new Error('S3 runtime manifest is incomplete')
+const target = '/tools/codec/?mode=json-format'
 ---
-
-<NativePageFrame title={`${tool.title} · DAT`} pageName={tool.title} description={tool.title} route="/tools/local-json/">
-  <section class="workspace-page" data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-max-bytes={tool.input.maxBytes}>
-    <header class="workspace-heading">
-      <h1>{tool.title}</h1>
-    </header>
-
-    <section class="workspace" aria-labelledby="workspace-title">
-      <h2 id="workspace-title">格式化</h2>
-      <details class="workspace-contract">
-        <summary>说明</summary>
-        <ul><li>输入：{tool.input.kinds.join('、')}</li><li>输出：{tool.output.kinds.join('、')}</li><li>上限：{(tool.input.maxBytes / 1024 / 1024).toFixed(0)} MB</li></ul>
-      </details>
-      <label id="dropzone" class="workspace-dropzone" tabindex="0" for="file-input">文件上传</label>
-      <input id="file-input" class="workspace-file-input" type="file" accept="application/json,.json,text/json" hidden />
-      <label for="json-input">JSON 输入</label>
-      <textarea id="json-input" spellcheck="false" placeholder="输入 JSON">&#123;"items":["A","B"],"ready":true&#125;</textarea>
-      <div class="workspace-actions"><button id="format" type="button">格式化</button><button id="fallback" type="button" hidden>主线程重试</button><button id="reset" type="button" hidden>清空</button><button id="download" type="button" disabled>下载</button><button id="cancel" type="button" disabled>取消</button></div>
-      <progress id="progress" value="0" max="1" hidden></progress>
-      <p id="status" class="workspace-status" role="status"></p>
-      <label for="output">格式化结果</label>
-      <textarea id="output" readonly aria-live="polite"></textarea>
-    </section>
-    <p class="reading-noscript"><noscript>无 JavaScript 时仍可阅读工具说明；文件不会被发送到服务器。</noscript></p>
-  </section>
-
-  <script is:inline type="module">
-    const $ = (selector) => document.querySelector(selector)
-    const root = document.querySelector('.workspace-page')
-    const status = $('#status')
-    const setStatus = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error) }
-    const downloadText = (text) => { const url = URL.createObjectURL(new Blob([text], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = 'formatted.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0) }
-    let runner; let controller
-    try {
-      const runtime = await import(root.dataset.runtimeModule)
-      runner = runtime.createTaskRunner({ workerUrl: root.dataset.workerModule })
-      const sw = await runtime.registerRuntimeServiceWorker(root.dataset.serviceWorker, { scope: '/tools/local-json/' })
-      setStatus(`已就绪；离线缓存：${sw.registered ? '已注册' : '不可用'}。`)
-    } catch (error) { setStatus(`运行时加载失败：${error.message}`, true) }
-    const input = $('#json-input')
-    const run = async (forceMainThread = false) => {
-      if (!runner) return
-      controller?.abort(); controller = new AbortController(); $('#progress').hidden = false; $('#cancel').disabled = false; $('#fallback').hidden = true; $('#reset').hidden = true
-      try {
-        const result = await runner.run('format-json', { input: input.value }, { signal: controller.signal, forceMainThread, onProgress: (value, label) => { $('#progress').value = value; setStatus(label) } })
-        $('#output').value = result.output; $('#download').disabled = false; setStatus(`完成：${result.bytes} bytes。`)
-      } catch (error) {
-        if (error.name === 'AbortError') setStatus('已取消。')
-        else if (error.code === 'TASK_INPUT_TOO_LARGE') { setStatus(`${error.message}；请选择更小的文件。`, true); $('#reset').hidden = false }
-        else { setStatus(`处理失败：${error.message}；可以主线程重试。`, true); $('#fallback').hidden = false }
-      } finally { $('#cancel').disabled = true; $('#progress').hidden = true }
-    }
-    $('#format').addEventListener('click', () => run()); $('#fallback').addEventListener('click', () => run(true)); $('#download').addEventListener('click', () => downloadText($('#output').value)); $('#cancel').addEventListener('click', () => controller?.abort())
-    $('#reset').addEventListener('click', () => { input.value = ''; $('#output').value = ''; $('#download').disabled = true; $('#reset').hidden = true; setStatus('已清空。'); input.focus() })
-    const readFile = async (file) => { input.value = await file.text(); await run() }
-    $('#file-input').addEventListener('change', (event) => { const [file] = event.target.files; if (file) readFile(file) }); $('#dropzone').addEventListener('dragover', (event) => { event.preventDefault(); $('#dropzone').dataset.active = 'true' }); $('#dropzone').addEventListener('dragleave', () => delete $('#dropzone').dataset.active); $('#dropzone').addEventListener('drop', (event) => { event.preventDefault(); delete $('#dropzone').dataset.active; const [file] = event.dataTransfer.files; if (file) readFile(file) }); $('#dropzone').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#file-input').click() } })
-  </script>
-</NativePageFrame>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
+    <link rel="canonical" href={target} />
+    <title>编码与摘要 · DAT</title>
+  </head>
+  <body><p>正在前往 <a href={target}>编码与摘要</a>…</p></body>
+</html>

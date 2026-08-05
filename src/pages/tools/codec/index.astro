@@ -1,0 +1,99 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import NativePageFrame from '../../../components/NativePageFrame.astro'
+import { buildToolManifestPayload } from '../../../../tools/capabilities/manifests.mjs'
+
+let payload
+try {
+  payload = JSON.parse(await readFile(path.resolve('generated', 'site-data', 'tool-manifests.json'), 'utf8'))
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+  payload = buildToolManifestPayload()
+}
+const tool = payload.tools.find((entry) => entry.id === 'tool.codec')
+if (!tool) throw new Error('tool.codec manifest is missing')
+const runtimeManifest = JSON.parse(await readFile(path.resolve('.astro-static', 'runtime', 'manifest.json'), 'utf8'))
+const runtimeModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWith('/local-runtime.js'))?.url
+const workerModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWith('/local-runtime-worker.js'))?.url
+const serviceWorkerUrl = runtimeManifest.entries.find((entry) => entry.file.includes('local-runtime-sw.'))?.url
+const codecModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWith('/codec-task.js'))?.url
+if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl || !codecModuleUrl) throw new Error('S3 runtime manifest is incomplete')
+---
+
+<NativePageFrame title={`${tool.title} · DAT`} pageName={tool.title} description={tool.title} route="/tools/codec/" comments={false}>
+  <section class="workspace-page codec-page" data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-codec-module={codecModuleUrl} data-max-bytes={tool.input.maxBytes}>
+    <header class="workspace-heading">
+      <h1>{tool.title}</h1>
+    </header>
+
+    <section class="workspace" aria-labelledby="workspace-title">
+      <div class="codec-toolbar">
+        <label for="mode">处理方式</label>
+        <select id="mode">
+          {tool.modes.map((mode) => <option value={mode.id}>{mode.label}</option>)}
+        </select>
+      </div>
+      <p class="workspace-contract">文本只在当前浏览器处理；支持 JSON、摘要、编码和 Markdown / MDX 源码。</p>
+      <label id="dropzone" class="workspace-dropzone" tabindex="0" for="file-input">文件上传</label>
+      <input id="file-input" class="workspace-file-input" type="file" accept="text/plain,application/json,text/markdown,.json,.md,.mdx" hidden />
+      <label for="text-input">输入</label>
+      <textarea id="text-input" spellcheck="false" placeholder="输入文本">&#123;"items":["A","B"],"ready":true&#125;</textarea>
+      <div class="workspace-actions"><button id="run" type="button">开始处理</button><button id="reset" type="button">清空</button><button id="download" type="button" disabled>下载结果</button><button id="cancel" type="button" disabled>取消</button></div>
+      <progress id="progress" value="0" max="1" hidden></progress>
+      <p id="status" class="workspace-status" role="status"></p>
+      <label for="output">结果</label>
+      <textarea id="output" readonly aria-live="polite"></textarea>
+    </section>
+    <p class="reading-noscript"><noscript>无 JavaScript 时仍可阅读工具说明；文件不会上传。</noscript></p>
+  </section>
+
+  <script is:inline type="module">
+    const $ = (selector) => document.querySelector(selector)
+    const root = document.querySelector('.codec-page')
+    const input = $('#text-input')
+    const output = $('#output')
+    const mode = $('#mode')
+    const status = $('#status')
+    const setStatus = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error) }
+    const modeLabel = () => mode.options[mode.selectedIndex]?.textContent || mode.value
+    const downloadText = (text) => { const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = `${mode.value}.${mode.value === 'json-format' ? 'json' : 'txt'}`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0) }
+    let runtime; let codec; let runner; let controller
+    const requestedMode = new URLSearchParams(location.search).get('mode')
+    if (requestedMode && [...mode.options].some((option) => option.value === requestedMode)) mode.value = requestedMode
+    try {
+      runtime = await import(root.dataset.runtimeModule)
+      codec = await import(root.dataset.codecModule)
+      runner = runtime.createTaskRunner({ workerUrl: root.dataset.workerModule })
+      const worker = await runner.probe()
+      const sw = await runtime.registerRuntimeServiceWorker(root.dataset.serviceWorker, { scope: '/tools/codec/' })
+      setStatus(`已就绪；Worker：${worker.available ? '已加载' : '主线程'}；离线缓存：${sw.registered ? '已注册' : '不可用'}。`)
+    } catch (error) { setStatus(`运行时加载失败：${error.message}；将使用浏览器计算。`, true) }
+    const hashDirect = async (value) => {
+      const bytes = new TextEncoder().encode(value)
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
+      return { output: [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join(''), bytes: bytes.byteLength }
+    }
+    const direct = async (value, selectedMode) => selectedMode === 'hash-sha256' ? hashDirect(value) : codec.transformResult(value, selectedMode)
+    const run = async () => {
+      const value = input.value
+      const selectedMode = mode.value
+      controller?.abort(); controller = new AbortController(); $('#progress').hidden = false; $('#cancel').disabled = false
+      try {
+        const result = runner ? await runner.run(selectedMode === 'hash-sha256' ? 'hash-sha256' : 'text-transform', selectedMode === 'hash-sha256' ? { input: value } : { input: value, mode: selectedMode }, { signal: controller.signal, onProgress: (progress, label) => { $('#progress').value = progress; setStatus(label) } }) : await direct(value, selectedMode)
+        output.value = result.output; $('#download').disabled = false; setStatus(`${modeLabel()}完成：${result.bytes} bytes。`)
+      } catch (error) {
+        if (error.name === 'AbortError') setStatus('已取消。')
+        else {
+          try { const result = await direct(value, selectedMode); output.value = result.output; $('#download').disabled = false; setStatus(`${modeLabel()}完成（主线程）。`) }
+          catch (fallbackError) { setStatus(`处理失败：${fallbackError.message}`, true) }
+        }
+      } finally { $('#cancel').disabled = true; $('#progress').hidden = true }
+    }
+    mode.addEventListener('change', () => { output.value = ''; $('#download').disabled = true; setStatus(`已切换：${modeLabel()}。`) })
+    $('#run').addEventListener('click', run); $('#download').addEventListener('click', () => downloadText(output.value)); $('#cancel').addEventListener('click', () => controller?.abort()); $('#reset').addEventListener('click', () => { input.value = ''; output.value = ''; $('#download').disabled = true; setStatus('已清空。'); input.focus() })
+    const readFile = async (file) => { input.value = await file.text(); await run() }
+    $('#file-input').addEventListener('change', (event) => { const [file] = event.target.files; if (file) readFile(file) }); $('#dropzone').addEventListener('dragover', (event) => { event.preventDefault(); $('#dropzone').dataset.active = 'true' }); $('#dropzone').addEventListener('dragleave', () => delete $('#dropzone').dataset.active); $('#dropzone').addEventListener('drop', (event) => { event.preventDefault(); delete $('#dropzone').dataset.active; const [file] = event.dataTransfer.files; if (file) readFile(file) }); $('#dropzone').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#file-input').click() } })
+  </script>
+</NativePageFrame>
