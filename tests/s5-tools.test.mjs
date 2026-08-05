@@ -9,13 +9,16 @@ import { buildSiteData } from '../tools/site-data/build.mjs'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
 
-test('S5 second tool follows the single manifest channel', async () => {
+test('tools share one manifest channel with codec, editor, and image utilities', async () => {
   const payload = buildToolManifestPayload()
-  const tool = payload.tools.find((entry) => entry.id === 'tool.sha256')
+  const tool = payload.tools.find((entry) => entry.id === 'tool.codec')
 
-  assert.equal(payload.tools.length, 2)
-  assert.equal(tool.route, '/tools/sha256/')
-  assert.equal(tool.task, 'hash-sha256')
+  assert.equal(payload.tools.length, 3)
+  assert.equal(tool.route, '/tools/codec/')
+  assert.equal(tool.task, 'text-transform')
+  assert.ok(tool.modes.some((entry) => entry.id === 'hash-sha256'))
+  assert.ok(tool.modes.some((entry) => entry.id === 'base64-encode'))
+  assert.ok(tool.modes.some((entry) => entry.id === 'mdx-source'))
   assert.equal(tool.privacy.mode, 'local-only')
   assert.equal(tool.privacy.uploads, false)
   assert.equal(tool.offline.supported, true)
@@ -24,20 +27,37 @@ test('S5 second tool follows the single manifest channel', async () => {
 
   const result = await buildSiteData({ root: repositoryRoot, write: false })
   assert.equal(result.ok, true)
-  const featuresTool = result.bundle['features.json'].tools.find((entry) => entry.id === 'tool.sha256')
-  assert.equal(featuresTool.slug, 'sha256')
+  const featuresTool = result.bundle['features.json'].tools.find((entry) => entry.id === 'tool.codec')
+  assert.equal(featuresTool.slug, 'codec')
   assert.equal(featuresTool.privacy, 'local-only')
-  const routesTool = result.bundle['routes.json'].items.find((entry) => entry.route === '/tools/sha256/')
+  const routesTool = result.bundle['routes.json'].items.find((entry) => entry.route === '/tools/codec/')
   assert.equal(routesTool.source, 'tool-manifest')
-  assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.sha256'))
+  assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.codec'))
+  assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.markdown-editor'))
+  assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.image-compressor'))
 })
 
-test('S5 SHA-256 tool page reuses the S3 task shell without a second upload path', async () => {
-  const source = await readFile(path.join(repositoryRoot, 'src', 'pages', 'tools', 'sha256', 'index.astro'), 'utf8')
-  for (const pattern of ['tool-manifests.json', 'createTaskRunner', 'hash-sha256', 'registerRuntimeServiceWorker', "scope: '/tools/sha256/'", '<noscript>']) {
+test('codec page reuses the S3 task shell for all text modes', async () => {
+  const source = await readFile(path.join(repositoryRoot, 'src', 'pages', 'tools', 'codec', 'index.astro'), 'utf8')
+  for (const pattern of ['tool-manifests.json', 'createTaskRunner', 'text-transform', 'hash-sha256', 'registerRuntimeServiceWorker', "scope: '/tools/codec/'", '文件上传', '<noscript>']) {
     assert.match(source, new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }
   const script = source.match(/<script is:inline type="module">([\s\S]*?)<\/script>/)
   assert.ok(script)
   assert.doesNotMatch(script[1], /generated\/|content\/|external\//)
+})
+
+test('markdown and image tools use mature local browser integrations', async () => {
+  const markdown = await readFile(path.join(repositoryRoot, 'src', 'pages', 'tools', 'markdown', 'index.astro'), 'utf8')
+  assert.match(markdown, /comments=\{false\}/)
+  const markdownScript = await readFile(path.join(repositoryRoot, 'src', 'scripts', 'tools-markdown.js'), 'utf8')
+  assert.match(markdownScript, /Vditor/)
+  assert.match(markdownScript, /mode: 'sv'/)
+  assert.match(markdownScript, /KaTeX/)
+  const image = await readFile(path.join(repositoryRoot, 'src', 'pages', 'tools', 'image-compressor', 'index.astro'), 'utf8')
+  assert.match(image, /image-compressor/)
+  assert.match(image, /comments=\{false\}/)
+  const imageScript = await readFile(path.join(repositoryRoot, 'src', 'scripts', 'tools-image-compressor.js'), 'utf8')
+  assert.match(imageScript, /Compressor/)
+  assert.match(imageScript, /new Compressor/)
 })

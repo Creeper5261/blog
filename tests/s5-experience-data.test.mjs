@@ -61,7 +61,7 @@ test('S5 routes projection merges tool manifests with curated site routes', () =
   assert.equal(payload.schemaVersion, 1)
   assert.equal(new Set(routes).size, routes.length)
   assert.deepEqual(routes, [...routes].sort())
-  const tool = payload.items.find((item) => item.route === '/tools/local-json/')
+  const tool = payload.items.find((item) => item.route === '/tools/codec/')
   assert.equal(tool.source, 'tool-manifest')
   assert.equal(tool.kind, 'tool')
   for (const route of ['/', '/topics/', '/tools/', '/explore/', '/explore/map/', '/paths/', '/flow/', '/lab/', '/explain/', '/knowledge-data/']) {

@@ -25,6 +25,8 @@ test('S3 runtime exposes local storage, capability detection, worker tasks and s
   assert.match(runtime, /MAX_TASK_BYTES/)
   assert.match(runtime, /registerRuntimeServiceWorker/)
   assert.match(worker, /format-json/)
+  assert.match(worker, /text-transform/)
+  assert.match(await readFile('source/js/codec-task.js', 'utf8'), /base64-encode/)
   assert.match(worker, /state-step/)
   assert.match(worker, /type: 'progress'/)
   assert.match(worker, /type: 'pong'/)
@@ -60,7 +62,7 @@ test('runtime manifest records integrity metadata and offline precache entries',
   assert.ok(manifest.entries.every((entry) => entry.url.includes(manifest.runtimeVersion)))
   assert.ok(manifest.entries.some((entry) => entry.url === `/local-runtime-sw.${manifest.runtimeVersion}.js`))
   assert.ok(!manifest.precache.includes('/lab/'))
-  assert.ok(!manifest.precache.includes('/tools/local-json/'))
+  assert.ok(!manifest.precache.includes('/tools/codec/'))
   await access(path.join(targetRoot, 'runtime', 'manifest.json'))
 })
 
@@ -73,9 +75,9 @@ test('service worker registration allows S4 consumers to use their own scope', a
   })
   try {
     const runtime = await importRuntime()
-    const result = await runtime.registerRuntimeServiceWorker('/local-runtime-sw.test.js', { scope: '/tools/local-json/' })
-    assert.deepEqual(result, { registered: true, scope: '/tools/local-json/' })
-    assert.deepEqual(calls, [['/local-runtime-sw.test.js', { scope: '/tools/local-json/' }]])
+    const result = await runtime.registerRuntimeServiceWorker('/local-runtime-sw.test.js', { scope: '/tools/codec/' })
+    assert.deepEqual(result, { registered: true, scope: '/tools/codec/' })
+    assert.deepEqual(calls, [['/local-runtime-sw.test.js', { scope: '/tools/codec/' }]])
   } finally {
     if (originalNavigator === undefined) delete globalThis.navigator
     else Object.defineProperty(globalThis, 'navigator', { configurable: true, value: originalNavigator })

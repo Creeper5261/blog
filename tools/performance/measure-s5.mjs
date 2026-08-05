@@ -2,8 +2,9 @@ import { measureS4 } from './measure-s4.mjs'
 
 const ROUTES = [
   '/lab/',
-  '/tools/local-json/',
-  '/tools/sha256/',
+  '/tools/codec/',
+  '/tools/markdown/',
+  '/tools/image-compressor/',
   '/topics/',
   '/explore/map/',
   '/paths/',

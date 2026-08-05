@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const DEFAULT_ROUTES = ['/tools/local-json/', '/explore/', '/explain/', '/lab/']
+const DEFAULT_ROUTES = ['/tools/codec/', '/explore/', '/explain/', '/lab/']
 
 function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
