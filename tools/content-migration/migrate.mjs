@@ -14,6 +14,10 @@ const MEDIA_ROOT = path.join(REPOSITORY_ROOT, 'content', 'media')
 const EXTERNAL_ROOT = path.join(REPOSITORY_ROOT, 'external', 'resources')
 const INVENTORY_FILE = path.join(REPOSITORY_ROOT, 'source', '_data', 'content-migration.json')
 
+// `localeCompare` can order non-ASCII filenames differently on Windows and
+// Linux. Migration output is versioned, so keep its ordering platform-neutral.
+const compareText = (left, right) => (left < right ? -1 : left > right ? 1 : 0)
+
 const PUBLISHABLE_EXTENSIONS = new Set([
   '.avif', '.gif', '.ico', '.jpeg', '.jpg', '.mp3', '.pdf', '.png', '.svg', '.webp'
 ])
@@ -82,7 +86,7 @@ async function walkFiles(directory) {
     throw error
   }
   const files = []
-  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+  for (const entry of entries.sort((left, right) => compareText(left.name, right.name))) {
     const file = path.join(directory, entry.name)
     if (entry.isDirectory()) files.push(...await walkFiles(file))
     if (entry.isFile()) files.push(file)
@@ -94,7 +98,7 @@ async function contentSources() {
   return (await walkFiles(SOURCE_ROOT))
     .filter((file) => path.extname(file).toLowerCase() === '.md')
     .filter((file) => !relativeRepositoryPath(file).startsWith('source/explain/'))
-    .sort((left, right) => relativeRepositoryPath(left).localeCompare(relativeRepositoryPath(right)))
+    .sort((left, right) => compareText(relativeRepositoryPath(left), relativeRepositoryPath(right)))
 }
 
 function parseResourceReferences(file, document) {
@@ -375,7 +379,7 @@ async function migrate({ write = true } = {}) {
     }
   }
 
-  const records = [...articles, ...media.values(), ...external.values()].sort((left, right) => left.id.localeCompare(right.id))
+  const records = [...articles, ...media.values(), ...external.values()].sort((left, right) => compareText(left.id, right.id))
   const inventory = {
     schemaVersion: 1,
     sourceRoot: 'source',
@@ -393,9 +397,9 @@ async function migrate({ write = true } = {}) {
       migratedStaticAssets: staticAssetFiles.filter((item) => item.status === 'migrated').length,
       excludedStaticAssets: staticAssetFiles.filter((item) => item.status === 'excluded').length
     },
-    articles: articles.map((record) => ({ id: record.id, source: record.source, title: record.title })).sort((left, right) => left.id.localeCompare(right.id)),
+    articles: articles.map((record) => ({ id: record.id, source: record.source, title: record.title })).sort((left, right) => compareText(left.id, right.id)),
     resources: resourceEntries,
-    staticAssets: staticAssetFiles.sort((left, right) => left.source.localeCompare(right.source))
+    staticAssets: staticAssetFiles.sort((left, right) => compareText(left.source, right.source))
   }
 
   if (write) {
