@@ -21,7 +21,7 @@ const toolPresentation = {
 const tools = toolManifests.tools.map((tool) => ({ ...tool, ...toolPresentation[tool.id] }))
 ---
 
-<NativePageFrame title="工具 · DAT" pageName="工具" description="DAT 工具" route="/tools/" comments={false}>
+<NativePageFrame title="工具 · DAT" pageName="工具" description="DAT 工具" route="/tools/" comments={false} fastInteractive={true}>
   <section class="tool-home" aria-label="工具与搜索">
     <div class="tool-home-intro">
       <form class="tool-search" action="https://www.google.com/search" method="get" target="_blank" role="search">

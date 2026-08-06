@@ -45,6 +45,8 @@ test('codec page reuses the S3 task shell for all text modes', async () => {
   const script = source.match(/<script is:inline type="module">([\s\S]*?)<\/script>/)
   assert.ok(script)
   assert.doesNotMatch(script[1], /generated\/|content\/|external\//)
+  assert.ok(script[1].indexOf("$('#run').addEventListener") < script[1].indexOf('initializeRuntime().catch'), 'codec controls bind before background runtime initialization')
+  assert.doesNotMatch(script[1], /^\s*const (worker|sw) = await/m)
 })
 
 test('markdown and image tools use mature local browser integrations', async () => {
@@ -52,6 +54,8 @@ test('markdown and image tools use mature local browser integrations', async () 
   assert.match(markdown, /comments=\{false\}/)
   assert.match(markdown, /layoutClass="tool-workspace-layout"/)
   assert.match(markdown, /<textarea id="markdown-input"/)
+  assert.match(markdown, /id="markdown-line-numbers"/)
+  assert.match(markdown, /defer src="\/vendor\/vditor\/dist\/index\.min\.js"/)
   const markdownScript = await readFile(path.join(repositoryRoot, 'src', 'scripts', 'tools-markdown.js'), 'utf8')
   assert.match(markdownScript, /window\.Vditor\.preview/)
   assert.match(markdownScript, /source\.setRangeText/)

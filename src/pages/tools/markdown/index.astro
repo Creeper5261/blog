@@ -14,7 +14,7 @@ $$
 支持 **加粗**、列表、表格、代码块和任务清单。`
 ---
 
-<NativePageFrame title="Markdown 编辑器 · DAT" pageName="Markdown 编辑器" description="Markdown / MDX 分屏编辑器" route="/tools/markdown/" comments={false} layoutClass="tool-workspace-layout">
+<NativePageFrame title="Markdown 编辑器 · DAT" pageName="Markdown 编辑器" description="Markdown / MDX 分屏编辑器" route="/tools/markdown/" comments={false} layoutClass="tool-workspace-layout" fastInteractive={true}>
   <section class="markdown-editor-page" aria-label="Markdown 编辑器" data-format="markdown">
     <header class="workspace-heading">
       <h1>Markdown 编辑器</h1>
@@ -30,7 +30,10 @@ $$
     <div class="markdown-workbench" data-ready="false">
       <section class="markdown-source-pane" aria-label="Markdown 源码">
         <label class="markdown-pane-label" for="markdown-input">Markdown</label>
-        <textarea id="markdown-input" spellcheck="false">{sample}</textarea>
+        <div class="markdown-source-editor">
+          <div id="markdown-line-numbers" aria-hidden="true"></div>
+          <textarea id="markdown-input" spellcheck="false">{sample}</textarea>
+        </div>
       </section>
       <section class="markdown-preview-pane" aria-label="Markdown 预览" aria-busy="true">
         <div id="markdown-preview-loading" class="markdown-preview-loading" role="status">正在加载预览…</div>
@@ -40,6 +43,6 @@ $$
     <p class="reading-noscript"><noscript>无 JavaScript 时可复制下方 Markdown 示例到本地编辑器：<br /><code>{sample}</code></noscript></p>
   </section>
   <link rel="stylesheet" href="/vendor/vditor/dist/index.css" />
-  <script is:inline src="/vendor/vditor/dist/index.min.js"></script>
+  <script is:inline defer src="/vendor/vditor/dist/index.min.js" onload="document.dispatchEvent(new Event('vditor:ready'))" onerror="document.dispatchEvent(new Event('vditor:error'))"></script>
   <script src="../../../scripts/tools-markdown.js"></script>
 </NativePageFrame>

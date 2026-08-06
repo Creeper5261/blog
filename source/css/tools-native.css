@@ -439,6 +439,10 @@ body:has(.tool-home) #to_comment {
   border: 1px solid var(--text-bg-hover);
   border-radius: 8px;
   background: var(--card-bg);
+  box-shadow:
+    0 18px 45px rgba(26, 35, 52, .22),
+    0 4px 12px rgba(26, 35, 52, .16),
+    inset 0 0 0 1px color-mix(in srgb, var(--theme-color) 18%, transparent);
 }
 
 .markdown-source-pane {
@@ -455,6 +459,31 @@ body:has(.tool-home) #to_comment {
   opacity: .75;
 }
 
+.markdown-source-editor {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+#markdown-line-numbers {
+  min-width: 3.2rem;
+  padding: .9rem .65rem;
+  overflow: hidden;
+  border-right: 1px solid var(--text-bg-hover);
+  color: color-mix(in srgb, var(--font-color) 50%, transparent);
+  background: color-mix(in srgb, var(--font-color) 5%, var(--card-bg));
+  font: .92rem/1.72 ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-align: right;
+  user-select: none;
+}
+
+#markdown-line-numbers span {
+  display: block;
+}
+
 #markdown-input {
   box-sizing: border-box;
   width: 100%;
@@ -465,9 +494,13 @@ body:has(.tool-home) #to_comment {
   outline: 0;
   resize: none;
   color: var(--font-color);
-  caret-color: var(--theme-color);
+  caret-color: #ff3e8a;
   background: var(--card-bg);
   font: .92rem/1.72 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+#markdown-input:focus {
+  box-shadow: inset 3px 0 0 #ff3e8a;
 }
 
 .markdown-preview-pane {

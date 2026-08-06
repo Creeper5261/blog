@@ -22,7 +22,7 @@ const codecModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWi
 if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl || !codecModuleUrl) throw new Error('S3 runtime manifest is incomplete')
 ---
 
-<NativePageFrame title={`${tool.title} · DAT`} pageName={tool.title} description={tool.title} route="/tools/codec/" comments={false} layoutClass="tool-workspace-layout">
+<NativePageFrame title={`${tool.title} · DAT`} pageName={tool.title} description={tool.title} route="/tools/codec/" comments={false} layoutClass="tool-workspace-layout" fastInteractive={true}>
   <section class="workspace-page codec-page" data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-codec-module={codecModuleUrl} data-max-bytes={tool.input.maxBytes}>
     <header class="workspace-heading">
       <h1>{tool.title}</h1>
@@ -60,27 +60,48 @@ if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl || !codecModuleUr
     const modeLabel = () => mode.options[mode.selectedIndex]?.textContent || mode.value
     const downloadText = (text) => { const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = `${mode.value}.${mode.value === 'json-format' ? 'json' : 'txt'}`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0) }
     let runtime; let codec; let runner; let controller
+    let runtimePromise
     const requestedMode = new URLSearchParams(location.search).get('mode')
     if (requestedMode && [...mode.options].some((option) => option.value === requestedMode)) mode.value = requestedMode
-    try {
-      runtime = await import(root.dataset.runtimeModule)
-      codec = await import(root.dataset.codecModule)
-      runner = runtime.createTaskRunner({ workerUrl: root.dataset.workerModule })
-      const worker = await runner.probe()
-      const sw = await runtime.registerRuntimeServiceWorker(root.dataset.serviceWorker, { scope: '/tools/codec/' })
-      setStatus(`已就绪；Worker：${worker.available ? '已加载' : '主线程'}；离线缓存：${sw.registered ? '已注册' : '不可用'}。`)
-    } catch (error) { setStatus(`运行时加载失败：${error.message}；将使用浏览器计算。`, true) }
+    const initializeRuntime = () => {
+      if (runtimePromise) return runtimePromise
+      runtimePromise = Promise.all([import(root.dataset.runtimeModule), import(root.dataset.codecModule)])
+        .then(([runtimeModule, codecModule]) => {
+          runtime = runtimeModule
+          codec = codecModule
+          runner = runtime.createTaskRunner({ workerUrl: root.dataset.workerModule })
+          setStatus('已就绪。')
+          Promise.allSettled([
+            runner.probe(),
+            runtime.registerRuntimeServiceWorker(root.dataset.serviceWorker, { scope: '/tools/codec/' })
+          ]).then(([workerResult, serviceWorkerResult]) => {
+            const worker = workerResult.status === 'fulfilled' && workerResult.value.available
+            const offline = serviceWorkerResult.status === 'fulfilled' && serviceWorkerResult.value.registered
+            setStatus(`已就绪；Worker：${worker ? '已加载' : '主线程'}；离线缓存：${offline ? '已注册' : '不可用'}。`)
+          })
+        })
+        .catch((error) => {
+          setStatus(`运行时加载失败：${error.message}`, true)
+          throw error
+        })
+      return runtimePromise
+    }
     const hashDirect = async (value) => {
       const bytes = new TextEncoder().encode(value)
       const digest = await crypto.subtle.digest('SHA-256', bytes)
       return { output: [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join(''), bytes: bytes.byteLength }
     }
-    const direct = async (value, selectedMode) => selectedMode === 'hash-sha256' ? hashDirect(value) : codec.transformResult(value, selectedMode)
+    const direct = async (value, selectedMode) => {
+      if (!codec) await initializeRuntime()
+      return selectedMode === 'hash-sha256' ? hashDirect(value) : codec.transformResult(value, selectedMode)
+    }
     const run = async () => {
       const value = input.value
       const selectedMode = mode.value
       controller?.abort(); controller = new AbortController(); $('#progress').hidden = false; $('#cancel').disabled = false
       try {
+        setStatus(codec ? `${modeLabel()}处理中…` : '正在加载处理模块…')
+        if (!codec) await initializeRuntime()
         const result = runner ? await runner.run(selectedMode === 'hash-sha256' ? 'hash-sha256' : 'text-transform', selectedMode === 'hash-sha256' ? { input: value } : { input: value, mode: selectedMode }, { signal: controller.signal, onProgress: (progress, label) => { $('#progress').value = progress; setStatus(label) } }) : await direct(value, selectedMode)
         output.value = result.output; $('#download').disabled = false; setStatus(`${modeLabel()}完成：${result.bytes} bytes。`)
       } catch (error) {
@@ -95,5 +116,6 @@ if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl || !codecModuleUr
     $('#run').addEventListener('click', run); $('#download').addEventListener('click', () => downloadText(output.value)); $('#cancel').addEventListener('click', () => controller?.abort()); $('#reset').addEventListener('click', () => { input.value = ''; output.value = ''; $('#download').disabled = true; setStatus('已清空。'); input.focus() })
     const readFile = async (file) => { input.value = await file.text(); await run() }
     $('#file-input').addEventListener('change', (event) => { const [file] = event.target.files; if (file) readFile(file) }); $('#dropzone').addEventListener('dragover', (event) => { event.preventDefault(); $('#dropzone').dataset.active = 'true' }); $('#dropzone').addEventListener('dragleave', () => delete $('#dropzone').dataset.active); $('#dropzone').addEventListener('drop', (event) => { event.preventDefault(); delete $('#dropzone').dataset.active; const [file] = event.dataTransfer.files; if (file) readFile(file) }); $('#dropzone').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); $('#file-input').click() } })
+    initializeRuntime().catch(() => {})
   </script>
 </NativePageFrame>

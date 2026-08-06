@@ -3,6 +3,7 @@ const source = document.querySelector('#markdown-input')
 const preview = document.querySelector('#markdown-preview')
 const previewPane = document.querySelector('.markdown-preview-pane')
 const loading = document.querySelector('#markdown-preview-loading')
+const lineNumbers = document.querySelector('#markdown-line-numbers')
 const status = document.querySelector('#markdown-status')
 const workbench = document.querySelector('.markdown-workbench')
 
@@ -22,9 +23,15 @@ const wrapSelection = (before, after = before, placeholder = '') => {
   source.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-if (page && source && preview && previewPane && loading && status && workbench) {
+if (page && source && preview && previewPane && loading && lineNumbers && status && workbench) {
   let renderTimer
   let requestedRender = 0
+  let rendererStarted = false
+  const updateLineNumbers = () => {
+    const count = source.value.split('\n').length
+    lineNumbers.innerHTML = Array.from({ length: count }, (_, index) => `<span>${index + 1}</span>`).join('')
+    lineNumbers.scrollTop = source.scrollTop
+  }
   const previewOptions = () => {
     const dark = document.documentElement.dataset.theme === 'dark'
     return {
@@ -60,14 +67,25 @@ if (page && source && preview && previewPane && loading && status && workbench) 
     renderTimer = setTimeout(() => render(), 80)
   }
 
-  if (!window.Vditor?.preview) {
-    loading.textContent = '渲染器加载失败，请刷新后重试。'
-    setStatus('Markdown 渲染器未加载。', true)
-  } else {
+  const initializeRenderer = () => {
+    if (rendererStarted || !window.Vditor?.preview) return false
+    rendererStarted = true
     render(true)
+    return true
   }
+  updateLineNumbers()
+  if (!initializeRenderer()) setStatus('正在加载 Markdown 渲染器…')
+  document.addEventListener('vditor:ready', initializeRenderer, { once: true })
+  document.addEventListener('vditor:error', () => {
+    loading.textContent = '预览加载失败，请刷新后重试。'
+    setStatus('Markdown 渲染器未加载。', true)
+  }, { once: true })
 
-  source.addEventListener('input', queueRender)
+  source.addEventListener('input', () => {
+    updateLineNumbers()
+    if (rendererStarted) queueRender()
+  })
+  source.addEventListener('scroll', () => { lineNumbers.scrollTop = source.scrollTop })
   source.addEventListener('keydown', (event) => {
     const modifier = event.ctrlKey || event.metaKey
     if (modifier && event.key.toLowerCase() === 'b') { event.preventDefault(); wrapSelection('**') }
@@ -89,6 +107,7 @@ if (page && source && preview && previewPane && loading && status && workbench) 
     if (!file) return
     source.value = await file.text()
     page.dataset.format = file.name.toLowerCase().endsWith('.mdx') ? 'mdx' : 'markdown'
+    updateLineNumbers()
     render()
   })
   document.querySelector('#markdown-copy')?.addEventListener('click', async () => {
@@ -106,6 +125,7 @@ if (page && source && preview && previewPane && loading && status && workbench) 
   })
   document.querySelector('#markdown-clear')?.addEventListener('click', () => {
     source.value = ''
+    updateLineNumbers()
     render()
     source.focus()
   })

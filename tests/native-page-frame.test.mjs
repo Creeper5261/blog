@@ -20,3 +20,17 @@ test('native page frame keeps Butterfly chrome while replacing toolbox article c
   assert.match(html, /实验内容/)
   assert.doesNotMatch(html, /常用工具放这里方便下载/)
 })
+
+test('interactive native frame removes recovered head blockers', async () => {
+  const shell = await loadNativePageShell({
+    title: '工具 | DAT',
+    pageName: '工具',
+    description: '工具',
+    route: '/tools/',
+    fastInteractive: true
+  })
+  const html = `${shell.before}${shell.after}`
+
+  assert.match(html, /#loading-box\{display:none!important\}/)
+  assert.doesNotMatch(html, /carousel-touch\.js/)
+})

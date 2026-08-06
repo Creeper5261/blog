@@ -28,6 +28,7 @@ export async function loadNativePageShell({
   route = '/tools/',
   comments = true,
   layoutClass = '',
+  fastInteractive = false,
   templatePath = DEFAULT_TEMPLATE,
   stylesheet = '/css/tools-native.css',
   services = getPublicServices()
@@ -38,6 +39,10 @@ export async function loadNativePageShell({
   const safeLayoutClass = String(layoutClass).trim()
   if (safeLayoutClass && !/^[a-zA-Z0-9_-]+$/.test(safeLayoutClass)) throw new Error('Native page layout class is invalid')
   let html = await readFile(templatePath, 'utf8')
+
+  if (fastInteractive) {
+    html = html.replace(/<script src="https:\/\/npm\.elemecdn\.com\/hexo-butterfly-tag-plugins-plus@latest\/lib\/assets\/carousel-touch\.js"><\/script>/i, '')
+  }
 
   html = replaceFirst(html, /<title>[^<]*<\/title>/i, `<title>${safeTitle}</title>`, 'title')
   html = replaceFirst(html, /(<meta name="description" content=")[^"]*(")/i, `$1${safeDescription}$2`, 'description')
@@ -51,9 +56,10 @@ export async function loadNativePageShell({
     html = replaceFirst(html, /<main class="layout" id="content-inner">/i, `<main class="layout ${safeLayoutClass}" id="content-inner">`, 'page layout')
   }
 
+  const interactionStyles = fastInteractive ? '<style>#loading-box{display:none!important}</style>' : ''
   const withNativeStyles = html.replace(
     /<\/head>/i,
-    `<link rel="stylesheet" href="${stylesheet}"></head>`
+    `<link rel="stylesheet" href="${stylesheet}">${interactionStyles}</head>`
   )
   const rendered = applyPublicServices(withNativeStyles, services)
   const articleStart = rendered.indexOf(ARTICLE_MARKER)
