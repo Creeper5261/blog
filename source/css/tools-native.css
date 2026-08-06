@@ -598,10 +598,8 @@ body:has(.tool-home) #to_comment {
   fill: currentColor;
 }
 
-.markdown-source-editor .markdown-fold-ellipsis:hover,
-.markdown-source-editor .markdown-fold-ellipsis:focus-visible {
+.markdown-source-editor .markdown-fold-ellipsis:hover {
   border-color: color-mix(in srgb, var(--theme-color) 42%, transparent);
-  outline: 0;
   color: var(--theme-color);
   background: color-mix(in srgb, var(--theme-color) 13%, transparent);
 }

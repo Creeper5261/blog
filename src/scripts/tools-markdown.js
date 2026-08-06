@@ -45,8 +45,6 @@ class FoldEllipsisWidget extends WidgetType {
     const marker = document.createElement('span')
     marker.className = 'markdown-fold-ellipsis'
     marker.setAttribute('aria-label', '展开折叠内容')
-    marker.setAttribute('role', 'button')
-    marker.tabIndex = 0
     const icon = document.createElementNS(svgNamespace, 'svg')
     icon.setAttribute('viewBox', '0 0 16 8')
     icon.setAttribute('aria-hidden', 'true')
@@ -70,11 +68,6 @@ class FoldEllipsisWidget extends WidgetType {
     marker.addEventListener('click', (event) => {
       event.preventDefault()
       event.stopPropagation()
-      expand()
-    })
-    marker.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return
-      event.preventDefault()
       expand()
     })
     return marker
