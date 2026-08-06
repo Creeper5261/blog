@@ -434,11 +434,13 @@ body:has(.tool-home) #to_comment {
 .markdown-workbench {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: .75rem;
   min-height: min(68vh, 760px);
+  padding: .75rem;
   overflow: hidden;
-  border: 1px solid var(--text-bg-hover);
-  border-radius: 8px;
-  background: var(--card-bg);
+  border: 1px solid color-mix(in srgb, var(--theme-color) 48%, var(--text-bg-hover));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--font-color) 11%, var(--card-bg));
   box-shadow:
     0 18px 45px rgba(26, 35, 52, .22),
     0 4px 12px rgba(26, 35, 52, .16),
@@ -449,14 +451,22 @@ body:has(.tool-home) #to_comment {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  border-right: 1px solid var(--text-bg-hover);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--font-color) 18%, var(--text-bg-hover));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--font-color) 4%, var(--card-bg));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 35%, transparent);
 }
 
 .markdown-pane-label {
   padding: .55rem .8rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--font-color) 16%, var(--text-bg-hover));
   color: var(--font-color);
+  background: color-mix(in srgb, var(--font-color) 8%, var(--card-bg));
   font-size: .78rem;
-  opacity: .75;
+  font-weight: 650;
+  letter-spacing: .03em;
+  opacity: .82;
 }
 
 .markdown-source-editor {
@@ -465,7 +475,7 @@ body:has(.tool-home) #to_comment {
   flex: 1;
   grid-template-columns: auto minmax(0, 1fr);
   overflow: hidden;
-  background: var(--card-bg);
+  background: color-mix(in srgb, var(--font-color) 3%, var(--card-bg));
 }
 
 #markdown-line-numbers {
@@ -495,7 +505,7 @@ body:has(.tool-home) #to_comment {
   resize: none;
   color: var(--font-color);
   caret-color: #ff3e8a;
-  background: var(--card-bg);
+  background: transparent;
   font: .92rem/1.72 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
@@ -505,19 +515,30 @@ body:has(.tool-home) #to_comment {
 
 .markdown-preview-pane {
   position: relative;
+  display: flex;
   min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--font-color) 18%, var(--text-bg-hover));
+  border-radius: 7px;
   background: var(--card-bg);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 35%, transparent);
 }
 
 #markdown-preview {
-  min-height: 100%;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
   padding: 1.25rem 1.45rem;
+  overflow: auto;
+  background: var(--card-bg);
 }
 
 .markdown-preview-loading {
   position: absolute;
   z-index: 1;
-  inset: 0;
+  inset: 2.45rem 0 0;
   display: grid;
   place-items: center;
   color: var(--font-color);
@@ -787,8 +808,6 @@ body:has(.tool-home) #to_comment {
 
   .markdown-source-pane {
     min-height: 20rem;
-    border-right: 0;
-    border-bottom: 1px solid var(--text-bg-hover);
   }
 
   .image-tool-options {
