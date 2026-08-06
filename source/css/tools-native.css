@@ -579,18 +579,31 @@ body:has(.tool-home) #to_comment {
 
 .markdown-source-editor .markdown-fold-ellipsis {
   display: inline-grid;
-  width: .72rem;
-  height: 1em;
-  margin-left: .14rem;
+  width: 1.25rem;
+  height: .78rem;
+  margin-left: .2rem;
+  border: 1px solid color-mix(in srgb, var(--font-color) 16%, transparent);
+  border-radius: 999px;
   place-items: center;
-  color: var(--theme-color);
-  vertical-align: -.12em;
+  color: color-mix(in srgb, var(--font-color) 60%, transparent);
+  background: color-mix(in srgb, var(--font-color) 9%, transparent);
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+  vertical-align: -.08em;
 }
 
 .markdown-source-editor .markdown-fold-ellipsis svg {
-  width: .72rem;
-  height: .42rem;
+  width: .78rem;
+  height: .38rem;
   fill: currentColor;
+}
+
+.markdown-source-editor .markdown-fold-ellipsis:hover,
+.markdown-source-editor .markdown-fold-ellipsis:focus-visible {
+  border-color: color-mix(in srgb, var(--theme-color) 42%, transparent);
+  outline: 0;
+  color: var(--theme-color);
+  background: color-mix(in srgb, var(--theme-color) 13%, transparent);
 }
 
 .markdown-source-editor .cm-activeLine,
