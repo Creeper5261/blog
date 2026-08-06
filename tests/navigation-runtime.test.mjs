@@ -19,3 +19,10 @@ test('custom nav scroll binding is single-owner and desktop-aware', async () => 
   assert.match(script, /matchMedia\('\(min-width: 769px\)'\)/)
   assert.doesNotMatch(script, /\$\(window\)\.scroll\(function/)
 })
+
+test('main navigation always restores its top state inside the threshold', async () => {
+  const script = await readFile('source/js/main.js', 'utf8')
+
+  assert.match(script, /else \{\s*\/\/ Scroll positions close to the top[\s\S]*?classList\.remove\('nav-fixed', 'nav-visible'\)/)
+  assert.doesNotMatch(script, /if \(currentTop === 0\)/)
+})
