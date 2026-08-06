@@ -1,8 +1,8 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { codeFolding, defaultHighlightStyle, foldEffect, foldKeymap, foldService, foldedRanges, syntaxHighlighting, unfoldEffect } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
-import { EditorState } from '@codemirror/state'
-import { EditorView, GutterMarker, drawSelection, gutter, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
+import { EditorState, StateField } from '@codemirror/state'
+import { Decoration, EditorView, GutterMarker, drawSelection, gutter, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
 
 const page = document.querySelector('.markdown-editor-page')
 const source = document.querySelector('#markdown-input')
@@ -46,17 +46,6 @@ const createFoldPlaceholder = (_view, onclick) => {
   placeholder.setAttribute('aria-label', '展开折叠内容')
   placeholder.title = '展开'
   placeholder.onclick = onclick
-  const icon = document.createElementNS(svgNamespace, 'svg')
-  icon.setAttribute('viewBox', '0 0 16 8')
-  icon.setAttribute('aria-hidden', 'true')
-  for (const x of [3, 8, 13]) {
-    const circle = document.createElementNS(svgNamespace, 'circle')
-    circle.setAttribute('cx', String(x))
-    circle.setAttribute('cy', '4')
-    circle.setAttribute('r', '1.25')
-    icon.append(circle)
-  }
-  placeholder.append(icon)
   return placeholder
 }
 
@@ -101,6 +90,18 @@ if (page && source && preview && previewPane && loading && status && workbench) 
     return end > line.to ? { from: line.to, to: end } : null
   }
   const headingFold = foldService.of(headingFoldRange)
+  const foldedHeadingLines = StateField.define({
+    create: () => Decoration.none,
+    update: (_decorations, transaction) => {
+      const ranges = []
+      foldedRanges(transaction.state).between(0, transaction.state.doc.length, (from) => {
+        const line = transaction.state.doc.lineAt(from)
+        if (/^(#{1,6})\s+\S/.test(line.text)) ranges.push(Decoration.line({ class: 'cm-folded-heading' }).range(line.from))
+      })
+      return Decoration.set(ranges, true)
+    },
+    provide: (field) => EditorView.decorations.from(field)
+  })
   const headingFoldGutter = gutter({
     class: 'cm-headingFoldGutter',
     initialSpacer: () => closedHeadingMarker,
@@ -175,6 +176,7 @@ if (page && source && preview && previewPane && loading && status && workbench) 
         highlightActiveLineGutter(),
         headingFoldGutter,
         codeFolding({ placeholderDOM: createFoldPlaceholder }),
+        foldedHeadingLines,
         history(),
         drawSelection(),
         markdown(),
