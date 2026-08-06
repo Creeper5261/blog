@@ -1,8 +1,8 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
-import { defaultHighlightStyle, foldGutter, foldKeymap, foldService, syntaxHighlighting } from '@codemirror/language'
+import { codeFolding, defaultHighlightStyle, foldEffect, foldKeymap, foldService, foldedRanges, syntaxHighlighting, unfoldEffect } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorState } from '@codemirror/state'
-import { EditorView, drawSelection, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
+import { EditorView, GutterMarker, drawSelection, gutter, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
 
 const page = document.querySelector('.markdown-editor-page')
 const source = document.querySelector('#markdown-input')
@@ -11,6 +11,54 @@ const previewPane = document.querySelector('.markdown-preview-pane')
 const loading = document.querySelector('#markdown-preview-loading')
 const status = document.querySelector('#markdown-status')
 const workbench = document.querySelector('.markdown-workbench')
+const svgNamespace = 'http://www.w3.org/2000/svg'
+
+const createFoldMarker = (open) => {
+  const marker = document.createElement('span')
+  marker.className = 'markdown-fold-marker'
+  const icon = document.createElementNS(svgNamespace, 'svg')
+  icon.setAttribute('viewBox', '0 0 12 12')
+  icon.setAttribute('aria-hidden', 'true')
+  const path = document.createElementNS(svgNamespace, 'path')
+  path.setAttribute('d', open ? 'M2.5 4 6 7.5 9.5 4' : 'M4 2.5 7.5 6 4 9.5')
+  icon.append(path)
+  marker.append(icon)
+  return marker
+}
+
+class HeadingFoldMarker extends GutterMarker {
+  constructor(open) {
+    super()
+    this.open = open
+  }
+
+  eq(other) { return this.open === other.open }
+
+  toDOM() { return createFoldMarker(this.open) }
+}
+
+const openHeadingMarker = new HeadingFoldMarker(true)
+const closedHeadingMarker = new HeadingFoldMarker(false)
+
+const createFoldPlaceholder = (_view, onclick) => {
+  const placeholder = document.createElement('span')
+  placeholder.className = 'cm-foldPlaceholder markdown-fold-placeholder'
+  placeholder.setAttribute('aria-label', '展开折叠内容')
+  placeholder.title = '展开'
+  placeholder.onclick = onclick
+  const icon = document.createElementNS(svgNamespace, 'svg')
+  icon.setAttribute('viewBox', '0 0 16 8')
+  icon.setAttribute('aria-hidden', 'true')
+  for (const x of [3, 8, 13]) {
+    const circle = document.createElementNS(svgNamespace, 'circle')
+    circle.setAttribute('cx', String(x))
+    circle.setAttribute('cy', '4')
+    circle.setAttribute('r', '1.25')
+    icon.append(circle)
+  }
+  placeholder.append(icon)
+  return placeholder
+}
 
 const setStatus = (text, error = false) => {
   status.textContent = text
@@ -36,7 +84,7 @@ if (page && source && preview && previewPane && loading && status && workbench) 
   let editor
   const getSource = () => editor.state.doc.toString()
   const setSource = (value) => editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: value } })
-  const headingFold = foldService.of((state, lineStart) => {
+  const headingFoldRange = (state, lineStart) => {
     const line = state.doc.lineAt(lineStart)
     const heading = /^(#{1,6})\s+\S/.exec(line.text)
     if (!heading) return null
@@ -51,6 +99,31 @@ if (page && source && preview && previewPane && loading && status && workbench) 
       }
     }
     return end > line.to ? { from: line.to, to: end } : null
+  }
+  const headingFold = foldService.of(headingFoldRange)
+  const headingFoldGutter = gutter({
+    class: 'cm-headingFoldGutter',
+    initialSpacer: () => closedHeadingMarker,
+    lineMarker: (view, line) => {
+      const range = headingFoldRange(view.state, line.from)
+      if (!range) return null
+      let folded = false
+      foldedRanges(view.state).between(range.from, range.from + 1, (from) => { folded ||= from === range.from })
+      return folded ? closedHeadingMarker : openHeadingMarker
+    },
+    lineMarkerChange: () => true,
+    domEventHandlers: {
+      click: (view, line) => {
+        const range = headingFoldRange(view.state, line.from)
+        if (!range) return false
+        let foldedRange
+        foldedRanges(view.state).between(range.from, range.from + 1, (from, to) => {
+          if (from === range.from) foldedRange = { from, to }
+        })
+        view.dispatch({ effects: foldedRange ? unfoldEffect.of(foldedRange) : foldEffect.of(range) })
+        return true
+      }
+    }
   })
   const previewOptions = () => {
     const dark = document.documentElement.dataset.theme === 'dark'
@@ -100,7 +173,8 @@ if (page && source && preview && previewPane && loading && status && workbench) 
       extensions: [
         lineNumbers(),
         highlightActiveLineGutter(),
-        foldGutter(),
+        headingFoldGutter,
+        codeFolding({ placeholderDOM: createFoldPlaceholder }),
         history(),
         drawSelection(),
         markdown(),

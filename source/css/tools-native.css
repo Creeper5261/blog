@@ -506,9 +506,13 @@ body:has(.tool-home) #to_comment {
   padding: 0 .9rem;
 }
 
+.markdown-source-editor .cm-line,
+.markdown-source-editor .cm-line * {
+  text-decoration: none !important;
+}
+
 .markdown-source-editor .cm-gutters {
   min-width: 4.5rem;
-  padding-top: .9rem;
   border-right: 1px solid var(--text-bg-hover);
   color: color-mix(in srgb, var(--font-color) 50%, transparent);
   background: var(--card-bg);
@@ -519,11 +523,61 @@ body:has(.tool-home) #to_comment {
   padding: 0 .55rem 0 .35rem;
 }
 
-.markdown-source-editor .cm-foldGutter .cm-gutterElement {
+.markdown-source-editor .cm-headingFoldGutter .cm-gutterElement {
   width: 1.35rem;
+  padding: 0;
   color: var(--theme-color);
   cursor: pointer;
   text-align: center;
+}
+
+.markdown-source-editor .markdown-fold-marker {
+  display: inline-grid;
+  width: 1.2rem;
+  height: 1.72em;
+  padding: 0;
+  place-items: center;
+}
+
+.markdown-source-editor .markdown-fold-marker svg {
+  width: .72rem;
+  height: .72rem;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+}
+
+.markdown-source-editor .cm-line:has(.markdown-fold-placeholder) {
+  color: var(--theme-color) !important;
+  background: color-mix(in srgb, var(--theme-color) 14%, transparent);
+  font-weight: 650;
+}
+
+.markdown-source-editor .cm-line:has(.markdown-fold-placeholder) * {
+  color: inherit !important;
+}
+
+.markdown-source-editor .markdown-fold-placeholder {
+  display: inline-grid;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0 0 0 .18rem;
+  padding: 0;
+  border: 0;
+  place-items: center;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  vertical-align: -.18rem;
+}
+
+.markdown-source-editor .markdown-fold-placeholder svg {
+  width: 1rem;
+  height: .5rem;
+  fill: currentColor;
 }
 
 .markdown-source-editor .cm-activeLine,
