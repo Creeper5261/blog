@@ -435,7 +435,8 @@ body:has(.tool-home) #to_comment {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: .75rem;
-  min-height: min(68vh, 760px);
+  height: var(--markdown-workbench-height, min(68vh, 760px));
+  min-height: 0;
   padding: .75rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--font-color) 12%, transparent);
@@ -493,8 +494,13 @@ body:has(.tool-home) #to_comment {
 }
 
 .markdown-source-editor .cm-scroller {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   font-family: inherit;
+}
+
+.markdown-workbench[data-overflow="source"] .markdown-source-editor .cm-scroller {
+  overflow-y: auto;
 }
 
 .markdown-source-editor .cm-content {
@@ -571,17 +577,20 @@ body:has(.tool-home) #to_comment {
   display: none;
 }
 
-.markdown-source-editor .cm-folded-heading::after {
-  display: inline-block;
+.markdown-source-editor .markdown-fold-ellipsis {
+  display: inline-grid;
+  width: .72rem;
+  height: 1em;
+  margin-left: .14rem;
+  place-items: center;
+  color: var(--theme-color);
+  vertical-align: -.12em;
+}
+
+.markdown-source-editor .markdown-fold-ellipsis svg {
   width: .72rem;
   height: .42rem;
-  margin-left: .14rem;
-  background:
-    radial-gradient(circle at 12% 50%, currentColor 0 1px, transparent 1.2px),
-    radial-gradient(circle at 50% 50%, currentColor 0 1px, transparent 1.2px),
-    radial-gradient(circle at 88% 50%, currentColor 0 1px, transparent 1.2px);
-  content: '';
-  vertical-align: .08rem;
+  fill: currentColor;
 }
 
 .markdown-source-editor .cm-activeLine,
@@ -610,8 +619,13 @@ body:has(.tool-home) #to_comment {
   min-height: 0;
   flex: 1;
   padding: 1.25rem 1.45rem;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: var(--card-bg);
+}
+
+.markdown-workbench[data-overflow="preview"] #markdown-preview {
+  overflow-y: auto;
 }
 
 .markdown-preview-loading {

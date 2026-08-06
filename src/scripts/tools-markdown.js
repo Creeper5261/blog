@@ -2,7 +2,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirro
 import { codeFolding, defaultHighlightStyle, foldEffect, foldKeymap, foldService, foldedRanges, syntaxHighlighting, unfoldEffect } from '@codemirror/language'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorState, StateField } from '@codemirror/state'
-import { Decoration, EditorView, GutterMarker, drawSelection, gutter, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
+import { Decoration, EditorView, GutterMarker, WidgetType, drawSelection, gutter, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view'
 
 const page = document.querySelector('.markdown-editor-page')
 const source = document.querySelector('#markdown-input')
@@ -40,6 +40,28 @@ class HeadingFoldMarker extends GutterMarker {
 const openHeadingMarker = new HeadingFoldMarker(true)
 const closedHeadingMarker = new HeadingFoldMarker(false)
 
+class FoldEllipsisWidget extends WidgetType {
+  toDOM() {
+    const marker = document.createElement('span')
+    marker.className = 'markdown-fold-ellipsis'
+    marker.setAttribute('aria-label', '已折叠')
+    const icon = document.createElementNS(svgNamespace, 'svg')
+    icon.setAttribute('viewBox', '0 0 16 8')
+    icon.setAttribute('aria-hidden', 'true')
+    for (const x of [3, 8, 13]) {
+      const circle = document.createElementNS(svgNamespace, 'circle')
+      circle.setAttribute('cx', String(x))
+      circle.setAttribute('cy', '4')
+      circle.setAttribute('r', '1.15')
+      icon.append(circle)
+    }
+    marker.append(icon)
+    return marker
+  }
+}
+
+const foldEllipsisWidget = new FoldEllipsisWidget()
+
 const createFoldPlaceholder = (_view, onclick) => {
   const placeholder = document.createElement('span')
   placeholder.className = 'cm-foldPlaceholder markdown-fold-placeholder'
@@ -70,6 +92,7 @@ if (page && source && preview && previewPane && loading && status && workbench) 
   let renderTimer
   let requestedRender = 0
   let rendererStarted = false
+  let paneHeightFrame
   let editor
   const getSource = () => editor.state.doc.toString()
   const setSource = (value) => editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: value } })
@@ -96,7 +119,10 @@ if (page && source && preview && previewPane && loading && status && workbench) 
       const ranges = []
       foldedRanges(transaction.state).between(0, transaction.state.doc.length, (from) => {
         const line = transaction.state.doc.lineAt(from)
-        if (/^(#{1,6})\s+\S/.test(line.text)) ranges.push(Decoration.line({ class: 'cm-folded-heading' }).range(line.from))
+        if (/^(#{1,6})\s+\S/.test(line.text)) {
+          ranges.push(Decoration.line({ class: 'cm-folded-heading' }).range(line.from))
+          ranges.push(Decoration.widget({ widget: foldEllipsisWidget, side: -1 }).range(line.to))
+        }
       })
       return Decoration.set(ranges, true)
     },
@@ -139,6 +165,31 @@ if (page && source && preview && previewPane && loading && status && workbench) 
       markdown: { codeBlockPreview: false, mathBlockPreview: false }
     }
   }
+  const syncPaneHeight = () => {
+    cancelAnimationFrame(paneHeightFrame)
+    paneHeightFrame = requestAnimationFrame(() => {
+      const sourceLabel = document.querySelector('.markdown-source-pane .markdown-pane-label')
+      const previewLabel = document.querySelector('.markdown-preview-pane .markdown-pane-label')
+      const previewStyle = getComputedStyle(preview)
+      const previewTop = preview.getBoundingClientRect().top + Number.parseFloat(previewStyle.paddingTop)
+      const previewBottom = [...preview.children].reduce((bottom, child) => {
+        const childStyle = getComputedStyle(child)
+        return Math.max(bottom, child.getBoundingClientRect().bottom + Number.parseFloat(childStyle.marginBottom))
+      }, previewTop)
+      const sourceHeight = (sourceLabel?.offsetHeight || 0) + editor.contentHeight + 2
+      const previewHeight = (previewLabel?.offsetHeight || 0) + Number.parseFloat(previewStyle.paddingTop) + (previewBottom - previewTop) + Number.parseFloat(previewStyle.paddingBottom) + 2
+      const workbenchStyle = getComputedStyle(workbench)
+      const frameHeight = Number.parseFloat(workbenchStyle.paddingTop) + Number.parseFloat(workbenchStyle.paddingBottom) + 2
+      const heightDifference = sourceHeight - previewHeight
+      const contentHeight = Math.abs(heightDifference) <= 2 ? Math.max(sourceHeight, previewHeight) : Math.min(sourceHeight, previewHeight)
+      const minimumHeight = Math.min(window.innerHeight * 0.68, 760)
+      const targetHeight = Math.max(minimumHeight, contentHeight + frameHeight)
+      const fitsBoth = targetHeight >= Math.max(sourceHeight, previewHeight) + frameHeight - 2
+      const overflow = fitsBoth || Math.abs(heightDifference) <= 2 ? 'none' : heightDifference > 0 ? 'source' : 'preview'
+      workbench.dataset.overflow = overflow
+      workbench.style.setProperty('--markdown-workbench-height', `${Math.ceil(targetHeight)}px`)
+    })
+  }
   const render = async (initial = false) => {
     const id = ++requestedRender
     if (initial) setStatus('正在加载 Markdown 渲染器…')
@@ -149,6 +200,7 @@ if (page && source && preview && previewPane && loading && status && workbench) 
       workbench.dataset.ready = 'true'
       previewPane.setAttribute('aria-busy', 'false')
       setStatus('本地编辑；内容不会上传。')
+      syncPaneHeight()
     } catch (error) {
       if (id !== requestedRender) return
       previewPane.setAttribute('aria-busy', 'false')
@@ -195,6 +247,7 @@ if (page && source && preview && previewPane && loading && status && workbench) 
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged && rendererStarted) queueRender()
+          if (update.geometryChanged) syncPaneHeight()
         })
       ]
     })
@@ -234,4 +287,5 @@ if (page && source && preview && previewPane && loading && status && workbench) 
     editor.focus()
   })
   new MutationObserver(() => render()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  window.addEventListener('resize', syncPaneHeight, { passive: true })
 }
