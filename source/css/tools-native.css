@@ -551,9 +551,16 @@ body:has(.tool-home) #to_comment {
 }
 
 .markdown-source-editor .cm-folded-heading {
+  box-sizing: border-box;
+  height: 1.72em !important;
+  min-height: 1.72em !important;
+  max-height: 1.72em !important;
+  overflow: hidden;
   color: var(--theme-color) !important;
   background: color-mix(in srgb, var(--theme-color) 14%, transparent);
   font-weight: 650;
+  line-height: 1.72 !important;
+  white-space: nowrap;
 }
 
 .markdown-source-editor .cm-folded-heading * {
@@ -566,13 +573,13 @@ body:has(.tool-home) #to_comment {
 
 .markdown-source-editor .cm-folded-heading::after {
   display: inline-block;
-  width: 1rem;
-  height: .5rem;
-  margin-left: .22rem;
+  width: .72rem;
+  height: .42rem;
+  margin-left: .14rem;
   background:
-    radial-gradient(circle at 15% 50%, currentColor 0 1.2px, transparent 1.4px),
-    radial-gradient(circle at 50% 50%, currentColor 0 1.2px, transparent 1.4px),
-    radial-gradient(circle at 85% 50%, currentColor 0 1.2px, transparent 1.4px);
+    radial-gradient(circle at 12% 50%, currentColor 0 1px, transparent 1.2px),
+    radial-gradient(circle at 50% 50%, currentColor 0 1px, transparent 1.2px),
+    radial-gradient(circle at 88% 50%, currentColor 0 1px, transparent 1.2px);
   content: '';
   vertical-align: .08rem;
 }
