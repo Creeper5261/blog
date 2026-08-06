@@ -475,43 +475,60 @@ body:has(.tool-home) #to_comment {
 }
 
 .markdown-source-editor {
-  display: grid;
   min-height: 0;
   flex: 1;
-  grid-template-columns: auto minmax(0, 1fr);
   overflow: hidden;
   background: var(--card-bg);
 }
 
-#markdown-line-numbers {
-  min-width: 3.2rem;
-  padding: .9rem .65rem;
-  overflow: hidden;
+.markdown-source-editor .cm-editor {
+  height: 100%;
+  color: var(--font-color);
+  background: var(--card-bg);
+  font: .92rem/1.72 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.markdown-source-editor .cm-editor.cm-focused {
+  outline: 0;
+}
+
+.markdown-source-editor .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+}
+
+.markdown-source-editor .cm-content {
+  padding: .9rem 0;
+  caret-color: auto;
+}
+
+.markdown-source-editor .cm-line {
+  padding: 0 .9rem;
+}
+
+.markdown-source-editor .cm-gutters {
+  min-width: 4.5rem;
+  padding-top: .9rem;
   border-right: 1px solid var(--text-bg-hover);
   color: color-mix(in srgb, var(--font-color) 50%, transparent);
   background: var(--card-bg);
-  font: .92rem/1.72 ui-monospace, SFMono-Regular, Consolas, monospace;
-  text-align: right;
-  user-select: none;
 }
 
-#markdown-line-numbers span {
-  display: block;
+.markdown-source-editor .cm-lineNumbers .cm-gutterElement {
+  min-width: 2.7rem;
+  padding: 0 .55rem 0 .35rem;
 }
 
-#markdown-input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 0;
-  flex: 1;
-  padding: .9rem;
-  border: 0;
-  outline: 0;
-  resize: none;
-  color: var(--font-color);
-  caret-color: auto;
+.markdown-source-editor .cm-foldGutter .cm-gutterElement {
+  width: 1.35rem;
+  color: var(--theme-color);
+  cursor: pointer;
+  text-align: center;
+}
+
+.markdown-source-editor .cm-activeLine,
+.markdown-source-editor .cm-activeLineGutter {
   background: transparent;
-  font: .92rem/1.72 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
 .markdown-preview-pane {
