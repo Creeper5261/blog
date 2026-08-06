@@ -22,7 +22,7 @@ const codecModuleUrl = runtimeManifest.entries.find((entry) => entry.file.endsWi
 if (!runtimeModuleUrl || !workerModuleUrl || !serviceWorkerUrl || !codecModuleUrl) throw new Error('S3 runtime manifest is incomplete')
 ---
 
-<NativePageFrame title={`${tool.title} · DAT`} pageName={tool.title} description={tool.title} route="/tools/codec/" comments={false}>
+<NativePageFrame title={`${tool.title} · DAT`} pageName={tool.title} description={tool.title} route="/tools/codec/" comments={false} layoutClass="tool-workspace-layout">
   <section class="workspace-page codec-page" data-runtime-module={runtimeModuleUrl} data-worker-module={workerModuleUrl} data-service-worker={serviceWorkerUrl} data-codec-module={codecModuleUrl} data-max-bytes={tool.input.maxBytes}>
     <header class="workspace-heading">
       <h1>{tool.title}</h1>

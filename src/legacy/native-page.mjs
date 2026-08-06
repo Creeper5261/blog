@@ -27,6 +27,7 @@ export async function loadNativePageShell({
   description,
   route = '/tools/',
   comments = true,
+  layoutClass = '',
   templatePath = DEFAULT_TEMPLATE,
   stylesheet = '/css/tools-native.css',
   services = getPublicServices()
@@ -34,6 +35,8 @@ export async function loadNativePageShell({
   const safeTitle = escapeHtml(title)
   const safePageName = escapeHtml(pageName)
   const safeDescription = escapeHtml(description)
+  const safeLayoutClass = String(layoutClass).trim()
+  if (safeLayoutClass && !/^[a-zA-Z0-9_-]+$/.test(safeLayoutClass)) throw new Error('Native page layout class is invalid')
   let html = await readFile(templatePath, 'utf8')
 
   html = replaceFirst(html, /<title>[^<]*<\/title>/i, `<title>${safeTitle}</title>`, 'title')
@@ -44,6 +47,9 @@ export async function loadNativePageShell({
   html = replaceFirst(html, /(title: ')[^']*(')/i, `$1${safePageName}$2`, 'site config title')
   html = html.replaceAll('PAGE_NAME', safePageName)
   html = replaceFirst(html, /(<h1 id="site-title">)[^<]*(<\/h1>)/i, `$1${safePageName}$2`, 'page heading')
+  if (safeLayoutClass) {
+    html = replaceFirst(html, /<main class="layout" id="content-inner">/i, `<main class="layout ${safeLayoutClass}" id="content-inner">`, 'page layout')
+  }
 
   const withNativeStyles = html.replace(
     /<\/head>/i,

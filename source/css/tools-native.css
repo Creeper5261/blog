@@ -211,22 +211,43 @@
   display: none;
 }
 
-/* Keep the native profile column beside tool workspaces at laptop widths.
-   Butterfly's 900px breakpoint is too eager when browser zoom is enabled. */
-@media screen and (min-width: 760px) {
-  #content-inner.layout:has(.workspace-page),
-  #content-inner.layout:has(.markdown-editor-page) {
-    flex-direction: row;
+/* Tool workspaces use an explicit shell class so the profile column never
+   depends on :has() support or the theme's generic responsive threshold. */
+#content-inner.layout.tool-workspace-layout {
+  align-items: flex-start;
+  max-width: 1360px;
+}
+
+#content-inner.layout.tool-workspace-layout > #page {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100% !important;
+}
+
+#content-inner.layout.tool-workspace-layout > #page > #article-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+}
+
+#content-inner.layout.tool-workspace-layout > #page > #aside-content {
+  box-sizing: border-box;
+  flex: 0 0 280px;
+  min-width: 0;
+  width: 280px !important;
+}
+
+@media screen and (max-width: 759px) {
+  #content-inner.layout.tool-workspace-layout > #page {
+    flex-direction: column;
   }
 
-  #content-inner.layout:has(.workspace-page) > #page,
-  #content-inner.layout:has(.markdown-editor-page) > #page {
-    width: 74% !important;
-  }
-
-  #content-inner.layout:has(.workspace-page) > #aside-content,
-  #content-inner.layout:has(.markdown-editor-page) > #aside-content {
-    width: 26% !important;
+  #content-inner.layout.tool-workspace-layout > #page > #article-container,
+  #content-inner.layout.tool-workspace-layout > #page > #aside-content {
+    width: 100% !important;
   }
 }
 
@@ -410,60 +431,96 @@ body:has(.tool-home) #to_comment {
   color: #c62828;
 }
 
-.markdown-editor-canvas {
-  min-height: 600px;
+.markdown-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: min(68vh, 760px);
   overflow: hidden;
   border: 1px solid var(--text-bg-hover);
   border-radius: 8px;
   background: var(--card-bg);
 }
 
-.markdown-editor-canvas .vditor {
+.markdown-source-pane {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--text-bg-hover);
+}
+
+.markdown-pane-label {
+  padding: .55rem .8rem;
+  color: var(--font-color);
+  font-size: .78rem;
+  opacity: .75;
+}
+
+#markdown-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  padding: .9rem;
   border: 0;
-  border-radius: 8px;
+  outline: 0;
+  resize: none;
   color: var(--font-color);
-  background: var(--card-bg) !important;
-}
-
-.markdown-editor-canvas .vditor-toolbar,
-.markdown-editor-canvas .vditor-sv .vditor-sv__marker {
-  color: var(--font-color);
-  border-color: var(--text-bg-hover);
-  background: var(--card-bg) !important;
-}
-
-.markdown-editor-canvas .vditor-sv__editor,
-.markdown-editor-canvas .vditor-sv__preview {
-  background: var(--card-bg) !important;
-}
-
-.markdown-editor-canvas .vditor-sv__editor .vditor-ir,
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset {
-  color: var(--font-color) !important;
-}
-
-.markdown-editor-canvas .vditor-sv__editor .vditor-ir {
   caret-color: var(--theme-color);
+  background: var(--card-bg);
+  font: .92rem/1.72 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset h1,
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset h2,
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset h3 {
+.markdown-preview-pane {
+  position: relative;
+  min-width: 0;
+  background: var(--card-bg);
+}
+
+#markdown-preview {
+  min-height: 100%;
+  padding: 1.25rem 1.45rem;
+}
+
+.markdown-preview-loading {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--font-color);
+  background: var(--card-bg);
+  transition: opacity .2s ease, visibility .2s ease;
+}
+
+.markdown-workbench[data-ready="true"] .markdown-preview-loading {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#markdown-preview.vditor-reset {
+  color: var(--font-color) !important;
+  background: var(--card-bg) !important;
+}
+
+#markdown-preview.vditor-reset h1,
+#markdown-preview.vditor-reset h2,
+#markdown-preview.vditor-reset h3 {
   color: var(--text-highlight-color);
   border-color: var(--text-bg-hover);
 }
 
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset a {
+#markdown-preview.vditor-reset a {
   color: var(--theme-color);
 }
 
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset blockquote {
+#markdown-preview.vditor-reset blockquote {
   border-left-color: var(--theme-color);
   background: color-mix(in srgb, var(--theme-color) 8%, transparent);
 }
 
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset code,
-.markdown-editor-canvas .vditor-sv__preview .vditor-reset pre {
+#markdown-preview.vditor-reset code,
+#markdown-preview.vditor-reset pre {
   background: color-mix(in srgb, var(--font-color) 8%, var(--card-bg));
 }
 
@@ -689,6 +746,16 @@ body:has(.tool-home) #to_comment {
   .markdown-editor-actions span {
     width: 100%;
     margin-left: 0;
+  }
+
+  .markdown-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .markdown-source-pane {
+    min-height: 20rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--text-bg-hover);
   }
 
   .image-tool-options {
