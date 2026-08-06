@@ -3,11 +3,13 @@ const editorHost = document.querySelector('#markdown-editor')
 const initial = document.querySelector('#markdown-initial')?.value || ''
 const status = document.querySelector('#markdown-status')
 const setStatus = (text, error = false) => { status.textContent = text; status.dataset.error = String(error) }
+const prefersDark = document.documentElement.dataset.theme === 'dark'
 
 if (page && editorHost && window.Vditor) {
   const editor = new window.Vditor(editorHost, {
     value: initial,
     mode: 'sv',
+    theme: prefersDark ? 'dark' : 'classic',
     lang: 'zh_CN',
     cdn: '/vendor/vditor',
     height: 'min(68vh, 760px)',
@@ -15,8 +17,8 @@ if (page && editorHost && window.Vditor) {
     toolbarConfig: { pin: true },
     toolbar: ['headings', 'bold', 'italic', 'strike', 'link', 'list', 'ordered-list', 'check', 'quote', 'line', 'code', 'inline-code', 'table', 'undo', 'redo', 'fullscreen', 'edit-mode'],
     preview: {
-      theme: { current: 'light', path: '/vendor/vditor/dist/css/content-theme' },
-      hljs: { style: 'github' },
+      theme: { current: prefersDark ? 'dark' : 'light', path: '/vendor/vditor/dist/css/content-theme' },
+      hljs: { style: prefersDark ? 'github-dark' : 'github' },
       math: { engine: 'KaTeX', inlineDigit: false }
     },
     input: () => setStatus('已修改；内容保存在当前浏览器。'),
@@ -51,5 +53,6 @@ if (page && editorHost && window.Vditor) {
     const dark = document.documentElement.dataset.theme === 'dark'
     editor.setTheme(dark ? 'dark' : 'classic', dark ? 'dark' : 'light', dark ? 'github-dark' : 'github', '/vendor/vditor/dist/css/content-theme')
   }
+  applyTheme()
   new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 }

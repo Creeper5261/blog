@@ -10,7 +10,7 @@ import NativePageFrame from '../../../components/NativePageFrame.astro'
     <section class="workspace" aria-labelledby="image-tool-title">
       <h2 id="image-tool-title">本地处理</h2>
       <p class="workspace-contract">图片只在当前浏览器处理，不上传；支持 JPEG、PNG、WebP。</p>
-      <label id="image-dropzone" class="workspace-dropzone" tabindex="0" for="image-file">文件上传</label>
+      <label id="image-dropzone" class="workspace-dropzone" tabindex="0" role="button" aria-controls="image-file">文件上传</label>
       <input id="image-file" class="workspace-file-input" type="file" accept="image/jpeg,image/png,image/webp" hidden />
       <div class="image-tool-options">
         <label for="image-quality">质量 <output id="image-quality-value" for="image-quality">0.8</output></label>
@@ -20,7 +20,7 @@ import NativePageFrame from '../../../components/NativePageFrame.astro'
         <label for="image-width">最大宽度</label>
         <input id="image-width" type="number" min="320" max="8192" step="1" value="2400" />
       </div>
-      <div class="workspace-actions"><button id="image-download" type="button" disabled>下载结果</button><button id="image-reset" type="button">清空</button></div>
+      <div class="workspace-actions"><button id="image-compress" type="button" disabled>开始压缩</button><button id="image-download" type="button" disabled>下载结果</button><button id="image-reset" type="button">清空</button></div>
       <p id="image-status" class="workspace-status" role="status">选择图片后开始处理。</p>
       <div class="image-tool-preview" aria-live="polite">
         <figure>

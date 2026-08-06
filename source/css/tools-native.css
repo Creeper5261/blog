@@ -211,6 +211,25 @@
   display: none;
 }
 
+/* Keep the native profile column beside tool workspaces at laptop widths.
+   Butterfly's 900px breakpoint is too eager when browser zoom is enabled. */
+@media screen and (min-width: 760px) {
+  #content-inner.layout:has(.workspace-page),
+  #content-inner.layout:has(.markdown-editor-page) {
+    flex-direction: row;
+  }
+
+  #content-inner.layout:has(.workspace-page) > #page,
+  #content-inner.layout:has(.markdown-editor-page) > #page {
+    width: 74% !important;
+  }
+
+  #content-inner.layout:has(.workspace-page) > #aside-content,
+  #content-inner.layout:has(.markdown-editor-page) > #aside-content {
+    width: 26% !important;
+  }
+}
+
 body:has(.tool-home) #to_comment {
   display: none !important;
 }
@@ -402,22 +421,50 @@ body:has(.tool-home) #to_comment {
 .markdown-editor-canvas .vditor {
   border: 0;
   border-radius: 8px;
-  background: var(--card-bg);
+  color: var(--font-color);
+  background: var(--card-bg) !important;
 }
 
 .markdown-editor-canvas .vditor-toolbar,
 .markdown-editor-canvas .vditor-sv .vditor-sv__marker {
-  background: var(--card-bg);
+  color: var(--font-color);
+  border-color: var(--text-bg-hover);
+  background: var(--card-bg) !important;
 }
 
 .markdown-editor-canvas .vditor-sv__editor,
 .markdown-editor-canvas .vditor-sv__preview {
-  background: var(--global-bg);
+  background: var(--card-bg) !important;
 }
 
 .markdown-editor-canvas .vditor-sv__editor .vditor-ir,
 .markdown-editor-canvas .vditor-sv__preview .vditor-reset {
-  color: var(--font-color);
+  color: var(--font-color) !important;
+}
+
+.markdown-editor-canvas .vditor-sv__editor .vditor-ir {
+  caret-color: var(--theme-color);
+}
+
+.markdown-editor-canvas .vditor-sv__preview .vditor-reset h1,
+.markdown-editor-canvas .vditor-sv__preview .vditor-reset h2,
+.markdown-editor-canvas .vditor-sv__preview .vditor-reset h3 {
+  color: var(--text-highlight-color);
+  border-color: var(--text-bg-hover);
+}
+
+.markdown-editor-canvas .vditor-sv__preview .vditor-reset a {
+  color: var(--theme-color);
+}
+
+.markdown-editor-canvas .vditor-sv__preview .vditor-reset blockquote {
+  border-left-color: var(--theme-color);
+  background: color-mix(in srgb, var(--theme-color) 8%, transparent);
+}
+
+.markdown-editor-canvas .vditor-sv__preview .vditor-reset code,
+.markdown-editor-canvas .vditor-sv__preview .vditor-reset pre {
+  background: color-mix(in srgb, var(--font-color) 8%, var(--card-bg));
 }
 
 .image-tool-options {
