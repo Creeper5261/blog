@@ -49,6 +49,17 @@ const sample = String.raw`\documentclass{article}
         <div class="latex-pane-label">main.tex</div>
         <div id="latex-input" class="latex-source-editor" data-initial-value={sample}></div>
       </section>
+      <button
+        id="latex-resize-handle"
+        class="latex-resize-handle"
+        type="button"
+        role="separator"
+        aria-label="调整编辑区宽度"
+        aria-orientation="vertical"
+        aria-valuemin="24"
+        aria-valuemax="68"
+        aria-valuenow="38"
+      ></button>
       <section class="latex-preview-pane" aria-label="LaTeX 即时预览" aria-busy="true">
         <div class="latex-pane-label">即时预览</div>
         <div id="latex-preview-loading" class="latex-preview-loading" role="status">正在初始化…</div>

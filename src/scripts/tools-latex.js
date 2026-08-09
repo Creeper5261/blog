@@ -23,6 +23,7 @@ const openButton = document.querySelector('#latex-open')
 const copyButton = document.querySelector('#latex-copy')
 const downloadButton = document.querySelector('#latex-download')
 const resetButton = document.querySelector('#latex-reset')
+const resizeHandle = document.querySelector('#latex-resize-handle')
 
 const parser = getParser({
   macros: { ...macroInfo.latex2e, ...macroInfo.mathtools, ...macroInfo.hyperref },
@@ -368,7 +369,7 @@ function render() {
       if (/\\maketitle\b/.test(block.source)) elementCache.delete(block.id)
     }
   }
-  const scrollTop = previewPane.scrollTop
+  const scrollTop = preview.scrollTop
   const nextElements = []
   for (const block of nextBlocks) {
     let element = elementCache.get(block.id)
@@ -389,7 +390,7 @@ function render() {
     empty.textContent = '空文档'
     preview.append(empty)
   }
-  previewPane.scrollTop = scrollTop
+  preview.scrollTop = scrollTop
   blocks = nextBlocks
   metadataSignature = nextMetadataSignature
   const elapsed = Math.round((performance.now() - started) * 10) / 10
@@ -460,9 +461,41 @@ if (page && input && preview && previewPane && loading && status && workbench) {
     const target = [...preview.children].reverse().find((element) => Number(element.dataset.startLine) <= line)
     if (!target) return
     syncing = true
-    previewPane.scrollTop = Math.max(0, target.offsetTop - preview.offsetTop - 44)
+    const targetTop = target.getBoundingClientRect().top - preview.getBoundingClientRect().top + preview.scrollTop
+    preview.scrollTop = Math.max(0, targetTop - 24)
     requestAnimationFrame(() => { syncing = false })
   }, { passive: true })
+
+  const setSourceWidth = (value) => {
+    const percentage = Math.max(24, Math.min(68, value))
+    workbench.style.setProperty('--latex-source-width', `${percentage}%`)
+    resizeHandle?.setAttribute('aria-valuenow', String(Math.round(percentage)))
+  }
+
+  resizeHandle?.addEventListener('pointerdown', (event) => {
+    if (matchMedia('(max-width: 800px)').matches) return
+    event.preventDefault()
+    resizeHandle.setPointerCapture(event.pointerId)
+    workbench.dataset.resizing = 'true'
+  })
+  resizeHandle?.addEventListener('pointermove', (event) => {
+    if (!resizeHandle.hasPointerCapture(event.pointerId)) return
+    const bounds = workbench.getBoundingClientRect()
+    setSourceWidth(((event.clientX - bounds.left) / bounds.width) * 100)
+  })
+  const finishResize = (event) => {
+    if (resizeHandle?.hasPointerCapture(event.pointerId)) resizeHandle.releasePointerCapture(event.pointerId)
+    delete workbench.dataset.resizing
+  }
+  resizeHandle?.addEventListener('pointerup', finishResize)
+  resizeHandle?.addEventListener('pointercancel', finishResize)
+  resizeHandle?.addEventListener('dblclick', () => setSourceWidth(38))
+  resizeHandle?.addEventListener('keydown', (event) => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return
+    event.preventDefault()
+    const current = Number(resizeHandle.getAttribute('aria-valuenow')) || 38
+    setSourceWidth(current + (event.key === 'ArrowRight' ? 2 : -2))
+  })
 
   openButton.addEventListener('click', () => fileInput.click())
   fileInput.addEventListener('change', async () => {

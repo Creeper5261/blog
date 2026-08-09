@@ -411,9 +411,10 @@ body:has(.tool-home) #to_comment {
 }
 
 .latex-workbench {
+  --latex-source-width: 38%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  height: clamp(620px, 72vh, 880px);
+  grid-template-columns: minmax(20rem, var(--latex-source-width)) 10px minmax(0, 1fr);
+  height: clamp(780px, 84vh, 1050px);
   min-height: 0;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--font-color) 14%, transparent);
@@ -438,8 +439,45 @@ body:has(.tool-home) #to_comment {
 }
 
 .latex-source-pane {
-  border-right: 1px solid color-mix(in srgb, var(--font-color) 15%, transparent);
   box-shadow: 7px 0 18px rgba(26, 35, 52, .09);
+}
+
+.latex-resize-handle {
+  position: relative;
+  z-index: 3;
+  width: 10px;
+  min-width: 10px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--theme-color);
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.latex-resize-handle::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: color-mix(in srgb, var(--font-color) 15%, transparent);
+  content: '';
+  transform: translateX(-50%);
+  transition: width .15s ease, background .15s ease;
+}
+
+.latex-resize-handle:hover::before,
+.latex-resize-handle:focus-visible::before,
+.latex-workbench[data-resizing="true"] .latex-resize-handle::before {
+  width: 3px;
+  background: var(--theme-color);
+}
+
+.latex-resize-handle:focus-visible {
+  outline: 0;
 }
 
 .latex-pane-label {
@@ -505,7 +543,7 @@ body:has(.tool-home) #to_comment {
 }
 
 .latex-preview-pane {
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .latex-preview-loading {
@@ -527,16 +565,20 @@ body:has(.tool-home) #to_comment {
 
 .latex-preview-document {
   box-sizing: border-box;
-  width: min(100%, 52rem);
-  min-height: 100%;
-  margin: 0 auto;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
   padding: 2.2rem clamp(1.4rem, 5vw, 3.6rem) 4rem;
+  overflow: auto;
   color: var(--font-color);
   font-family: "Noto Serif SC", "Songti SC", "Times New Roman", serif;
   line-height: 1.85;
 }
 
 .latex-preview-block {
+  box-sizing: border-box;
+  width: min(100%, 52rem);
+  margin-inline: auto;
   scroll-margin-top: 3.5rem;
 }
 
@@ -677,6 +719,10 @@ body:has(.tool-home) #to_comment {
     grid-template-columns: 1fr;
     height: auto;
     min-height: 0;
+  }
+
+  .latex-resize-handle {
+    display: none;
   }
 
   .latex-source-pane,
