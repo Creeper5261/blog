@@ -368,10 +368,327 @@ body:has(.tool-home) #to_comment {
 
 .codec-page,
 .markdown-editor-page,
+.latex-editor-page,
 .image-tool-page,
 .document-converter-page {
   width: min(100%, 1180px);
   margin-inline: auto;
+}
+
+.latex-editor-page {
+  width: 100%;
+}
+
+.latex-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem;
+  margin: 1rem 0 .8rem;
+}
+
+.latex-editor-actions button {
+  padding: .45rem .72rem;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 6px;
+  color: var(--font-color);
+  background: var(--card-bg);
+  cursor: pointer;
+  font: inherit;
+}
+
+.latex-editor-actions button:hover,
+.latex-editor-actions button:focus-visible {
+  border-color: var(--theme-color);
+  color: var(--theme-color);
+}
+
+.latex-editor-actions span {
+  margin-left: auto;
+  color: var(--font-color);
+  font-size: .78rem;
+  opacity: .72;
+}
+
+.latex-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: clamp(620px, 72vh, 880px);
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--font-color) 14%, transparent);
+  border-radius: 10px;
+  background: var(--card-bg);
+  box-shadow:
+    0 18px 42px rgba(26, 35, 52, .22),
+    0 6px 16px rgba(26, 35, 52, .13),
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent),
+    inset 0 -10px 18px rgba(26, 35, 52, .05);
+}
+
+.latex-source-pane,
+.latex-preview-pane {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.latex-source-pane {
+  border-right: 1px solid color-mix(in srgb, var(--font-color) 15%, transparent);
+  box-shadow: 7px 0 18px rgba(26, 35, 52, .09);
+}
+
+.latex-pane-label {
+  position: relative;
+  z-index: 2;
+  padding: .55rem .8rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--font-color) 11%, transparent);
+  color: var(--font-color);
+  background: var(--card-bg);
+  box-shadow: 0 5px 12px rgba(26, 35, 52, .08);
+  font-size: .78rem;
+  font-weight: 650;
+  letter-spacing: .03em;
+  opacity: .82;
+}
+
+.latex-source-editor {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.latex-source-editor .cm-editor {
+  height: 100%;
+  color: var(--font-color);
+  background: var(--card-bg);
+  font: .9rem/1.68 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.latex-source-editor .cm-editor.cm-focused {
+  outline: 0;
+}
+
+.latex-source-editor .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+}
+
+.latex-source-editor .cm-content {
+  padding: 1rem 0 3rem;
+  caret-color: auto;
+}
+
+.latex-source-editor .cm-line {
+  padding: 0 1rem;
+}
+
+.latex-source-editor .cm-gutters {
+  min-width: 3.4rem;
+  border-right: 1px solid color-mix(in srgb, var(--font-color) 11%, transparent);
+  color: color-mix(in srgb, var(--font-color) 48%, transparent);
+  background: var(--card-bg);
+}
+
+.latex-source-editor .cm-lineNumbers .cm-gutterElement {
+  min-width: 3rem;
+  padding: 0 .7rem 0 .35rem;
+}
+
+.latex-source-editor .cm-activeLine,
+.latex-source-editor .cm-activeLineGutter {
+  background: color-mix(in srgb, var(--theme-color) 7%, transparent);
+}
+
+.latex-preview-pane {
+  overflow-y: auto;
+}
+
+.latex-preview-loading {
+  position: absolute;
+  z-index: 1;
+  inset: 2.5rem 0 0;
+  display: grid;
+  place-items: center;
+  color: var(--font-color);
+  background: var(--card-bg);
+  transition: opacity .16s ease, visibility .16s ease;
+}
+
+.latex-workbench[data-ready="true"] .latex-preview-loading {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.latex-preview-document {
+  box-sizing: border-box;
+  width: min(100%, 52rem);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 2.2rem clamp(1.4rem, 5vw, 3.6rem) 4rem;
+  color: var(--font-color);
+  font-family: "Noto Serif SC", "Songti SC", "Times New Roman", serif;
+  line-height: 1.85;
+}
+
+.latex-preview-block {
+  scroll-margin-top: 3.5rem;
+}
+
+.latex-preview-block > :first-child {
+  margin-top: 0;
+}
+
+.latex-preview-block > :last-child {
+  margin-bottom: 0;
+}
+
+.latex-preview-document p {
+  margin: .7rem 0;
+}
+
+.latex-preview-document h1,
+.latex-preview-document h2,
+.latex-preview-document h3,
+.latex-preview-document h4,
+.latex-preview-document h5,
+.latex-preview-document h6 {
+  color: var(--text-highlight-color);
+  font-family: inherit;
+  line-height: 1.35;
+}
+
+.latex-preview-document h2 {
+  margin: 1.9rem 0 .75rem;
+  padding-bottom: .38rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-color) 46%, transparent);
+  font-size: 1.55rem;
+}
+
+.latex-preview-document h3 {
+  margin: 1.45rem 0 .55rem;
+  font-size: 1.22rem;
+}
+
+.latex-title-block {
+  margin: 1rem 0 2.6rem;
+  text-align: center;
+}
+
+.latex-title-block h1 {
+  margin: 0 0 .65rem;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+.latex-title-block p {
+  opacity: .72;
+}
+
+.latex-preview-document a,
+.latex-reference {
+  color: var(--theme-color);
+}
+
+.latex-preview-document blockquote {
+  margin: 1rem 0;
+  padding: .2rem 0 .2rem 1rem;
+  border-left: 3px solid var(--theme-color);
+}
+
+.latex-preview-document code {
+  padding: .08rem .28rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--font-color) 8%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.latex-preview-document table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+}
+
+.latex-preview-document td {
+  padding: .38rem .55rem;
+  border: 1px solid color-mix(in srgb, var(--font-color) 20%, transparent);
+}
+
+.latex-environment {
+  margin: 1rem 0;
+}
+
+.latex-theorem,
+.latex-lemma,
+.latex-proposition,
+.latex-corollary,
+.latex-definition,
+.latex-proof {
+  padding: .75rem 1rem;
+  border-left: 3px solid color-mix(in srgb, var(--theme-color) 70%, transparent);
+  background: color-mix(in srgb, var(--theme-color) 5%, transparent);
+}
+
+.latex-math-display {
+  max-width: 100%;
+  margin: 1.15rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+
+.latex-unknown-command {
+  color: color-mix(in srgb, var(--font-color) 58%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.latex-placeholder,
+.latex-image-placeholder {
+  color: color-mix(in srgb, var(--font-color) 60%, transparent);
+}
+
+.latex-preview-block-error {
+  color: #c62828;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: .82rem;
+}
+
+.latex-preview-block-error pre {
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.latex-preview-empty {
+  opacity: .65;
+  text-align: center;
+}
+
+@media screen and (max-width: 800px) {
+  .latex-editor-actions span {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .latex-workbench {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+  }
+
+  .latex-source-pane,
+  .latex-preview-pane {
+    min-height: 34rem;
+  }
+
+  .latex-source-pane {
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--font-color) 15%, transparent);
+    box-shadow: 0 7px 18px rgba(26, 35, 52, .09);
+  }
 }
 
 .converter-modes {

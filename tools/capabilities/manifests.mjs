@@ -74,6 +74,20 @@ export const TOOL_MANIFESTS = [
     offline: { supported: true, requirements: ['bundled-pdfjs', 'bundled-mammoth', 'bundled-document-writers'] },
     runtime: { shell: 'local-document-converter', worker: false, mainThreadFallback: true },
     accessibility: { staticDescription: true, statusRole: 'status', keyboardDropzone: true }
+  },
+  {
+    schemaVersion: 1,
+    id: 'tool.latex-instant',
+    title: 'LaTeX 即时预览',
+    route: '/tools/latex/',
+    task: 'latex-instant-preview',
+    modes: ['latex-source', 'incremental-html-preview'],
+    input: { kinds: ['application/x-tex', 'text/x-tex', 'text/plain'], maxBytes: 2097152 },
+    output: { kinds: ['application/x-tex'], download: true },
+    privacy: { mode: 'local-only', uploads: false, thirdPartyProcessing: false },
+    offline: { supported: true, requirements: ['bundled-unified-latex', 'bundled-katex', 'browser-storage'] },
+    runtime: { shell: 'incremental-latex-html', worker: false, mainThreadFallback: true },
+    accessibility: { staticDescription: true, statusRole: 'status', keyboardDropzone: false }
   }
 ]
 
