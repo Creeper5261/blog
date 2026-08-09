@@ -42,6 +42,7 @@ export async function loadNativePageShell({
 
   if (fastInteractive) {
     html = html.replace(/<script src="https:\/\/npm\.elemecdn\.com\/hexo-butterfly-tag-plugins-plus@latest\/lib\/assets\/carousel-touch\.js"><\/script>/i, '')
+    html = html.replace(/<script defer src="\/js\/search\/local-search\.js(?:\.js)?"><\/script>/i, '')
   }
 
   html = replaceFirst(html, /<title>[^<]*<\/title>/i, `<title>${safeTitle}</title>`, 'title')
