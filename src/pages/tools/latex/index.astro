@@ -1,0 +1,72 @@
+---
+import NativePageFrame from '../../../components/NativePageFrame.astro'
+
+const sample = String.raw`\documentclass{article}
+\usepackage{amsmath}
+\title{即时 LaTeX}
+\author{DAT}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{引言}
+正文与行内公式 $E = mc^2$ 会随输入即时更新。
+
+\subsection{公式}
+\begin{align}
+  f(x) &= \int_{-\infty}^{\infty} \hat f(\xi)e^{2\pi i\xi x}\,d\xi \\
+  \sum_{k=1}^{n} k &= \frac{n(n+1)}{2}
+\end{align}
+
+\begin{theorem}
+若 $a,b > 0$，则 $a+b \geq 2\sqrt{ab}$。
+\end{theorem}
+
+\begin{itemize}
+  \item AST 解析
+  \item 增量块更新
+  \item KaTeX 数学排版
+\end{itemize}
+\end{document}`
+---
+
+<NativePageFrame title="LaTeX 即时预览 · DAT" pageName="LaTeX 即时预览" description="LaTeX 即时增量预览" route="/tools/latex/" comments={false} layoutClass="tool-workspace-layout" fastInteractive={true}>
+  <section class="latex-editor-page" aria-label="LaTeX 即时预览">
+    <header class="workspace-heading">
+      <h1>LaTeX 即时预览</h1>
+    </header>
+    <div class="latex-editor-actions">
+      <button id="latex-open" type="button">打开 .tex</button>
+      <button id="latex-copy" type="button">复制</button>
+      <button id="latex-download" type="button">下载</button>
+      <button id="latex-reset" type="button">重置</button>
+      <span id="latex-status" role="status">准备中…</span>
+    </div>
+    <input id="latex-file" type="file" accept="application/x-tex,text/x-tex,.tex" hidden />
+    <div class="latex-workbench" data-ready="false">
+      <section class="latex-source-pane" aria-label="LaTeX 源码">
+        <div class="latex-pane-label">main.tex</div>
+        <div id="latex-input" class="latex-source-editor" data-initial-value={sample}></div>
+      </section>
+      <button
+        id="latex-resize-handle"
+        class="latex-resize-handle"
+        type="button"
+        role="separator"
+        aria-label="调整编辑区宽度"
+        aria-orientation="vertical"
+        aria-valuemin="24"
+        aria-valuemax="68"
+        aria-valuenow="38"
+      ></button>
+      <section class="latex-preview-pane" aria-label="LaTeX 即时预览" aria-busy="true">
+        <div class="latex-pane-label">即时预览</div>
+        <div id="latex-preview-loading" class="latex-preview-loading" role="status">正在初始化…</div>
+        <article id="latex-preview" class="latex-preview-document"></article>
+      </section>
+    </div>
+    <p class="reading-noscript"><noscript>需要 JavaScript 才能运行即时预览。</noscript></p>
+  </section>
+  <script src="../../../scripts/tools-latex.js"></script>
+</NativePageFrame>

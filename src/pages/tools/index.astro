@@ -16,7 +16,9 @@ try {
 const toolPresentation = {
   'tool.codec': { description: 'JSON、摘要与文本编码转换', icon: '⌘', keywords: 'json sha256 hash base64 url unicode mdx 编码' },
   'tool.markdown-editor': { description: 'Markdown / MDX 分屏编辑与数学预览', icon: '✎', keywords: 'markdown mdx latex katex math 编辑器' },
-  'tool.image-compressor': { description: '本地压缩图片并转换格式', icon: '▧', keywords: 'image jpeg png webp 压缩转换 squoosh compressor' }
+  'tool.image-compressor': { description: '本地压缩图片并转换格式', icon: '▧', keywords: 'image jpeg png webp 压缩转换 squoosh compressor' },
+  'tool.document-converter': { description: 'PDF、Word 与图片批量转换和拼接', icon: '⇄', keywords: 'pdf word docx image png jpeg 文档 转换 合并 批量' },
+  'tool.latex-instant': { description: 'LaTeX 源码即时增量预览', icon: '∑', keywords: 'latex tex katex equation paper 即时 论文 数学' }
 }
 const tools = toolManifests.tools.map((tool) => ({ ...tool, ...toolPresentation[tool.id] }))
 ---

@@ -33,4 +33,5 @@ test('interactive native frame removes recovered head blockers', async () => {
 
   assert.match(html, /#loading-box\{display:none!important\}/)
   assert.doesNotMatch(html, /carousel-touch\.js/)
+  assert.doesNotMatch(html, /local-search\.js/)
 })

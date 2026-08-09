@@ -1,0 +1,70 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import NativePageFrame from '../../../components/NativePageFrame.astro'
+import { buildToolManifestPayload } from '../../../../tools/capabilities/manifests.mjs'
+
+let payload
+try {
+  payload = JSON.parse(await readFile(path.resolve('generated', 'site-data', 'tool-manifests.json'), 'utf8'))
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+  payload = buildToolManifestPayload()
+}
+const tool = payload.tools.find((entry) => entry.id === 'tool.document-converter')
+if (!tool) throw new Error('tool.document-converter manifest is missing')
+---
+
+<NativePageFrame title={tool.title + ' · DAT'} pageName={tool.title} description={tool.title} route="/tools/converter/" comments={false} layoutClass="tool-workspace-layout" fastInteractive={true}>
+  <section class="workspace-page document-converter-page" data-max-bytes={tool.input.maxBytes}>
+    <header class="workspace-heading">
+      <h1>{tool.title}</h1>
+    </header>
+
+    <section class="workspace document-converter" aria-labelledby="converter-title">
+      <h2 id="converter-title">转换方式</h2>
+      <div class="converter-modes" role="radiogroup" aria-label="转换方式">
+        {tool.modes.map((mode, index) => (
+          <label class="converter-mode" data-mode-card>
+            <input type="radio" name="converter-mode" value={mode.id} checked={index === 0} />
+            <span>{mode.label}</span>
+          </label>
+        ))}
+      </div>
+
+      <p id="converter-capability" class="workspace-contract">PDF 每页导出为 PNG。</p>
+      <label id="converter-dropzone" class="workspace-dropzone converter-dropzone" tabindex="0" role="button" for="converter-file">文件上传</label>
+      <input id="converter-file" class="workspace-file-input" type="file" accept="application/pdf,.pdf" hidden />
+      <ul id="converter-files" class="converter-files" aria-live="polite"></ul>
+
+      <div id="converter-options" class="converter-options">
+        <div id="converter-scale-wrap">
+          <label for="converter-scale">清晰度</label>
+          <select id="converter-scale">
+            <option value="1.5">标准</option>
+            <option value="2" selected>高清</option>
+            <option value="3">超清</option>
+          </select>
+        </div>
+        <label id="converter-merge-wrap" class="converter-check" hidden>
+          <input id="converter-merge" type="checkbox" checked />
+          <span>合并为一个 PDF</span>
+        </label>
+      </div>
+
+      <div class="workspace-actions">
+        <button id="converter-run" type="button" disabled>开始转换</button>
+        <button id="converter-download" type="button" disabled>下载结果</button>
+        <button id="converter-reset" type="button">清空</button>
+      </div>
+      <progress id="converter-progress" value="0" max="1" hidden></progress>
+      <p id="converter-status" class="workspace-status" role="status">选择文件。</p>
+
+      <section id="converter-preview" class="converter-preview" aria-label="转换预览" hidden></section>
+    </section>
+    <p class="reading-noscript"><noscript>无 JavaScript 时仍可阅读工具说明；文件不会上传。</noscript></p>
+  </section>
+
+  <script src="../../../scripts/tools-document-converter.js"></script>
+</NativePageFrame>
