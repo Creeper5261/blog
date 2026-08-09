@@ -13,7 +13,7 @@ test('tools share one manifest channel with codec, editor, and image utilities',
   const payload = buildToolManifestPayload()
   const tool = payload.tools.find((entry) => entry.id === 'tool.codec')
 
-  assert.equal(payload.tools.length, 3)
+  assert.equal(payload.tools.length, 4)
   assert.equal(tool.route, '/tools/codec/')
   assert.equal(tool.task, 'text-transform')
   assert.ok(tool.modes.some((entry) => entry.id === 'hash-sha256'))
@@ -35,6 +35,7 @@ test('tools share one manifest channel with codec, editor, and image utilities',
   assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.codec'))
   assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.markdown-editor'))
   assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.image-compressor'))
+  assert.ok(result.bundle['tool-manifests.json'].tools.some((entry) => entry.id === 'tool.document-converter'))
 })
 
 test('codec page reuses the S3 task shell for all text modes', async () => {
