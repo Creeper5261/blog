@@ -396,10 +396,8 @@ body:has(.tool-home) #to_comment {
 }
 
 .latex-editor-page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
-  gap: 1.25rem;
-  align-items: start;
+  position: relative;
+  display: block;
 }
 
 .latex-main-column {
@@ -468,19 +466,125 @@ body:has(.tool-home) #to_comment {
 }
 
 .latex-reference-panel {
-  position: sticky;
-  top: 5rem;
+  --latex-reference-width: 320px;
+  position: fixed;
+  z-index: 90;
+  top: 50%;
+  right: max(.75rem, calc((100vw - 1680px) / 2 + .75rem));
   display: flex;
   box-sizing: border-box;
-  max-height: calc(100vh - 6rem);
-  min-height: 36rem;
+  width: min(var(--latex-reference-width), calc(100vw - 4rem));
+  height: min(760px, calc(100vh - 7rem));
+  min-height: 28rem;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid color-mix(in srgb, var(--font-color) 13%, transparent);
   border-radius: 10px;
   color: var(--font-color);
   background: color-mix(in srgb, var(--card-bg) 97%, transparent);
   box-shadow: 0 12px 30px rgba(26, 35, 52, .14);
+  transform: translateY(-50%);
+  transition: transform .22s ease, opacity .18s ease, visibility 0s linear;
+}
+
+.latex-reference-panel[data-open="false"] {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(calc(100% + 4rem), -50%);
+  transition: transform .22s ease, opacity .18s ease, visibility 0s linear .22s;
+}
+
+.latex-reference-panel[data-resizing="true"] {
+  transition: none;
+  user-select: none;
+}
+
+.latex-reference-resize {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  left: -6px;
+  width: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.latex-reference-resize::before {
+  position: absolute;
+  top: 3.8rem;
+  bottom: 1rem;
+  left: 50%;
+  width: 1px;
+  background: color-mix(in srgb, var(--font-color) 18%, transparent);
+  content: '';
+  transform: translateX(-50%);
+  transition: width .14s ease, background .14s ease;
+}
+
+.latex-reference-resize:hover::before,
+.latex-reference-resize:focus-visible::before,
+.latex-reference-panel[data-resizing="true"] .latex-reference-resize::before {
+  width: 3px;
+  background: var(--theme-color);
+}
+
+.latex-reference-toggle {
+  display: grid;
+  width: 2.35rem;
+  height: 3.35rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--font-color) 14%, transparent);
+  color: var(--font-color);
+  background: var(--card-bg);
+  box-shadow: 0 8px 20px rgba(26, 35, 52, .2);
+  cursor: pointer;
+}
+
+.latex-reference-toggle:hover,
+.latex-reference-toggle:focus-visible {
+  color: var(--theme-color);
+}
+
+.latex-reference-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.latex-reference-toggle.is-collapse {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: -2.35rem;
+  border-right: 0;
+  border-radius: 9px 0 0 9px;
+  transform: translateY(-50%);
+}
+
+.latex-reference-toggle.is-expand {
+  position: fixed;
+  z-index: 91;
+  top: 50%;
+  right: 0;
+  border-right: 0;
+  border-radius: 9px 0 0 9px;
+  transform: translateY(-50%);
+}
+
+.latex-reference-toggle.is-expand[hidden] {
+  display: none;
 }
 
 .latex-reference-heading {
@@ -1039,18 +1143,19 @@ body:has(.tool-home) #to_comment {
 }
 
 @media screen and (max-width: 1120px) {
-  .latex-editor-page {
-    grid-template-columns: 1fr;
-  }
-
   .latex-reference-panel {
-    position: static;
-    max-height: 44rem;
-    min-height: 30rem;
+    right: .75rem;
+    height: min(700px, calc(100vh - 5rem));
   }
 }
 
 @media screen and (max-width: 620px) {
+  .latex-reference-panel {
+    right: .5rem;
+    width: min(var(--latex-reference-width), calc(100vw - 3rem));
+    min-height: 24rem;
+  }
+
   .latex-editor-actions .latex-export-controls {
     width: 100%;
     margin-left: 0;

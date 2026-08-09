@@ -30,6 +30,10 @@ const referenceSearch = document.querySelector('#latex-reference-search')
 const referenceFilters = [...document.querySelectorAll('[data-reference-filter]')]
 const referenceGroups = [...document.querySelectorAll('[data-reference-group]')]
 const referenceCodes = [...document.querySelectorAll('[data-latex-snippet]')]
+const referencePanel = document.querySelector('#latex-reference-panel')
+const referenceCollapse = document.querySelector('#latex-reference-collapse')
+const referenceExpand = document.querySelector('#latex-reference-expand')
+const referenceResize = document.querySelector('#latex-reference-resize')
 
 const parser = getParser({
   macros: { ...macroInfo.latex2e, ...macroInfo.mathtools, ...macroInfo.hyperref },
@@ -122,6 +126,48 @@ function setupReferencePanel() {
     await copyText(button.dataset.latexSnippet || '')
     status.textContent = '已复制语法'
   }))
+}
+
+function setupReferenceDrawer() {
+  if (!referencePanel || !referenceCollapse || !referenceExpand || !referenceResize) return
+
+  const setOpen = (open) => {
+    referencePanel.dataset.open = String(open)
+    referencePanel.setAttribute('aria-hidden', String(!open))
+    referenceCollapse.setAttribute('aria-expanded', String(open))
+    referenceExpand.setAttribute('aria-expanded', String(open))
+    referenceExpand.hidden = open
+  }
+
+  const setWidth = (value) => {
+    const maximum = Math.max(260, Math.min(520, window.innerWidth - 48))
+    const width = Math.max(Math.min(260, maximum), Math.min(maximum, value))
+    referencePanel.style.setProperty('--latex-reference-width', `${width}px`)
+    referenceResize.setAttribute('aria-valuemax', String(Math.round(maximum)))
+    referenceResize.setAttribute('aria-valuenow', String(Math.round(width)))
+  }
+
+  referenceCollapse.addEventListener('click', () => setOpen(false))
+  referenceExpand.addEventListener('click', () => setOpen(true))
+  referenceResize.addEventListener('pointerdown', (event) => {
+    event.preventDefault()
+    referenceResize.setPointerCapture(event.pointerId)
+    referencePanel.dataset.resizing = 'true'
+  })
+  referenceResize.addEventListener('pointermove', (event) => {
+    if (!referenceResize.hasPointerCapture(event.pointerId)) return
+    setWidth(referencePanel.getBoundingClientRect().right - event.clientX)
+  })
+  const finishResize = (event) => {
+    if (referenceResize.hasPointerCapture(event.pointerId)) referenceResize.releasePointerCapture(event.pointerId)
+    delete referencePanel.dataset.resizing
+  }
+  referenceResize.addEventListener('pointerup', finishResize)
+  referenceResize.addEventListener('pointercancel', finishResize)
+  referenceResize.addEventListener('dblclick', () => setWidth(320))
+  window.addEventListener('resize', () => setWidth(Number(referenceResize.getAttribute('aria-valuenow')) || 320), { passive: true })
+  setOpen(true)
+  setWidth(320)
 }
 
 async function exportPreviewPdf() {
@@ -547,6 +593,7 @@ function setSource(value) {
 
 if (page && input && preview && previewPane && loading && status && workbench) {
   setupReferencePanel()
+  setupReferenceDrawer()
   const initial = localStorage.getItem(storageKey) || input.dataset.initialValue || ''
   editor = new EditorView({
     parent: input,

@@ -119,7 +119,21 @@ const referenceGroups = [
       <p class="reading-noscript"><noscript>需要 JavaScript 才能运行即时预览。</noscript></p>
     </div>
 
-    <aside class="latex-reference-panel" aria-label="LaTeX 速查">
+    <aside id="latex-reference-panel" class="latex-reference-panel" aria-label="LaTeX 速查" aria-hidden="false" data-open="true">
+      <button
+        id="latex-reference-resize"
+        class="latex-reference-resize"
+        type="button"
+        role="separator"
+        aria-label="调整速查栏宽度"
+        aria-orientation="vertical"
+        aria-valuemin="260"
+        aria-valuemax="520"
+        aria-valuenow="320"
+      ></button>
+      <button id="latex-reference-collapse" class="latex-reference-toggle is-collapse" type="button" aria-controls="latex-reference-panel" aria-expanded="true" aria-label="收起速查栏">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 6 6-6 6" /></svg>
+      </button>
       <div class="latex-reference-heading">
         <h2>LaTeX 速查</h2>
         <input id="latex-reference-search" type="search" placeholder="搜索语法" autocomplete="off" />
@@ -162,6 +176,9 @@ const referenceGroups = [
         ))}
       </div>
     </aside>
+    <button id="latex-reference-expand" class="latex-reference-toggle is-expand" type="button" aria-controls="latex-reference-panel" aria-expanded="false" aria-label="展开速查栏" hidden>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m13 4-6 6 6 6" /></svg>
+    </button>
   </section>
   <script src="../../../scripts/tools-latex.js"></script>
 </NativePageFrame>
