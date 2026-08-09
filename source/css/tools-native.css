@@ -379,6 +379,33 @@ body:has(.tool-home) #to_comment {
   width: 100%;
 }
 
+#content-inner.layout.latex-tool-layout {
+  align-items: flex-start;
+  max-width: 1680px;
+}
+
+#content-inner.layout.latex-tool-layout > #page,
+#content-inner.layout.latex-tool-layout > #page > #article-container {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100% !important;
+}
+
+#content-inner.layout.latex-tool-layout > #page > #aside-content {
+  display: none !important;
+}
+
+.latex-editor-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.latex-main-column {
+  min-width: 0;
+}
+
 .latex-editor-actions {
   display: flex;
   flex-wrap: wrap;
@@ -408,6 +435,225 @@ body:has(.tool-home) #to_comment {
   color: var(--font-color);
   font-size: .78rem;
   opacity: .72;
+}
+
+.latex-editor-actions .latex-export-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-left: .35rem;
+  padding-left: .75rem;
+  border-left: 1px solid color-mix(in srgb, var(--font-color) 14%, transparent);
+  opacity: 1;
+}
+
+.latex-export-controls label {
+  color: var(--font-color);
+  font-size: .78rem;
+  white-space: nowrap;
+}
+
+.latex-export-controls select {
+  min-height: 2.15rem;
+  padding: .32rem 1.8rem .32rem .55rem;
+  border: 1px solid var(--text-bg-hover);
+  border-radius: 6px;
+  color: var(--font-color);
+  background: var(--card-bg);
+  font: inherit;
+}
+
+.latex-editor-actions #latex-status {
+  margin-left: auto;
+}
+
+.latex-reference-panel {
+  position: sticky;
+  top: 5rem;
+  display: flex;
+  box-sizing: border-box;
+  max-height: calc(100vh - 6rem);
+  min-height: 36rem;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--font-color) 13%, transparent);
+  border-radius: 10px;
+  color: var(--font-color);
+  background: color-mix(in srgb, var(--card-bg) 97%, transparent);
+  box-shadow: 0 12px 30px rgba(26, 35, 52, .14);
+}
+
+.latex-reference-heading {
+  padding: 1rem 1rem .7rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--font-color) 10%, transparent);
+}
+
+.latex-reference-heading h2 {
+  margin: 0 0 .65rem;
+  color: var(--text-highlight-color);
+  font-size: 1.15rem;
+}
+
+.latex-reference-heading input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: .48rem .65rem;
+  border: 1px solid color-mix(in srgb, var(--font-color) 16%, transparent);
+  border-radius: 6px;
+  outline: 0;
+  color: var(--font-color);
+  background: var(--card-bg);
+  font: inherit;
+}
+
+.latex-reference-heading input:focus {
+  border-color: var(--theme-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 14%, transparent);
+}
+
+.latex-reference-filters {
+  display: flex;
+  gap: .3rem;
+  padding: .65rem 1rem;
+  overflow-x: auto;
+  border-bottom: 1px solid color-mix(in srgb, var(--font-color) 9%, transparent);
+}
+
+.latex-reference-filters button {
+  padding: .26rem .48rem;
+  border: 0;
+  border-radius: 999px;
+  color: var(--font-color);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: .75rem;
+  white-space: nowrap;
+}
+
+.latex-reference-filters button:hover,
+.latex-reference-filters button[aria-pressed="true"] {
+  color: var(--theme-color);
+  background: color-mix(in srgb, var(--theme-color) 11%, transparent);
+}
+
+.latex-reference-groups {
+  min-height: 0;
+  flex: 1;
+  padding: 0 1rem 1rem;
+  overflow: auto;
+}
+
+.latex-reference-group h3 {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  margin: 0;
+  padding: .85rem 0 .45rem;
+  color: var(--text-highlight-color);
+  background: var(--card-bg);
+  font-size: .86rem;
+}
+
+.latex-reference-group > table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: .72rem;
+}
+
+.latex-reference-group > table th,
+.latex-reference-group > table > tbody > tr > td {
+  width: 50%;
+  padding: .48rem .35rem;
+  border: 1px solid color-mix(in srgb, var(--font-color) 12%, transparent);
+  vertical-align: middle;
+}
+
+.latex-reference-group > table th {
+  color: color-mix(in srgb, var(--font-color) 65%, transparent);
+  font-weight: 500;
+  text-align: left;
+}
+
+.latex-reference-code {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: var(--font-color);
+  background: transparent;
+  cursor: copy;
+  text-align: left;
+}
+
+.latex-reference-code:hover,
+.latex-reference-code:focus-visible {
+  color: var(--theme-color);
+}
+
+.latex-reference-code code {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: .68rem;
+  line-height: 1.45;
+}
+
+.latex-reference-result {
+  overflow: hidden;
+  text-align: center;
+}
+
+.latex-reference-result .katex {
+  font-size: .9rem;
+}
+
+.latex-reference-math.is-display {
+  display: block;
+  overflow-x: auto;
+}
+
+.latex-reference-section,
+.latex-reference-subsection {
+  display: block;
+  padding-bottom: .2rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-color) 45%, transparent);
+  color: var(--text-highlight-color);
+  text-align: left;
+}
+
+.latex-reference-subsection {
+  border-bottom: 0;
+  font-size: .86em;
+}
+
+.latex-reference-contents,
+.latex-reference-result ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  text-align: left;
+}
+
+.latex-reference-abstract {
+  display: block;
+  padding: .3rem;
+  border-left: 2px solid var(--theme-color);
+  text-align: left;
+}
+
+.latex-reference-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.latex-reference-table td {
+  padding: .16rem;
+  border: 1px solid color-mix(in srgb, var(--font-color) 20%, transparent);
+}
+
+.latex-reference-group[hidden],
+[data-reference-entry][hidden] {
+  display: none !important;
 }
 
 .latex-workbench {
@@ -709,6 +955,61 @@ body:has(.tool-home) #to_comment {
   text-align: center;
 }
 
+.latex-pdf-stage {
+  position: fixed;
+  z-index: -1000;
+  top: 0;
+  left: -100000px;
+  box-sizing: border-box;
+  width: 794px;
+  min-height: 1123px;
+  overflow: visible;
+  background: var(--card-bg);
+}
+
+.latex-pdf-stage .latex-preview-document {
+  box-sizing: border-box;
+  width: 794px;
+  min-height: 1123px;
+  height: auto;
+  padding: 72px 68px 86px;
+  overflow: visible;
+  background: var(--card-bg);
+}
+
+.latex-pdf-stage.is-plain,
+.latex-pdf-stage.is-plain .latex-preview-document {
+  color: #222;
+  background: #fff;
+}
+
+.latex-pdf-stage.is-plain .latex-preview-document {
+  font-family: "Times New Roman", "Songti SC", serif;
+}
+
+.latex-pdf-stage.is-plain .latex-preview-document h1,
+.latex-pdf-stage.is-plain .latex-preview-document h2,
+.latex-pdf-stage.is-plain .latex-preview-document h3,
+.latex-pdf-stage.is-plain .latex-preview-document h4,
+.latex-pdf-stage.is-plain .latex-preview-document h5,
+.latex-pdf-stage.is-plain .latex-preview-document h6 {
+  color: #111;
+}
+
+.latex-pdf-stage.is-plain .latex-preview-document h2 {
+  border-bottom-color: #bbb;
+}
+
+.latex-pdf-stage.is-plain .latex-theorem,
+.latex-pdf-stage.is-plain .latex-lemma,
+.latex-pdf-stage.is-plain .latex-proposition,
+.latex-pdf-stage.is-plain .latex-corollary,
+.latex-pdf-stage.is-plain .latex-definition,
+.latex-pdf-stage.is-plain .latex-proof {
+  border-left-color: #777;
+  background: #f7f7f7;
+}
+
 @media screen and (max-width: 800px) {
   .latex-editor-actions span {
     width: 100%;
@@ -734,6 +1035,33 @@ body:has(.tool-home) #to_comment {
     border-right: 0;
     border-bottom: 1px solid color-mix(in srgb, var(--font-color) 15%, transparent);
     box-shadow: 0 7px 18px rgba(26, 35, 52, .09);
+  }
+}
+
+@media screen and (max-width: 1120px) {
+  .latex-editor-page {
+    grid-template-columns: 1fr;
+  }
+
+  .latex-reference-panel {
+    position: static;
+    max-height: 44rem;
+    min-height: 30rem;
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .latex-editor-actions .latex-export-controls {
+    width: 100%;
+    margin-left: 0;
+    padding: .55rem 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--font-color) 12%, transparent);
+    border-left: 0;
+  }
+
+  .latex-editor-actions #latex-status {
+    width: 100%;
+    margin-left: 0;
   }
 }
 

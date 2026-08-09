@@ -29,44 +29,139 @@ const sample = String.raw`\documentclass{article}
   \item KaTeX 数学排版
 \end{itemize}
 \end{document}`
+
+const referenceGroups = [
+  {
+    id: 'formula',
+    label: '公式',
+    entries: [
+      { syntax: String.raw`$E = mc^2$`, math: String.raw`E = mc^2`, label: '行内公式' },
+      { syntax: String.raw`\[\frac{a}{b}\]`, math: String.raw`\frac{a}{b}`, display: true, label: '分式' },
+      { syntax: String.raw`\[\sum_{i=1}^{n} i\]`, math: String.raw`\sum_{i=1}^{n} i`, display: true, label: '求和' },
+      { syntax: String.raw`\[\int_a^b f(x)\,dx\]`, math: String.raw`\int_a^b f(x)\,dx`, display: true, label: '积分' },
+      { syntax: String.raw`\[\begin{pmatrix}a&b\\c&d\end{pmatrix}\]`, math: String.raw`\begin{pmatrix}a&b\\c&d\end{pmatrix}`, display: true, label: '矩阵' },
+    ],
+  },
+  {
+    id: 'structure',
+    label: '结构',
+    entries: [
+      { syntax: String.raw`\section{标题}`, preview: 'section', label: '一级标题' },
+      { syntax: String.raw`\subsection{标题}`, preview: 'subsection', label: '二级标题' },
+      { syntax: String.raw`\tableofcontents`, preview: 'contents', label: '目录' },
+      { syntax: String.raw`\begin{abstract}摘要\end{abstract}`, preview: 'abstract', label: '摘要' },
+    ],
+  },
+  {
+    id: 'text',
+    label: '文本',
+    entries: [
+      { syntax: String.raw`\textbf{粗体}`, preview: 'bold', label: '粗体' },
+      { syntax: String.raw`\emph{强调}`, preview: 'emphasis', label: '强调' },
+      { syntax: String.raw`\begin{itemize}\item 项目\end{itemize}`, preview: 'list', label: '列表' },
+      { syntax: String.raw`\footnote{注释}`, preview: 'footnote', label: '脚注' },
+    ],
+  },
+  {
+    id: 'table',
+    label: '表格',
+    entries: [
+      { syntax: String.raw`\begin{tabular}{cc}A&B\\1&2\end{tabular}`, preview: 'table', label: '两列表格' },
+    ],
+  },
+]
 ---
 
-<NativePageFrame title="LaTeX 即时预览 · DAT" pageName="LaTeX 即时预览" description="LaTeX 即时增量预览" route="/tools/latex/" comments={false} layoutClass="tool-workspace-layout" fastInteractive={true}>
+<NativePageFrame title="LaTeX 即时预览 · DAT" pageName="LaTeX 即时预览" description="LaTeX 即时增量预览" route="/tools/latex/" comments={false} layoutClass="latex-tool-layout" fastInteractive={true}>
   <section class="latex-editor-page" aria-label="LaTeX 即时预览">
-    <header class="workspace-heading">
-      <h1>LaTeX 即时预览</h1>
-    </header>
-    <div class="latex-editor-actions">
-      <button id="latex-open" type="button">打开 .tex</button>
-      <button id="latex-copy" type="button">复制</button>
-      <button id="latex-download" type="button">下载</button>
-      <button id="latex-reset" type="button">重置</button>
-      <span id="latex-status" role="status">准备中…</span>
+    <div class="latex-main-column">
+      <header class="workspace-heading">
+        <h1>LaTeX 即时预览</h1>
+      </header>
+      <div class="latex-editor-actions">
+        <button id="latex-open" type="button">打开 .tex</button>
+        <button id="latex-copy" type="button">复制</button>
+        <button id="latex-download" type="button">下载</button>
+        <button id="latex-reset" type="button">重置</button>
+        <span class="latex-export-controls">
+          <label for="latex-pdf-style">PDF 样式</label>
+          <select id="latex-pdf-style">
+            <option value="plain">原始排版</option>
+            <option value="blog">博客预览</option>
+          </select>
+          <button id="latex-export-pdf" type="button">导出 PDF</button>
+        </span>
+        <span id="latex-status" role="status">准备中…</span>
+      </div>
+      <input id="latex-file" type="file" accept="application/x-tex,text/x-tex,.tex" hidden />
+      <div class="latex-workbench" data-ready="false">
+        <section class="latex-source-pane" aria-label="LaTeX 源码">
+          <div class="latex-pane-label">main.tex</div>
+          <div id="latex-input" class="latex-source-editor" data-initial-value={sample}></div>
+        </section>
+        <button
+          id="latex-resize-handle"
+          class="latex-resize-handle"
+          type="button"
+          role="separator"
+          aria-label="调整编辑区宽度"
+          aria-orientation="vertical"
+          aria-valuemin="24"
+          aria-valuemax="68"
+          aria-valuenow="38"
+        ></button>
+        <section class="latex-preview-pane" aria-label="LaTeX 即时预览" aria-busy="true">
+          <div class="latex-pane-label">即时预览</div>
+          <div id="latex-preview-loading" class="latex-preview-loading" role="status">正在初始化…</div>
+          <article id="latex-preview" class="latex-preview-document"></article>
+        </section>
+      </div>
+      <p class="reading-noscript"><noscript>需要 JavaScript 才能运行即时预览。</noscript></p>
     </div>
-    <input id="latex-file" type="file" accept="application/x-tex,text/x-tex,.tex" hidden />
-    <div class="latex-workbench" data-ready="false">
-      <section class="latex-source-pane" aria-label="LaTeX 源码">
-        <div class="latex-pane-label">main.tex</div>
-        <div id="latex-input" class="latex-source-editor" data-initial-value={sample}></div>
-      </section>
-      <button
-        id="latex-resize-handle"
-        class="latex-resize-handle"
-        type="button"
-        role="separator"
-        aria-label="调整编辑区宽度"
-        aria-orientation="vertical"
-        aria-valuemin="24"
-        aria-valuemax="68"
-        aria-valuenow="38"
-      ></button>
-      <section class="latex-preview-pane" aria-label="LaTeX 即时预览" aria-busy="true">
-        <div class="latex-pane-label">即时预览</div>
-        <div id="latex-preview-loading" class="latex-preview-loading" role="status">正在初始化…</div>
-        <article id="latex-preview" class="latex-preview-document"></article>
-      </section>
-    </div>
-    <p class="reading-noscript"><noscript>需要 JavaScript 才能运行即时预览。</noscript></p>
+
+    <aside class="latex-reference-panel" aria-label="LaTeX 速查">
+      <div class="latex-reference-heading">
+        <h2>LaTeX 速查</h2>
+        <input id="latex-reference-search" type="search" placeholder="搜索语法" autocomplete="off" />
+      </div>
+      <div class="latex-reference-filters" aria-label="速查分类">
+        <button type="button" data-reference-filter="all" aria-pressed="true">全部</button>
+        {referenceGroups.map((group) => <button type="button" data-reference-filter={group.id} aria-pressed="false">{group.label}</button>)}
+      </div>
+      <div class="latex-reference-groups">
+        {referenceGroups.map((group) => (
+          <section class="latex-reference-group" data-reference-group={group.id}>
+            <h3>{group.label}</h3>
+            <table>
+              <thead><tr><th>语法</th><th>效果</th></tr></thead>
+              <tbody>
+                {group.entries.map((entry) => (
+                  <tr data-reference-entry data-search={`${entry.label} ${entry.syntax}`}>
+                    <td>
+                      <button class="latex-reference-code" type="button" data-latex-snippet={entry.syntax} title="复制语法">
+                        <code>{entry.syntax}</code>
+                      </button>
+                    </td>
+                    <td class="latex-reference-result">
+                      {entry.math && <span class:list={['latex-reference-math', { 'is-display': entry.display }]} data-latex={entry.math} data-display={entry.display ? 'true' : 'false'}></span>}
+                      {entry.preview === 'section' && <strong class="latex-reference-section">一级标题</strong>}
+                      {entry.preview === 'subsection' && <strong class="latex-reference-subsection">二级标题</strong>}
+                      {entry.preview === 'contents' && <ol class="latex-reference-contents"><li>章节</li><li>小节</li></ol>}
+                      {entry.preview === 'abstract' && <span class="latex-reference-abstract"><strong>摘要</strong><br />正文摘要</span>}
+                      {entry.preview === 'bold' && <strong>粗体</strong>}
+                      {entry.preview === 'emphasis' && <em>强调</em>}
+                      {entry.preview === 'list' && <ul><li>项目</li></ul>}
+                      {entry.preview === 'footnote' && <span>正文<sup>1</sup></span>}
+                      {entry.preview === 'table' && <table class="latex-reference-table"><tbody><tr><td>A</td><td>B</td></tr><tr><td>1</td><td>2</td></tr></tbody></table>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ))}
+      </div>
+    </aside>
   </section>
   <script src="../../../scripts/tools-latex.js"></script>
 </NativePageFrame>

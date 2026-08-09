@@ -24,6 +24,12 @@ const copyButton = document.querySelector('#latex-copy')
 const downloadButton = document.querySelector('#latex-download')
 const resetButton = document.querySelector('#latex-reset')
 const resizeHandle = document.querySelector('#latex-resize-handle')
+const pdfStyle = document.querySelector('#latex-pdf-style')
+const exportPdfButton = document.querySelector('#latex-export-pdf')
+const referenceSearch = document.querySelector('#latex-reference-search')
+const referenceFilters = [...document.querySelectorAll('[data-reference-filter]')]
+const referenceGroups = [...document.querySelectorAll('[data-reference-group]')]
+const referenceCodes = [...document.querySelectorAll('[data-latex-snippet]')]
 
 const parser = getParser({
   macros: { ...macroInfo.latex2e, ...macroInfo.mathtools, ...macroInfo.hyperref },
@@ -68,6 +74,120 @@ function mathElement(source, displayMode = false) {
   element.className = displayMode ? 'latex-math latex-math-display' : 'latex-math'
   element.innerHTML = cachedMath(source, displayMode)
   return element
+}
+
+function renderReferenceMath() {
+  for (const element of document.querySelectorAll('[data-latex]')) {
+    element.innerHTML = cachedMath(element.dataset.latex || '', element.dataset.display === 'true')
+  }
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(value)
+  const area = document.createElement('textarea')
+  area.value = value
+  area.style.position = 'fixed'
+  area.style.opacity = '0'
+  document.body.append(area)
+  area.select()
+  document.execCommand('copy')
+  area.remove()
+}
+
+function setupReferencePanel() {
+  renderReferenceMath()
+  let activeFilter = 'all'
+
+  const update = () => {
+    const query = referenceSearch?.value.trim().toLocaleLowerCase() || ''
+    for (const group of referenceGroups) {
+      const matchesFilter = activeFilter === 'all' || group.dataset.referenceGroup === activeFilter
+      let visibleEntries = 0
+      for (const entry of group.querySelectorAll('[data-reference-entry]')) {
+        const matchesQuery = !query || (entry.dataset.search || '').toLocaleLowerCase().includes(query)
+        entry.hidden = !(matchesFilter && matchesQuery)
+        if (!entry.hidden) visibleEntries += 1
+      }
+      group.hidden = visibleEntries === 0
+    }
+  }
+
+  referenceFilters.forEach((button) => button.addEventListener('click', () => {
+    activeFilter = button.dataset.referenceFilter || 'all'
+    referenceFilters.forEach((item) => item.setAttribute('aria-pressed', String(item === button)))
+    update()
+  }))
+  referenceSearch?.addEventListener('input', update)
+  referenceCodes.forEach((button) => button.addEventListener('click', async () => {
+    await copyText(button.dataset.latexSnippet || '')
+    status.textContent = '已复制语法'
+  }))
+}
+
+async function exportPreviewPdf() {
+  if (!preview.children.length || exportPdfButton.disabled) return
+  exportPdfButton.disabled = true
+  status.textContent = '正在生成 PDF…'
+  const style = pdfStyle?.value === 'blog' ? 'blog' : 'plain'
+  const stage = document.createElement('div')
+  stage.className = `latex-pdf-stage is-${style}`
+  stage.setAttribute('aria-hidden', 'true')
+  const documentClone = preview.cloneNode(true)
+  documentClone.removeAttribute('id')
+  documentClone.scrollTop = 0
+  stage.append(documentClone)
+  document.body.append(stage)
+
+  try {
+    await document.fonts?.ready
+    const [{ toCanvas }, { jsPDF }] = await Promise.all([import('html-to-image'), import('jspdf')])
+    const pixelRatio = Math.max(1, Math.min(2, 12000 / stage.scrollHeight))
+    const canvas = await toCanvas(stage, {
+      backgroundColor: getComputedStyle(stage).backgroundColor,
+      cacheBust: true,
+      pixelRatio,
+      width: stage.scrollWidth,
+      height: stage.scrollHeight,
+      style: {
+        position: 'static',
+        inset: 'auto',
+        zIndex: 'auto',
+      },
+    })
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true })
+    const pageWidth = 210
+    const pageHeight = 297
+    const pagePixelHeight = Math.floor(canvas.width * (pageHeight / pageWidth))
+    const background = getComputedStyle(stage).backgroundColor || '#ffffff'
+    let offset = 0
+    let pageIndex = 0
+
+    while (offset < canvas.height) {
+      const remaining = canvas.height - offset
+      if (pageIndex > 0 && remaining <= Math.max(4, Math.ceil(pixelRatio * 2))) break
+      const sliceHeight = Math.min(pagePixelHeight, canvas.height - offset)
+      const pageCanvas = document.createElement('canvas')
+      pageCanvas.width = canvas.width
+      pageCanvas.height = sliceHeight
+      const context = pageCanvas.getContext('2d')
+      context.fillStyle = background
+      context.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
+      context.drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight)
+      if (pageIndex > 0) pdf.addPage()
+      pdf.addImage(pageCanvas.toDataURL('image/jpeg', .95), 'JPEG', 0, 0, pageWidth, (sliceHeight / canvas.width) * pageWidth, undefined, 'FAST')
+      offset += sliceHeight
+      pageIndex += 1
+    }
+
+    pdf.save(style === 'blog' ? 'latex-blog-preview.pdf' : 'latex-document.pdf')
+    status.textContent = `PDF 已导出 · ${pageIndex} 页`
+  } catch (error) {
+    console.error(error)
+    status.textContent = 'PDF 导出失败'
+  } finally {
+    stage.remove()
+    exportPdfButton.disabled = false
+  }
 }
 
 function renderArgument(node, metadata) {
@@ -426,6 +546,7 @@ function setSource(value) {
 }
 
 if (page && input && preview && previewPane && loading && status && workbench) {
+  setupReferencePanel()
   const initial = localStorage.getItem(storageKey) || input.dataset.initialValue || ''
   editor = new EditorView({
     parent: input,
@@ -509,7 +630,7 @@ if (page && input && preview && previewPane && loading && status && workbench) {
     status.textContent = file.name
   })
   copyButton.addEventListener('click', async () => {
-    await navigator.clipboard.writeText(editor.state.doc.toString())
+    await copyText(editor.state.doc.toString())
     status.textContent = '已复制'
   })
   downloadButton.addEventListener('click', () => {
@@ -521,5 +642,6 @@ if (page && input && preview && previewPane && loading && status && workbench) {
     setTimeout(() => URL.revokeObjectURL(url), 0)
   })
   resetButton.addEventListener('click', () => setSource(input.dataset.initialValue || ''))
+  exportPdfButton?.addEventListener('click', exportPreviewPdf)
   render()
 }
