@@ -79,6 +79,7 @@ test('LaTeX tool exposes an incremental local preview instead of a compile actio
   assert.match(script, /katex\.renderToString/)
   assert.match(script, /更新 \$\{diff\.rendered\} 块/)
   assert.match(script, /setPointerCapture/)
+  assert.match(script, /window\.innerWidth \* \.78/)
   assert.match(script, /--latex-source-width/)
   assert.match(script, /import\('html-to-image'\)/)
   assert.match(script, /import\('jspdf'\)/)

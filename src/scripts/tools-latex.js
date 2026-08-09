@@ -140,7 +140,7 @@ function setupReferenceDrawer() {
   }
 
   const setWidth = (value) => {
-    const maximum = Math.max(260, Math.min(520, window.innerWidth - 48))
+    const maximum = Math.max(260, Math.min(window.innerWidth * .78, window.innerWidth - 48))
     const width = Math.max(Math.min(260, maximum), Math.min(maximum, value))
     referencePanel.style.setProperty('--latex-reference-width', `${width}px`)
     referenceResize.setAttribute('aria-valuemax', String(Math.round(maximum)))

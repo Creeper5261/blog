@@ -36,37 +36,337 @@ const referenceGroups = [
     label: '公式',
     entries: [
       { syntax: String.raw`$E = mc^2$`, math: String.raw`E = mc^2`, label: '行内公式' },
-      { syntax: String.raw`\[\frac{a}{b}\]`, math: String.raw`\frac{a}{b}`, display: true, label: '分式' },
-      { syntax: String.raw`\[\sum_{i=1}^{n} i\]`, math: String.raw`\sum_{i=1}^{n} i`, display: true, label: '求和' },
-      { syntax: String.raw`\[\int_a^b f(x)\,dx\]`, math: String.raw`\int_a^b f(x)\,dx`, display: true, label: '积分' },
-      { syntax: String.raw`\[\begin{pmatrix}a&b\\c&d\end{pmatrix}\]`, math: String.raw`\begin{pmatrix}a&b\\c&d\end{pmatrix}`, display: true, label: '矩阵' },
+      {
+        syntax: String.raw`\[
+  \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+\]`,
+        math: String.raw`\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`,
+        display: true,
+        label: '分式与根号',
+      },
+      {
+        syntax: String.raw`\begin{equation}
+  E = mc^2
+  \label{eq:energy}
+\end{equation}`,
+        math: String.raw`E = mc^2 \tag{1}`,
+        display: true,
+        label: '带编号公式',
+      },
+      {
+        syntax: String.raw`\begin{align}
+  (a+b)^2
+    &= a^2 + 2ab + b^2 \\
+    &= (a+b)(a+b)
+\end{align}`,
+        math: String.raw`\begin{aligned}(a+b)^2 &= a^2+2ab+b^2 \\ &= (a+b)(a+b)\end{aligned}`,
+        display: true,
+        label: '多行对齐公式',
+      },
+      {
+        syntax: String.raw`\[
+  f(x) =
+  \begin{cases}
+    x^2, & x \ge 0 \\
+    -x,  & x < 0
+  \end{cases}
+\]`,
+        math: String.raw`f(x)=\begin{cases}x^2,&x\ge0\\-x,&x<0\end{cases}`,
+        display: true,
+        label: '分段函数',
+      },
+      {
+        syntax: String.raw`\[
+  A =
+  \begin{pmatrix}
+    a & b \\
+    c & d
+  \end{pmatrix}
+\]`,
+        math: String.raw`A=\begin{pmatrix}a&b\\c&d\end{pmatrix}`,
+        display: true,
+        label: '矩阵',
+      },
+      {
+        syntax: String.raw`\[
+  \sum_{i=1}^{n} i
+    = \frac{n(n+1)}{2},
+  \qquad
+  \int_a^b f(x)\,dx
+\]`,
+        math: String.raw`\sum_{i=1}^{n}i=\frac{n(n+1)}2,\quad\int_a^b f(x)\,dx`,
+        display: true,
+        label: '求和与积分',
+      },
+      {
+        syntax: String.raw`\[
+  \left\lVert \vec{x} \right\rVert_2
+  = \sqrt{x_1^2 + \cdots + x_n^2}
+\]`,
+        math: String.raw`\left\lVert\vec{x}\right\rVert_2=\sqrt{x_1^2+\cdots+x_n^2}`,
+        display: true,
+        label: '向量与定界符',
+      },
     ],
   },
   {
     id: 'structure',
     label: '结构',
     entries: [
+      {
+        syntax: String.raw`\documentclass{article}
+\usepackage{amsmath}
+
+\title{文档标题}
+\author{作者}
+\date{\today}
+
+\begin{document}
+  \maketitle
+  正文
+\end{document}`,
+        preview: 'document',
+        label: '完整文档骨架',
+      },
       { syntax: String.raw`\section{标题}`, preview: 'section', label: '一级标题' },
       { syntax: String.raw`\subsection{标题}`, preview: 'subsection', label: '二级标题' },
-      { syntax: String.raw`\tableofcontents`, preview: 'contents', label: '目录' },
-      { syntax: String.raw`\begin{abstract}摘要\end{abstract}`, preview: 'abstract', label: '摘要' },
+      { syntax: String.raw`\subsubsection{标题}`, preview: 'subsubsection', label: '三级标题' },
+      {
+        syntax: String.raw`\tableofcontents
+\listoffigures
+\listoftables`,
+        preview: 'contents',
+        label: '目录与图表目录',
+      },
+      {
+        syntax: String.raw`\begin{abstract}
+  在此填写摘要正文。
+\end{abstract}`,
+        preview: 'abstract',
+        label: '摘要',
+      },
+      { syntax: String.raw`\newpage`, preview: 'pagebreak', label: '分页' },
     ],
   },
   {
     id: 'text',
     label: '文本',
     entries: [
-      { syntax: String.raw`\textbf{粗体}`, preview: 'bold', label: '粗体' },
-      { syntax: String.raw`\emph{强调}`, preview: 'emphasis', label: '强调' },
-      { syntax: String.raw`\begin{itemize}\item 项目\end{itemize}`, preview: 'list', label: '列表' },
+      {
+        syntax: String.raw`\textbf{粗体}
+\textit{斜体}
+\emph{强调}
+\texttt{等宽}`, preview: 'text-styles', label: '常用字形',
+      },
+      {
+        syntax: String.raw`\begin{quote}
+  这是一段引用文字。
+\end{quote}`,
+        preview: 'quote',
+        label: '引用段落',
+      },
       { syntax: String.raw`\footnote{注释}`, preview: 'footnote', label: '脚注' },
+      {
+        syntax: String.raw`第一段正文。
+
+第二段正文。\\
+同一段内换行。`,
+        preview: 'paragraphs',
+        label: '段落与换行',
+      },
+      {
+        syntax: String.raw`\begin{center}
+  居中文本
+\end{center}
+
+\begin{flushright}
+  右对齐文本
+\end{flushright}`,
+        preview: 'alignment',
+        label: '文本对齐',
+      },
+    ],
+  },
+  {
+    id: 'list',
+    label: '列表',
+    entries: [
+      {
+        syntax: String.raw`\begin{itemize}
+  \item 第一项
+  \item 第二项
+\end{itemize}`,
+        preview: 'itemize',
+        label: '无序列表',
+      },
+      {
+        syntax: String.raw`\begin{enumerate}
+  \item 第一步
+  \item 第二步
+\end{enumerate}`,
+        preview: 'enumerate',
+        label: '有序列表',
+      },
+      {
+        syntax: String.raw`\begin{description}
+  \item[LaTeX] 排版系统
+  \item[TeX] 底层引擎
+\end{description}`,
+        preview: 'description-list',
+        label: '说明列表',
+      },
+      {
+        syntax: String.raw`\begin{itemize}
+  \item 一级项目
+  \begin{enumerate}
+    \item 二级项目
+  \end{enumerate}
+\end{itemize}`,
+        preview: 'nested-list',
+        label: '嵌套列表',
+      },
     ],
   },
   {
     id: 'table',
     label: '表格',
     entries: [
-      { syntax: String.raw`\begin{tabular}{cc}A&B\\1&2\end{tabular}`, preview: 'table', label: '两列表格' },
+      {
+        syntax: String.raw`\begin{table}[htbp]
+  \centering
+  \begin{tabular}{lcr}
+    \hline
+    姓名 & 分数 & 排名 \\
+    \hline
+    Alice & 95 & 1 \\
+    Bob   & 88 & 2 \\
+    \hline
+  \end{tabular}
+  \caption{成绩表}
+  \label{tab:scores}
+\end{table}`,
+        preview: 'table',
+        label: '基础表格',
+      },
+      {
+        syntax: String.raw`\usepackage{booktabs}
+
+\begin{tabular}{lrr}
+  \toprule
+  项目 & 数量 & 单价 \\
+  \midrule
+  图书 & 2 & 68.00 \\
+  文具 & 5 & 12.50 \\
+  \bottomrule
+\end{tabular}`,
+        preview: 'booktabs',
+        label: '三线表',
+      },
+      {
+        syntax: String.raw`\usepackage{tabularx}
+
+\begin{tabularx}{\textwidth}{lXr}
+  \hline
+  项目 & 说明 & 数量 \\
+  \hline
+  A & 可自动换行的较长说明 & 10 \\
+  B & 另一段说明 & 20 \\
+  \hline
+\end{tabularx}`,
+        preview: 'wide-table',
+        label: '自动宽度表格',
+      },
+      {
+        syntax: String.raw`\begin{tabular}{lcc}
+  \hline
+  \multicolumn{3}{c}{季度数据} \\
+  \hline
+  项目 & 第一季 & 第二季 \\
+  收入 & 120 & 150 \\
+  \hline
+\end{tabular}`,
+        preview: 'merged-table',
+        label: '合并列',
+      },
+    ],
+  },
+  {
+    id: 'figure',
+    label: '图片',
+    entries: [
+      {
+        syntax: String.raw`\usepackage{graphicx}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[
+    width=0.72\textwidth
+  ]{figures/chart.pdf}
+  \caption{实验结果}
+  \label{fig:result}
+\end{figure}`,
+        preview: 'figure',
+        label: '插入图片',
+      },
+      {
+        syntax: String.raw`\begin{figure}[htbp]
+  \centering
+  \begin{minipage}{0.47\textwidth}
+    \includegraphics[width=\linewidth]{a.png}
+    \caption{左图}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.47\textwidth}
+    \includegraphics[width=\linewidth]{b.png}
+    \caption{右图}
+  \end{minipage}
+\end{figure}`,
+        preview: 'two-figures',
+        label: '并排图片',
+      },
+    ],
+  },
+  {
+    id: 'reference',
+    label: '引用',
+    entries: [
+      {
+        syntax: String.raw`\section{方法}
+\label{sec:method}
+
+详见第~\ref{sec:method}~节，
+位于第~\pageref{sec:method}~页。`,
+        preview: 'cross-reference',
+        label: '交叉引用',
+      },
+      {
+        syntax: String.raw`\usepackage{hyperref}
+
+\href{https://www.latex-project.org/}{
+  LaTeX Project
+}
+
+\url{https://www.ctan.org/}`,
+        preview: 'link',
+        label: '超链接',
+      },
+      {
+        syntax: String.raw`正文引用文献~\cite{lamport1994}。
+
+\bibliographystyle{plain}
+\bibliography{references}`,
+        preview: 'citation',
+        label: 'BibTeX 引用',
+      },
+      {
+        syntax: String.raw`\begin{thebibliography}{9}
+  \bibitem{lamport1994}
+  Leslie Lamport.
+  \textit{LaTeX: A Document Preparation System}.
+\end{thebibliography}`,
+        preview: 'bibliography',
+        label: '手写参考文献',
+      },
     ],
   },
 ]
@@ -128,7 +428,7 @@ const referenceGroups = [
         aria-label="调整速查栏宽度"
         aria-orientation="vertical"
         aria-valuemin="260"
-        aria-valuemax="520"
+        aria-valuemax="1600"
         aria-valuenow="320"
       ></button>
       <button id="latex-reference-collapse" class="latex-reference-toggle is-collapse" type="button" aria-controls="latex-reference-panel" aria-expanded="true" aria-label="收起速查栏">
@@ -158,15 +458,32 @@ const referenceGroups = [
                     </td>
                     <td class="latex-reference-result">
                       {entry.math && <span class:list={['latex-reference-math', { 'is-display': entry.display }]} data-latex={entry.math} data-display={entry.display ? 'true' : 'false'}></span>}
+                      {entry.preview === 'document' && <div class="latex-reference-document"><strong>文档标题</strong><span>作者 · 日期</span><p>正文</p></div>}
                       {entry.preview === 'section' && <strong class="latex-reference-section">一级标题</strong>}
                       {entry.preview === 'subsection' && <strong class="latex-reference-subsection">二级标题</strong>}
-                      {entry.preview === 'contents' && <ol class="latex-reference-contents"><li>章节</li><li>小节</li></ol>}
+                      {entry.preview === 'subsubsection' && <strong class="latex-reference-subsubsection">三级标题</strong>}
+                      {entry.preview === 'contents' && <ol class="latex-reference-contents"><li>章节 <span>1</span></li><li>小节 <span>2</span></li></ol>}
                       {entry.preview === 'abstract' && <span class="latex-reference-abstract"><strong>摘要</strong><br />正文摘要</span>}
-                      {entry.preview === 'bold' && <strong>粗体</strong>}
-                      {entry.preview === 'emphasis' && <em>强调</em>}
-                      {entry.preview === 'list' && <ul><li>项目</li></ul>}
+                      {entry.preview === 'pagebreak' && <span class="latex-reference-pagebreak">分页</span>}
+                      {entry.preview === 'text-styles' && <span><strong>粗体</strong>　<em>斜体</em><br /><em>强调</em>　<code>等宽</code></span>}
+                      {entry.preview === 'quote' && <blockquote class="latex-reference-quote">这是一段引用文字。</blockquote>}
                       {entry.preview === 'footnote' && <span>正文<sup>1</sup></span>}
-                      {entry.preview === 'table' && <table class="latex-reference-table"><tbody><tr><td>A</td><td>B</td></tr><tr><td>1</td><td>2</td></tr></tbody></table>}
+                      {entry.preview === 'paragraphs' && <span>第一段正文。<br /><br />第二段正文。<br />同一段内换行。</span>}
+                      {entry.preview === 'alignment' && <div class="latex-reference-alignment"><span>居中文本</span><span>右对齐文本</span></div>}
+                      {entry.preview === 'itemize' && <ul><li>第一项</li><li>第二项</li></ul>}
+                      {entry.preview === 'enumerate' && <ol><li>第一步</li><li>第二步</li></ol>}
+                      {entry.preview === 'description-list' && <dl><dt>LaTeX</dt><dd>排版系统</dd><dt>TeX</dt><dd>底层引擎</dd></dl>}
+                      {entry.preview === 'nested-list' && <ul><li>一级项目<ol><li>二级项目</li></ol></li></ul>}
+                      {entry.preview === 'table' && <figure class="latex-reference-table-figure"><table class="latex-reference-table"><tbody><tr><th>姓名</th><th>分数</th><th>排名</th></tr><tr><td>Alice</td><td>95</td><td>1</td></tr><tr><td>Bob</td><td>88</td><td>2</td></tr></tbody></table><figcaption>表 1：成绩表</figcaption></figure>}
+                      {entry.preview === 'booktabs' && <table class="latex-reference-table is-booktabs"><tbody><tr><th>项目</th><th>数量</th><th>单价</th></tr><tr><td>图书</td><td>2</td><td>68.00</td></tr><tr><td>文具</td><td>5</td><td>12.50</td></tr></tbody></table>}
+                      {entry.preview === 'wide-table' && <table class="latex-reference-table"><tbody><tr><th>项目</th><th>说明</th><th>数量</th></tr><tr><td>A</td><td>可自动换行的较长说明</td><td>10</td></tr></tbody></table>}
+                      {entry.preview === 'merged-table' && <table class="latex-reference-table"><tbody><tr><th colspan="3">季度数据</th></tr><tr><td>项目</td><td>第一季</td><td>第二季</td></tr><tr><td>收入</td><td>120</td><td>150</td></tr></tbody></table>}
+                      {entry.preview === 'figure' && <figure class="latex-reference-figure"><span aria-hidden="true">▧</span><figcaption>图 1：实验结果</figcaption></figure>}
+                      {entry.preview === 'two-figures' && <div class="latex-reference-two-figures"><figure><span aria-hidden="true">▧</span><figcaption>左图</figcaption></figure><figure><span aria-hidden="true">▧</span><figcaption>右图</figcaption></figure></div>}
+                      {entry.preview === 'cross-reference' && <span>详见第 <a href="#">1</a> 节，位于第 <a href="#">2</a> 页。</span>}
+                      {entry.preview === 'link' && <a href="https://www.latex-project.org/">LaTeX Project</a>}
+                      {entry.preview === 'citation' && <span>正文引用文献 [1]。</span>}
+                      {entry.preview === 'bibliography' && <span class="latex-reference-bibliography">[1] Leslie Lamport.<br /><em>LaTeX: A Document Preparation System.</em></span>}
                     </td>
                   </tr>
                 ))}
