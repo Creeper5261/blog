@@ -13,6 +13,7 @@ import { buildRoutesPayload } from './routes.mjs'
 import { buildTopicsPayload } from './topics.mjs'
 
 const INPUT_CACHE_VERSION = 1
+const WINDOWS_RENAME_RETRY_CODES = new Set(['EPERM', 'EBUSY'])
 const BUILDER_INPUTS = [
   fileURLToPath(import.meta.url),
   fileURLToPath(new URL('../content-build/build.mjs', import.meta.url)),
@@ -26,6 +27,24 @@ const BUILDER_INPUTS = [
   fileURLToPath(new URL('./routes.mjs', import.meta.url)),
   fileURLToPath(new URL('./topics.mjs', import.meta.url))
 ]
+
+async function renameDirectoryWithRetry(source, target) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await rename(source, target)
+      return
+    } catch (error) {
+      if (!WINDOWS_RENAME_RETRY_CODES.has(error.code)) throw error
+      if (attempt >= 5) {
+        if (process.platform !== 'win32') throw error
+        await cp(source, target, { recursive: true, errorOnExist: true, force: false })
+        await rm(source, { recursive: true, force: true })
+        return
+      }
+      await new Promise((resolve) => setTimeout(resolve, 40 * (attempt + 1)))
+    }
+  }
+}
 
 function json(value) {
   return `${JSON.stringify(value, null, 2)}\n`
@@ -432,7 +451,7 @@ async function writeSiteData({ generatedRoot, payloads, release, policy, previou
     retention: policy.releaseRetention
   })
   await rm(target, { recursive: true, force: true })
-  await rename(staging, target)
+  await renameDirectoryWithRetry(staging, target)
   await hydrateRetainedObjects(generatedRoot, retainedReleases)
   await pruneMediaForReleases(generatedRoot, retainedReleases)
   return retainedReleases
