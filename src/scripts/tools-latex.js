@@ -1,3 +1,4 @@
+import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap, snippetCompletion } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, defaultHighlightStyle, StreamLanguage, syntaxHighlighting } from '@codemirror/language'
 import { stex } from '@codemirror/legacy-modes/mode/stex'
@@ -46,6 +47,54 @@ const blockMacros = new Set(['part', 'chapter', 'section', 'subsection', 'subsub
 const headingLevels = { part: 1, chapter: 1, section: 2, subsection: 3, subsubsection: 4, paragraph: 5, subparagraph: 6 }
 const mathEnvironments = new Set(['equation', 'equation*', 'align', 'align*', 'aligned', 'gather', 'gather*', 'multline', 'multline*', 'split', 'cases', 'matrix', 'pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix'])
 const theoremNames = { theorem: '定理', lemma: '引理', proposition: '命题', corollary: '推论', definition: '定义', proof: '证明', example: '例', remark: '注' }
+
+const latexCompletions = [
+  snippetCompletion('\\documentclass{${class}}', { label: '\\documentclass', detail: '文档类型', type: 'keyword' }),
+  snippetCompletion('\\usepackage{${package}}', { label: '\\usepackage', detail: '加载宏包', type: 'keyword' }),
+  snippetCompletion('\\title{${title}}', { label: '\\title', detail: '文档标题', type: 'keyword' }),
+  snippetCompletion('\\author{${author}}', { label: '\\author', detail: '作者', type: 'keyword' }),
+  snippetCompletion('\\section{${title}}', { label: '\\section', detail: '一级标题', type: 'keyword' }),
+  snippetCompletion('\\subsection{${title}}', { label: '\\subsection', detail: '二级标题', type: 'keyword' }),
+  snippetCompletion('\\subsubsection{${title}}', { label: '\\subsubsection', detail: '三级标题', type: 'keyword' }),
+  snippetCompletion('\\textbf{${text}}', { label: '\\textbf', detail: '粗体', type: 'keyword' }),
+  snippetCompletion('\\textit{${text}}', { label: '\\textit', detail: '斜体', type: 'keyword' }),
+  snippetCompletion('\\emph{${text}}', { label: '\\emph', detail: '强调', type: 'keyword' }),
+  snippetCompletion('\\texttt{${text}}', { label: '\\texttt', detail: '等宽文本', type: 'keyword' }),
+  snippetCompletion('\\footnote{${text}}', { label: '\\footnote', detail: '脚注', type: 'keyword' }),
+  snippetCompletion('\\href{${url}}{${text}}', { label: '\\href', detail: '超链接', type: 'keyword' }),
+  snippetCompletion('\\label{${key}}', { label: '\\label', detail: '引用标签', type: 'keyword' }),
+  snippetCompletion('\\ref{${key}}', { label: '\\ref', detail: '交叉引用', type: 'keyword' }),
+  snippetCompletion('\\cite{${key}}', { label: '\\cite', detail: '文献引用', type: 'keyword' }),
+  snippetCompletion('\\includegraphics[width=${width}\\textwidth]{${file}}', { label: '\\includegraphics', detail: '插入图片', type: 'keyword' }),
+  snippetCompletion('\\caption{${caption}}', { label: '\\caption', detail: '图表标题', type: 'keyword' }),
+  snippetCompletion('\\frac{${numerator}}{${denominator}}', { label: '\\frac', detail: '分式', type: 'function' }),
+  snippetCompletion('\\sqrt{${value}}', { label: '\\sqrt', detail: '根号', type: 'function' }),
+  snippetCompletion('\\sum_{${i=1}}^{${n}} ${expression}', { label: '\\sum', detail: '求和', type: 'function' }),
+  snippetCompletion('\\int_{${a}}^{${b}} ${f(x)}\\,dx', { label: '\\int', detail: '积分', type: 'function' }),
+  snippetCompletion('\\left(${expression}\\right)', { label: '\\left…\\right', detail: '自适应括号', type: 'function' }),
+  snippetCompletion('\\[\n  ${formula}\n\\]', { label: '\\[…\\]', detail: '行间公式', type: 'keyword' }),
+  snippetCompletion('\\begin{equation}\n  ${formula}\n\\end{equation}', { label: '\\begin{equation}', detail: '编号公式', type: 'keyword' }),
+  snippetCompletion('\\begin{align}\n  ${left} &= ${right} \\\\\n  ${next} &= ${result}\n\\end{align}', { label: '\\begin{align}', detail: '多行对齐公式', type: 'keyword' }),
+  snippetCompletion('\\begin{cases}\n  ${value}, & ${condition} \\\\\n  ${other}, & ${otherwise}\n\\end{cases}', { label: '\\begin{cases}', detail: '分段函数', type: 'keyword' }),
+  snippetCompletion('\\begin{itemize}\n  \\item ${item}\n\\end{itemize}', { label: '\\begin{itemize}', detail: '无序列表', type: 'keyword' }),
+  snippetCompletion('\\begin{enumerate}\n  \\item ${item}\n\\end{enumerate}', { label: '\\begin{enumerate}', detail: '有序列表', type: 'keyword' }),
+  snippetCompletion('\\begin{figure}[htbp]\n  \\centering\n  \\includegraphics[width=${width}\\textwidth]{${file}}\n  \\caption{${caption}}\n  \\label{fig:${key}}\n\\end{figure}', { label: '\\begin{figure}', detail: '图片环境', type: 'keyword' }),
+  snippetCompletion('\\begin{table}[htbp]\n  \\centering\n  \\begin{tabular}{${columns}}\n    ${cells}\n  \\end{tabular}\n  \\caption{${caption}}\n  \\label{tab:${key}}\n\\end{table}', { label: '\\begin{table}', detail: '表格环境', type: 'keyword' }),
+  ...['maketitle', 'tableofcontents', 'newpage', 'centering', 'hfill', 'item'].map((command) => ({
+    label: `\\${command}`,
+    type: 'keyword',
+  })),
+]
+
+const latexCompletionSource = (context) => {
+  const token = context.matchBefore(/\\(?:[A-Za-z]*|begin\{[A-Za-z*]*)/)
+  if (!token && !context.explicit) return null
+  return {
+    from: token?.from ?? context.pos,
+    options: latexCompletions,
+    validFor: /^\\(?:[A-Za-z]*|begin\{[A-Za-z*]*)$/,
+  }
+}
 
 const textOf = (nodes = []) => nodes.map((node) => {
   if (node.type === 'string') return node.content
@@ -613,6 +662,45 @@ const wrapSelection = (before, after = before, placeholder = '') => (view) => {
   return true
 }
 
+const insertMathPair = (view) => {
+  const range = view.state.selection.main
+  const selected = view.state.sliceDoc(range.from, range.to)
+  if (selected) return wrapSelection('$', '$')(view)
+  if (view.state.sliceDoc(range.from, range.from + 1) === '$') {
+    view.dispatch({ selection: { anchor: range.from + 1 } })
+    return true
+  }
+  view.dispatch({
+    changes: { from: range.from, insert: '$$' },
+    selection: { anchor: range.from + 1 },
+  })
+  return true
+}
+
+const completeBeginEnvironment = (view) => {
+  const range = view.state.selection.main
+  if (!range.empty) return false
+  const line = view.state.doc.lineAt(range.from)
+  const before = view.state.sliceDoc(line.from, range.from)
+  const match = before.match(/\\begin\{([A-Za-z*]+)$/)
+  if (!match) return false
+
+  const environment = match[1]
+  const tail = view.state.sliceDoc(range.from, Math.min(view.state.doc.length, range.from + 400))
+  if (tail.includes(`\\end{${environment}}`)) return false
+
+  const hasClosingBrace = tail.startsWith('}')
+  const insertAt = range.from + (hasClosingBrace ? 1 : 0)
+  const indent = line.text.match(/^\s*/)?.[0] || ''
+  const prefix = hasClosingBrace ? '' : '}'
+  const insertion = `${prefix}\n${indent}  \n${indent}\\end{${environment}}`
+  view.dispatch({
+    changes: { from: insertAt, insert: insertion },
+    selection: { anchor: insertAt + prefix.length + indent.length + 3 },
+  })
+  return true
+}
+
 function setSource(value) {
   editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: value } })
 }
@@ -631,13 +719,19 @@ if (page && input && preview && previewPane && loading && status && workbench) {
         history(),
         drawSelection(),
         bracketMatching(),
+        closeBrackets({ brackets: ['(', '[', '{', "'", '"'] }),
+        autocompletion({ override: [latexCompletionSource], activateOnTyping: true }),
         StreamLanguage.define(stex),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         keymap.of([
           { key: 'Mod-b', run: wrapSelection('\\textbf{', '}', 'text') },
           { key: 'Mod-i', run: wrapSelection('\\emph{', '}', 'text') },
           { key: 'Mod-e', run: wrapSelection('$', '$', 'x') },
+          { key: '$', run: insertMathPair },
+          { key: '}', run: completeBeginEnvironment },
           indentWithTab,
+          ...completionKeymap,
+          ...closeBracketsKeymap,
           ...defaultKeymap,
           ...historyKeymap,
         ]),
