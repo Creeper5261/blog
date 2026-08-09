@@ -466,7 +466,7 @@ body:has(.tool-home) #to_comment {
 }
 
 .latex-reference-panel {
-  --latex-reference-width: 320px;
+  --latex-reference-width: 720px;
   position: fixed;
   z-index: 90;
   top: 50%;
@@ -484,7 +484,7 @@ body:has(.tool-home) #to_comment {
   background: color-mix(in srgb, var(--card-bg) 97%, transparent);
   box-shadow: 0 12px 30px rgba(26, 35, 52, .14);
   transform: translateY(-50%);
-  transition: transform .22s ease, opacity .18s ease, visibility 0s linear;
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1), opacity .2s ease, visibility 0s linear;
 }
 
 .latex-reference-panel[data-open="false"] {
@@ -492,7 +492,7 @@ body:has(.tool-home) #to_comment {
   opacity: 0;
   pointer-events: none;
   transform: translate(calc(100% + 4rem), -50%);
-  transition: transform .22s ease, opacity .18s ease, visibility 0s linear .22s;
+  transition: transform .28s cubic-bezier(.4, 0, 1, 1), opacity .18s ease, visibility 0s linear .28s;
 }
 
 .latex-reference-panel[data-resizing="true"] {
@@ -692,6 +692,7 @@ body:has(.tool-home) #to_comment {
 .latex-reference-code {
   display: block;
   width: 100%;
+  overflow-x: auto;
   padding: 0;
   border: 0;
   color: var(--font-color);
@@ -706,8 +707,8 @@ body:has(.tool-home) #to_comment {
 }
 
 .latex-reference-code code {
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+  overflow-wrap: normal;
+  white-space: pre;
   font-size: .68rem;
   line-height: 1.45;
 }

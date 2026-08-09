@@ -131,6 +131,9 @@ function setupReferencePanel() {
 function setupReferenceDrawer() {
   if (!referencePanel || !referenceCollapse || !referenceExpand || !referenceResize) return
 
+  let manualState = false
+  let scrollFrame = 0
+
   const setOpen = (open) => {
     referencePanel.dataset.open = String(open)
     referencePanel.setAttribute('aria-hidden', String(!open))
@@ -147,8 +150,27 @@ function setupReferenceDrawer() {
     referenceResize.setAttribute('aria-valuenow', String(Math.round(width)))
   }
 
-  referenceCollapse.addEventListener('click', () => setOpen(false))
-  referenceExpand.addEventListener('click', () => setOpen(true))
+  const defaultWidth = () => Math.min(720, Math.max(320, window.innerWidth * .46))
+  const syncAutomaticState = () => {
+    scrollFrame = 0
+    if (manualState || !workbench) return
+    const bounds = workbench.getBoundingClientRect()
+    const viewportFocus = window.innerHeight / 2
+    setOpen(bounds.top <= viewportFocus && bounds.bottom >= viewportFocus)
+  }
+  const scheduleAutomaticState = () => {
+    if (manualState || scrollFrame) return
+    scrollFrame = window.requestAnimationFrame(syncAutomaticState)
+  }
+
+  referenceCollapse.addEventListener('click', () => {
+    manualState = true
+    setOpen(false)
+  })
+  referenceExpand.addEventListener('click', () => {
+    manualState = true
+    setOpen(true)
+  })
   referenceResize.addEventListener('pointerdown', (event) => {
     event.preventDefault()
     referenceResize.setPointerCapture(event.pointerId)
@@ -164,10 +186,14 @@ function setupReferenceDrawer() {
   }
   referenceResize.addEventListener('pointerup', finishResize)
   referenceResize.addEventListener('pointercancel', finishResize)
-  referenceResize.addEventListener('dblclick', () => setWidth(320))
-  window.addEventListener('resize', () => setWidth(Number(referenceResize.getAttribute('aria-valuenow')) || 320), { passive: true })
-  setOpen(true)
-  setWidth(320)
+  referenceResize.addEventListener('dblclick', () => setWidth(defaultWidth()))
+  window.addEventListener('scroll', scheduleAutomaticState, { passive: true })
+  window.addEventListener('resize', () => {
+    setWidth(Number(referenceResize.getAttribute('aria-valuenow')) || defaultWidth())
+    scheduleAutomaticState()
+  }, { passive: true })
+  setWidth(defaultWidth())
+  syncAutomaticState()
 }
 
 async function exportPreviewPdf() {
