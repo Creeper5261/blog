@@ -56,6 +56,11 @@ test('compatibility helpers preserve collapsible blocks and booktabs rows', () =
   assert.deepEqual(segments.map((item) => item.type), ['latex', 'details', 'latex'])
   assert.equal(segments[1].open, true)
   assert.equal(segments[1].summary, '注释 $x$')
+  const unfinished = splitHtmlDetails('<details><summary>还在输入</summary>正文')
+  assert.deepEqual(unfinished, [{ type: 'details', open: false, summary: '还在输入', source: '正文' }])
+  const nested = splitHtmlDetails('<details><summary>外层</summary><details><summary>内层</summary>正文</details></details>')
+  assert.equal(nested.length, 1)
+  assert.equal(nested[0].source.includes('<details>'), true)
 
   const table = parseLatexTable(String.raw`\toprule
 方法 & 输出 \\
