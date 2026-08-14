@@ -76,6 +76,26 @@ RMSNorm & $0.913$ \\
   assert.equal(latexFontSizeClass('Huge'), 'latex-size-huge-1')
 })
 
+test('LaTeX splitter keeps details bodies together across blank lines', () => {
+  const source = `前言
+
+<details open>
+<summary>展开说明</summary>
+
+第一段正文。
+
+第二段正文。
+</details>
+
+结尾`
+  const blocks = splitLatexBlocks(source)
+
+  assert.deepEqual(blocks.map((block) => block.source.split('\n')[0]), ['前言', '<details open>', '结尾'])
+  assert.match(blocks[1].source, /第一段正文。/)
+  assert.match(blocks[1].source, /第二段正文。/)
+  assert.equal(splitHtmlDetails(blocks[1].source)[0].source.includes('第二段正文。'), true)
+})
+
 test('large documents only invalidate the edited paragraph', () => {
   const paragraphs = Array.from({ length: 2_000 }, (_, index) => `Paragraph ${index} with $x_${index}$.`).join('\n\n')
   const previous = splitLatexBlocks(paragraphs)

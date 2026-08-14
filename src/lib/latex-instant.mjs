@@ -2,6 +2,8 @@ const SECTION_PATTERN = /^\s*\\(part|chapter|section|subsection|subsubsection|pa
 const STANDALONE_PATTERN = /^\s*\\(maketitle|tableofcontents|bibliography|printbibliography)\b/
 const BEGIN_PATTERN = /\\begin\s*\{([^}]+)\}/g
 const END_PATTERN = /\\end\s*\{([^}]+)\}/g
+const DETAILS_TAG_PATTERN = /<\/?details\b[^>]*>/gi
+const VERBATIM_ENVIRONMENTS = new Set(['verbatim', 'Verbatim', 'lstlisting', 'minted'])
 
 export function hashLatexBlock(value) {
   let hash = 5381
@@ -68,6 +70,18 @@ function environmentDelta(line, stack) {
   }
 }
 
+function detailsDelta(line, depth) {
+  for (const match of line.matchAll(DETAILS_TAG_PATTERN)) {
+    depth += match[0].startsWith('</') ? -1 : 1
+    if (depth < 0) depth = 0
+  }
+  return depth
+}
+
+function isVerbatimEnvironment(stack) {
+  return stack.some((environment) => VERBATIM_ENVIRONMENTS.has(environment))
+}
+
 export function splitLatexBlocks(source) {
   const { body, startLine } = extractLatexBody(source)
   const lines = body.split('\n')
@@ -75,6 +89,7 @@ export function splitLatexBlocks(source) {
   let pending = []
   let pendingStart = startLine
   let environmentStack = []
+  let detailsDepth = 0
 
   const flush = () => {
     const raw = pending.join('\n').trimEnd()
@@ -85,8 +100,9 @@ export function splitLatexBlocks(source) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]
     const lineNumber = startLine + index
-    const startsStructure = environmentStack.length === 0 && (SECTION_PATTERN.test(line) || STANDALONE_PATTERN.test(line))
-    const startsEnvironment = environmentStack.length === 0 && /\\begin\s*\{(?!document\})[^}]+\}/.test(line)
+    const topLevel = environmentStack.length === 0 && detailsDepth === 0
+    const startsStructure = topLevel && (SECTION_PATTERN.test(line) || STANDALONE_PATTERN.test(line))
+    const startsEnvironment = topLevel && /\\begin\s*\{(?!document\})[^}]+\}/.test(line)
 
     if (!pending.length) pendingStart = lineNumber
     if (startsStructure) {
@@ -97,9 +113,11 @@ export function splitLatexBlocks(source) {
     if (startsEnvironment) flush()
     if (!pending.length) pendingStart = lineNumber
     pending.push(line)
+    const insideVerbatim = isVerbatimEnvironment(environmentStack)
     environmentDelta(line, environmentStack)
+    if (!insideVerbatim) detailsDepth = detailsDelta(line, detailsDepth)
 
-    if (environmentStack.length === 0 && (startsEnvironment || !line.trim())) flush()
+    if (environmentStack.length === 0 && detailsDepth === 0 && (startsEnvironment || !line.trim())) flush()
   }
   flush()
 
