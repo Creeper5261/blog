@@ -42,6 +42,13 @@ const RUNTIME_SCRIPTS = [
   '/js/service-fallbacks.js'
 ]
 
+// PJAX only replaces the configured body fragments and does not merge new
+// stylesheet links from a destination page. Keep tool styles in the shared
+// document shell so navigating into a tool is identical to a hard reload.
+const RUNTIME_STYLES = [
+  '/css/tools-native.css'
+]
+
 const SINGLE_SCRIPT_WITH_GITCALENDAR = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:GitCalendarInit|gitcalendar_injector_config)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
 const SINGLE_SCRIPT_WITH_LEGACY_TWIKOO = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:twikoo\.init|twikoo@1\.6\.8)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
 const LIST_MENU_GROUP = /<div class="menus_item">\s*<a class="site-page group[\s\S]*?<ul class="menus_item_child">[\s\S]*?<\/ul>\s*<\/div>/gi
@@ -80,6 +87,12 @@ export function injectRuntimeSupport(html, services = getPublicServices()) {
 
   if (!result.includes('window.DAT_PUBLIC_SERVICES')) {
     result = injectBeforeClosingTag(result, 'head', renderPublicServicesScript(services))
+  }
+
+  for (const stylesheet of RUNTIME_STYLES) {
+    if (!result.includes(`href="${stylesheet}"`)) {
+      result = injectBeforeClosingTag(result, 'head', `<link rel="stylesheet" href="${stylesheet}">`)
+    }
   }
 
   for (const script of RUNTIME_SCRIPTS) {

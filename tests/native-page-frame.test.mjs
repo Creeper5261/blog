@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { applyPublicServices } from '../src/legacy/html-transform.mjs'
 import { loadNativePageShell } from '../src/legacy/native-page.mjs'
+
+test('shared legacy shell always carries tool styles across PJAX navigation', () => {
+  const html = applyPublicServices('<html><head><title>DAT</title></head><body></body></html>')
+  assert.match(html, /<link rel="stylesheet" href="\/css\/tools-native\.css">/)
+  assert.equal(html.match(/href="\/css\/tools-native\.css"/g)?.length, 1)
+
+  const existing = applyPublicServices('<html><head><link rel="stylesheet" href="/css/tools-native.css"></head><body></body></html>')
+  assert.equal(existing.match(/href="\/css\/tools-native\.css"/g)?.length, 1)
+})
 
 test('native page frame keeps Butterfly chrome while replacing toolbox article content', async () => {
   const shell = await loadNativePageShell({
