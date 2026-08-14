@@ -730,6 +730,32 @@ let pendingRender = false
 let syncing = false
 let metadataSignature = ''
 
+function clampProgress(value) {
+  return Math.max(0, Math.min(1, value))
+}
+
+function sourceBlockBounds(block) {
+  const startLine = editor.state.doc.line(Math.max(1, Math.min(block.startLine, editor.state.doc.lines)))
+  const endLine = editor.state.doc.line(Math.max(1, Math.min(block.endLine, editor.state.doc.lines)))
+  const start = editor.lineBlockAt(startLine.from).top
+  const endBlock = editor.lineBlockAt(endLine.from)
+  return { start, end: endBlock.top + endBlock.height }
+}
+
+function sourceBlockProgress(block, scrollTop) {
+  const bounds = sourceBlockBounds(block)
+  return clampProgress((scrollTop - bounds.start) / Math.max(1, bounds.end - bounds.start))
+}
+
+function sourceScrollPosition(block, progress) {
+  const bounds = sourceBlockBounds(block)
+  return Math.max(0, bounds.start + (bounds.end - bounds.start) * progress - 24)
+}
+
+function previewBlockProgress(element, scrollTop) {
+  return clampProgress((scrollTop + 32 - element.offsetTop) / Math.max(1, element.offsetHeight))
+}
+
 function focusLine(number) {
   const line = editor.state.doc.line(Math.max(1, Math.min(number, editor.state.doc.lines)))
   editor.dispatch({ selection: { anchor: line.from }, scrollIntoView: true })
@@ -891,9 +917,10 @@ if (page && input && preview && previewPane && loading && status && workbench) {
     const line = editor.state.doc.lineAt(editor.lineBlockAtHeight(editor.scrollDOM.scrollTop).from).number
     const target = [...preview.children].reverse().find((element) => Number(element.dataset.startLine) <= line)
     if (!target) return
+    const block = blocks.find((item) => item.id === target.dataset.blockId)
+    if (!block) return
     syncing = true
-    const targetTop = target.getBoundingClientRect().top - preview.getBoundingClientRect().top + preview.scrollTop
-    preview.scrollTop = Math.max(0, targetTop - 24)
+    preview.scrollTop = Math.max(0, target.offsetTop + target.offsetHeight * sourceBlockProgress(block, editor.scrollDOM.scrollTop) - 24)
     requestAnimationFrame(() => { syncing = false })
   }, { passive: true })
 
@@ -901,11 +928,10 @@ if (page && input && preview && previewPane && loading && status && workbench) {
     if (syncing || !blocks.length) return
     const previewLine = preview.scrollTop + 32
     const target = [...preview.children].reverse().find((element) => element.offsetTop <= previewLine) || preview.children[0]
-    const lineNumber = Number(target?.dataset.startLine)
-    if (!Number.isFinite(lineNumber)) return
-    const line = editor.state.doc.line(Math.max(1, Math.min(lineNumber, editor.state.doc.lines)))
+    const block = blocks.find((item) => item.id === target?.dataset.blockId)
+    if (!block) return
     syncing = true
-    editor.scrollDOM.scrollTop = Math.max(0, editor.lineBlockAt(line.from).top - 24)
+    editor.scrollDOM.scrollTop = sourceScrollPosition(block, previewBlockProgress(target, preview.scrollTop))
     requestAnimationFrame(() => { syncing = false })
   }, { passive: true })
 
