@@ -11,6 +11,8 @@ test('txmap welcome script guards missing Tencent location data', async () => {
   assert.match(script, /encodeURIComponent\(timeZone\)/)
   assert.match(script, /document\.readyState/)
   assert.match(script, /loadWelcomeLocation\(\)/)
+  assert.match(script, /__datWelcomeLocationRuntime/)
+  assert.match(script, /existingRuntime\.load\(\)/)
   assert.match(script, /ipLoacation.*result.*location/s)
   assert.match(script, /getDistance\(116\.290663,40\.158009/)
   assert.doesNotMatch(script, /和站长在同一个城市/)
