@@ -682,6 +682,13 @@ function appendParsedFlow(parent, source, metadata) {
   appendFlow(parent, parser.parse(source).content, metadata)
 }
 
+function appendSourceSegments(parent, source, metadata) {
+  for (const segment of splitHtmlDetails(source)) {
+    if (segment.type === 'details') parent.append(renderHtmlDetails(segment, metadata))
+    else appendParsedFlow(parent, segment.source, metadata)
+  }
+}
+
 function renderHtmlDetails(segment, metadata) {
   const element = document.createElement('details')
   element.className = 'latex-details'
@@ -690,7 +697,7 @@ function renderHtmlDetails(segment, metadata) {
   appendInline(summary, parser.parse(segment.summary).content, metadata)
   const body = document.createElement('div')
   body.className = 'latex-details-body'
-  appendParsedFlow(body, segment.source, metadata)
+  appendSourceSegments(body, segment.source, metadata)
   element.append(summary, body)
   return element
 }
@@ -702,10 +709,7 @@ function renderBlock(block, metadata) {
   element.dataset.startLine = String(block.startLine)
   element.dataset.endLine = String(block.endLine)
   try {
-    for (const segment of splitHtmlDetails(block.source)) {
-      if (segment.type === 'details') element.append(renderHtmlDetails(segment, metadata))
-      else appendParsedFlow(element, segment.source, metadata)
-    }
+    appendSourceSegments(element, block.source, metadata)
   } catch (error) {
     element.classList.add('latex-preview-block-error')
     const source = document.createElement('pre')

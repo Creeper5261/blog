@@ -1,21 +1,41 @@
-const detailsPattern = /<details\b([^>]*)>([\s\S]*?)<\/details>/gi
 const summaryPattern = /<summary\b[^>]*>([\s\S]*?)<\/summary>/i
 
 export function splitHtmlDetails(source) {
   const segments = []
   let cursor = 0
+  const tags = /<\/?details\b[^>]*>/gi
+  let match
 
-  for (const match of source.matchAll(detailsPattern)) {
-    if (match.index > cursor) segments.push({ type: 'latex', source: source.slice(cursor, match.index) })
-    const body = match[2]
+  while ((match = tags.exec(source))) {
+    if (match[0].startsWith('</')) continue
+    const start = match.index
+    const attributes = match[0]
+    let depth = 1
+    let bodyEnd = source.length
+    let end = source.length
+    let nested
+
+    while ((nested = tags.exec(source))) {
+      if (nested[0].startsWith('</')) depth -= 1
+      else depth += 1
+      if (depth === 0) {
+        bodyEnd = nested.index
+        end = nested.index + nested[0].length
+        break
+      }
+    }
+
+    if (start > cursor) segments.push({ type: 'latex', source: source.slice(cursor, start) })
+    const body = source.slice(match.index + match[0].length, bodyEnd)
     const summary = summaryPattern.exec(body)
     segments.push({
       type: 'details',
-      open: /\bopen\b/i.test(match[1]),
+      open: /\bopen\b/i.test(attributes),
       summary: summary?.[1]?.trim() || '展开内容',
       source: (summary ? body.slice(0, summary.index) + body.slice(summary.index + summary[0].length) : body).trim(),
     })
-    cursor = match.index + match[0].length
+    cursor = end
+    tags.lastIndex = end
   }
 
   if (cursor < source.length) segments.push({ type: 'latex', source: source.slice(cursor) })
