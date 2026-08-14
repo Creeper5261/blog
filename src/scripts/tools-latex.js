@@ -10,6 +10,7 @@ import { printRaw } from '@unified-latex/unified-latex-util-print-raw'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
+import { isSafeCssColor, latexFontSizeClass, parseLatexTable, splitHtmlDetails } from '../lib/latex-compat.mjs'
 import { diffLatexBlocks, extractLatexMetadata, splitLatexBlocks } from '../lib/latex-instant.mjs'
 
 const page = document.querySelector('.latex-editor-page')
@@ -37,8 +38,22 @@ const referenceExpand = document.querySelector('#latex-reference-expand')
 const referenceResize = document.querySelector('#latex-reference-resize')
 
 const parser = getParser({
-  macros: { ...macroInfo.latex2e, ...macroInfo.mathtools, ...macroInfo.hyperref },
-  environments: { ...environmentInfo.latex2e, ...environmentInfo.mathtools },
+  macros: {
+    ...macroInfo.latex2e,
+    ...macroInfo.mathtools,
+    ...macroInfo.hyperref,
+    ...macroInfo.listings,
+    ...macroInfo.minted,
+    ...macroInfo.xcolor,
+    ...macroInfo.nicematrix,
+  },
+  environments: {
+    ...environmentInfo.latex2e,
+    ...environmentInfo.mathtools,
+    ...environmentInfo.listings,
+    ...environmentInfo.minted,
+    ...environmentInfo.nicematrix,
+  },
 })
 const mathCache = new Map()
 const elementCache = new Map()
@@ -47,6 +62,7 @@ const blockMacros = new Set(['part', 'chapter', 'section', 'subsection', 'subsub
 const headingLevels = { part: 1, chapter: 1, section: 2, subsection: 3, subsubsection: 4, paragraph: 5, subparagraph: 6 }
 const mathEnvironments = new Set(['equation', 'equation*', 'align', 'align*', 'aligned', 'gather', 'gather*', 'multline', 'multline*', 'split', 'cases', 'matrix', 'pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix'])
 const theoremNames = { theorem: '定理', lemma: '引理', proposition: '命题', corollary: '推论', definition: '定义', proof: '证明', example: '例', remark: '注' }
+const passthroughMacros = new Set(['label', 'documentclass', 'usepackage', 'title', 'author', 'date', 'begin', 'end', 'noindent', 'centering', 'raggedright', 'raggedleft', 'smallskip', 'medskip', 'bigskip', 'vspace', 'hspace', 'hfill', 'quad', 'qquad', 'enspace'])
 
 const latexCompletions = [
   snippetCompletion('\\documentclass{${class}}', { label: '\\documentclass', detail: '文档类型', type: 'keyword' }),
@@ -342,13 +358,25 @@ function renderMacro(node, metadata) {
     box.textContent = '目录'
     return box
   }
-  if (['textbf', 'mathbf'].includes(name)) {
+  if (['textbf', 'mathbf', 'textmd'].includes(name)) {
     const element = document.createElement('strong')
     element.append(renderArgument(node, metadata))
     return element
   }
-  if (['emph', 'textit'].includes(name)) {
+  if (['emph', 'textit', 'mathit'].includes(name)) {
     const element = document.createElement('em')
+    element.append(renderArgument(node, metadata))
+    return element
+  }
+  if (['textrm', 'mathrm', 'textnormal'].includes(name)) {
+    const element = document.createElement('span')
+    element.className = 'latex-roman'
+    element.append(renderArgument(node, metadata))
+    return element
+  }
+  if (['textsf', 'mathsf'].includes(name)) {
+    const element = document.createElement('span')
+    element.className = 'latex-sans'
     element.append(renderArgument(node, metadata))
     return element
   }
@@ -360,6 +388,29 @@ function renderMacro(node, metadata) {
   if (['texttt', 'verb'].includes(name)) {
     const element = document.createElement('code')
     element.append(renderArgument(node, metadata))
+    return element
+  }
+  if (['fbox', 'framebox', 'parbox', 'mbox', 'makebox'].includes(name)) {
+    const element = document.createElement(name === 'mbox' || name === 'makebox' ? 'span' : 'span')
+    element.className = `latex-${name}`
+    element.append(renderArgument(node, metadata))
+    return element
+  }
+  if (name === 'textcolor') {
+    const args = meaningfulArguments(node)
+    const element = document.createElement('span')
+    const color = textOf(args.at(-2)?.content || [])
+    if (isSafeCssColor(color)) element.style.color = color
+    element.append(...renderInlineNodes(args.at(-1)?.content || [], metadata))
+    return element
+  }
+  if (name === 'colorbox' || name === 'fcolorbox') {
+    const args = meaningfulArguments(node)
+    const element = document.createElement('span')
+    element.className = 'latex-colorbox'
+    const background = textOf(args.at(-2)?.content || [])
+    if (isSafeCssColor(background)) element.style.backgroundColor = background
+    element.append(...renderInlineNodes(args.at(-1)?.content || [], metadata))
     return element
   }
   if (name === 'href') {
@@ -395,16 +446,42 @@ function renderMacro(node, metadata) {
     element.textContent = textOf(lastArgument(node)) || '图片'
     return element
   }
+  if (name === 'caption') {
+    const element = document.createElement('figcaption')
+    element.append(renderArgument(node, metadata))
+    return element
+  }
+  if (name === 'newpage' || name === 'clearpage') {
+    const element = document.createElement('hr')
+    element.className = 'latex-pagebreak'
+    return element
+  }
+  if (name === 'rule') {
+    const element = document.createElement('hr')
+    element.className = 'latex-rule'
+    return element
+  }
+  if (name === 'par') return document.createElement('br')
   if (['LaTeX', 'TeX'].includes(name)) return document.createTextNode(name === 'LaTeX' ? 'LaTeX' : 'TeX')
   if (name === 'today') return document.createTextNode(new Intl.DateTimeFormat('zh-CN').format(new Date()))
   if (['\\', 'newline', 'linebreak'].includes(name)) return document.createElement('br')
-  if ([',', ';', ':', 'quad', 'qquad', 'enspace'].includes(name)) return document.createTextNode(name.includes('qquad') ? '    ' : '  ')
-  if (['label', 'documentclass', 'usepackage', 'title', 'author', 'date', 'begin', 'end'].includes(name)) return document.createDocumentFragment()
+  if ([',', ';', ':'].includes(name)) return document.createTextNode(' ')
+  if (passthroughMacros.has(name)) return document.createDocumentFragment()
+
+  const sizeClass = latexFontSizeClass(name)
+  if (sizeClass) {
+    const element = document.createElement('span')
+    element.className = sizeClass
+    element.append(renderArgument(node, metadata))
+    return element
+  }
 
   const element = document.createElement('span')
-  element.className = 'latex-unknown-command'
-  element.textContent = `\\${name}`
-  if (meaningfulArguments(node).length) element.append(renderArgument(node, metadata))
+  element.className = 'latex-command-fallback'
+  element.dataset.command = name
+  const args = meaningfulArguments(node)
+  if (args.length) element.append(...renderInlineNodes(args.at(-1).content, metadata))
+  else element.textContent = name.length === 1 ? `\\${name}` : ''
   return element
 }
 
@@ -469,25 +546,66 @@ function renderEnvironment(node, metadata) {
     appendFlow(element, node.content, metadata)
     return element
   }
-  if (name === 'tabular') {
+  if (name === 'lstlisting' || name === 'minted' || name === 'verbatim' || name === 'Verbatim') {
+    const wrapper = document.createElement('pre')
+    wrapper.className = 'latex-code-block'
+    const code = document.createElement('code')
+    code.textContent = printRaw(node.content).replace(/^\n|\n$/g, '')
+    wrapper.append(code)
+    return wrapper
+  }
+  if (name === 'details' || name === 'fold' || name === 'accordion') {
+    const element = document.createElement('details')
+    element.className = 'latex-details'
+    const summary = document.createElement('summary')
+    summary.textContent = textOf(meaningfulArguments(node).at(-1)?.content || []) || '展开内容'
+    const body = document.createElement('div')
+    body.className = 'latex-details-body'
+    appendFlow(body, node.content, metadata)
+    element.append(summary, body)
+    return element
+  }
+  if (name === 'description') {
+    const list = document.createElement('dl')
+    list.className = 'latex-description-list'
+    for (const item of splitItems(node.content)) {
+      const term = document.createElement('dt')
+      const definition = document.createElement('dd')
+      const [first = [], ...rest] = item
+      appendInline(term, first, metadata)
+      appendFlow(definition, rest, metadata)
+      list.append(term, definition)
+    }
+    return list
+  }
+  if (['tabular', 'tabular*', 'tabularx', 'longtable', 'array'].includes(name)) {
+    const tableWrap = document.createElement('div')
+    tableWrap.className = 'latex-table-wrap'
     const table = document.createElement('table')
+    const parsed = parseLatexTable(printRaw(node.content))
+    if (parsed.hasBooktabs) table.classList.add('latex-table-booktabs')
     const body = document.createElement('tbody')
-    const raw = printRaw(node.content)
-    for (const rowSource of raw.split(/\\\\/).map((row) => row.trim()).filter(Boolean)) {
+    for (const rowSource of parsed.rows) {
       const row = document.createElement('tr')
-      for (const cellSource of rowSource.split('&')) {
-        const cell = document.createElement('td')
+      for (const cellSource of rowSource.cells) {
+        const cell = document.createElement(rowSource.header ? 'th' : 'td')
         appendFlow(cell, parser.parse(cellSource).content, metadata)
         row.append(cell)
       }
       body.append(row)
     }
     table.append(body)
-    return table
+    tableWrap.append(table)
+    return tableWrap
   }
   if (name === 'figure' || name === 'table') {
     const element = document.createElement(name === 'figure' ? 'figure' : 'div')
     element.className = `latex-${name}`
+    const source = printRaw(node.content)
+    if (/\\centering\b/.test(source)) element.classList.add('latex-center')
+    const size = ['tiny', 'scriptsize', 'footnotesize', 'small', 'normalsize', 'large', 'Large', 'LARGE', 'huge', 'Huge']
+      .find((candidate) => new RegExp(`\\\\${candidate}\\b`).test(source))
+    if (size) element.classList.add(latexFontSizeClass(size))
     appendFlow(element, node.content, metadata)
     return element
   }
@@ -559,6 +677,24 @@ function appendFlow(parent, nodes, metadata) {
   flush()
 }
 
+function appendParsedFlow(parent, source, metadata) {
+  if (!source.trim()) return
+  appendFlow(parent, parser.parse(source).content, metadata)
+}
+
+function renderHtmlDetails(segment, metadata) {
+  const element = document.createElement('details')
+  element.className = 'latex-details'
+  element.open = segment.open
+  const summary = document.createElement('summary')
+  appendInline(summary, parser.parse(segment.summary).content, metadata)
+  const body = document.createElement('div')
+  body.className = 'latex-details-body'
+  appendParsedFlow(body, segment.source, metadata)
+  element.append(summary, body)
+  return element
+}
+
 function renderBlock(block, metadata) {
   const element = document.createElement('section')
   element.className = 'latex-preview-block'
@@ -566,7 +702,10 @@ function renderBlock(block, metadata) {
   element.dataset.startLine = String(block.startLine)
   element.dataset.endLine = String(block.endLine)
   try {
-    appendFlow(element, parser.parse(block.source).content, metadata)
+    for (const segment of splitHtmlDetails(block.source)) {
+      if (segment.type === 'details') element.append(renderHtmlDetails(segment, metadata))
+      else appendParsedFlow(element, segment.source, metadata)
+    }
   } catch (error) {
     element.classList.add('latex-preview-block-error')
     const source = document.createElement('pre')
@@ -751,6 +890,18 @@ if (page && input && preview && previewPane && loading && status && workbench) {
     syncing = true
     const targetTop = target.getBoundingClientRect().top - preview.getBoundingClientRect().top + preview.scrollTop
     preview.scrollTop = Math.max(0, targetTop - 24)
+    requestAnimationFrame(() => { syncing = false })
+  }, { passive: true })
+
+  preview.addEventListener('scroll', () => {
+    if (syncing || !blocks.length) return
+    const previewLine = preview.scrollTop + 32
+    const target = [...preview.children].reverse().find((element) => element.offsetTop <= previewLine) || preview.children[0]
+    const lineNumber = Number(target?.dataset.startLine)
+    if (!Number.isFinite(lineNumber)) return
+    const line = editor.state.doc.line(Math.max(1, Math.min(lineNumber, editor.state.doc.lines)))
+    syncing = true
+    editor.scrollDOM.scrollTop = Math.max(0, editor.lineBlockAt(line.from).top - 24)
     requestAnimationFrame(() => { syncing = false })
   }, { passive: true })
 

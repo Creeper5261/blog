@@ -11,10 +11,36 @@ export function hashLatexBlock(value) {
 
 export function extractLatexMetadata(source) {
   const read = (name) => {
-    const match = new RegExp(`\\\\${name}\\s*\\{([^}]*)\\}`).exec(source)
-    return match?.[1]?.trim() || ''
+    const start = source.search(new RegExp(`\\\\${name}\\s*\\{`))
+    if (start < 0) return ''
+    const brace = source.indexOf('{', start)
+    let depth = 0
+    for (let index = brace; index < source.length; index += 1) {
+      if (source[index] === '{') depth += 1
+      if (source[index] === '}') depth -= 1
+      if (depth === 0) return plainLatexText(source.slice(brace + 1, index))
+    }
+    return ''
   }
   return { title: read('title'), author: read('author'), date: read('date') }
+}
+
+export function plainLatexText(value) {
+  let text = String(value)
+  let previous = ''
+  while (text !== previous) {
+    previous = text
+    text = text.replace(/\\(?:textbf|textit|textrm|textsf|texttt|emph|underline|mathrm|mathbf|mathit)\s*\{([^{}]*)\}/g, '$1')
+  }
+  return text
+    .replace(/\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)\b/g, '')
+    .replace(/\\{1,2}(?:\[[^\]]*\])?/g, ' ')
+    .replace(/\\today\b/g, '__DAT_TODAY__')
+    .replace(/\\[A-Za-z@]+\*?/g, '')
+    .replace(/[{}]/g, '')
+    .replace('__DAT_TODAY__', '\\today')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export function extractLatexBody(source) {

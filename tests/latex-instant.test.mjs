@@ -5,6 +5,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { diffLatexBlocks, extractLatexMetadata, splitLatexBlocks } from '../src/lib/latex-instant.mjs'
+import { latexFontSizeClass, parseLatexTable, splitHtmlDetails } from '../src/lib/latex-compat.mjs'
 import { buildToolManifestPayload } from '../tools/capabilities/manifests.mjs'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -41,6 +42,33 @@ test('editing one paragraph preserves stable IDs for every other block', () => {
   const previous = splitLatexBlocks(sample)
   const next = splitLatexBlocks(sample.replace('One paragraph', 'Changed paragraph'))
   assert.deepEqual(diffLatexBlocks(previous, next), { reused: 3, rendered: 1, removed: 1 })
+})
+
+test('metadata strips common visual macros without losing title text', () => {
+  const metadata = extractLatexMetadata(String.raw`\title{\Huge RMSNorm\\[.35em]\Large Transformer 中的特征尺度控制}
+\author{\textbf{DAT}}`)
+  assert.equal(metadata.title, 'RMSNorm Transformer 中的特征尺度控制')
+  assert.equal(metadata.author, 'DAT')
+})
+
+test('compatibility helpers preserve collapsible blocks and booktabs rows', () => {
+  const segments = splitHtmlDetails('前言\n<details open><summary>注释 $x$</summary>正文</details>\n结尾')
+  assert.deepEqual(segments.map((item) => item.type), ['latex', 'details', 'latex'])
+  assert.equal(segments[1].open, true)
+  assert.equal(segments[1].summary, '注释 $x$')
+
+  const table = parseLatexTable(String.raw`\toprule
+方法 & 输出 \\
+\midrule
+RMSNorm & $0.913$ \\
+\bottomrule`)
+  assert.equal(table.hasBooktabs, true)
+  assert.deepEqual(table.rows, [
+    { cells: ['方法', '输出'], header: true },
+    { cells: ['RMSNorm', '$0.913$'], header: false },
+  ])
+  assert.equal(parseLatexTable('左 & 右 \\\n下 & 上').rows.length, 2)
+  assert.equal(latexFontSizeClass('Huge'), 'latex-size-huge-1')
 })
 
 test('large documents only invalidate the edited paragraph', () => {
@@ -94,10 +122,18 @@ test('LaTeX tool exposes an incremental local preview instead of a compile actio
   assert.match(script, /pdf\.save/)
   assert.match(script, /setupReferenceDrawer/)
   assert.match(script, /referenceResize\.setPointerCapture/)
+  assert.match(script, /splitHtmlDetails/)
+  assert.match(script, /parseLatexTable/)
+  assert.match(script, /preview\.addEventListener\('scroll'/)
+  assert.match(script, /lstlisting/)
+  assert.match(script, /latex-command-fallback/)
   assert.match(styles, /\.latex-tool-layout[\s\S]*?#aside-content[\s\S]*?display: none/)
   assert.match(styles, /\.latex-reference-panel/)
   assert.match(styles, /\.latex-reference-panel\[data-open="false"\]/)
   assert.match(styles, /\.latex-reference-toggle\.is-expand/)
   assert.match(styles, /white-space: pre;/)
   assert.match(styles, /\.latex-pdf-stage\.is-plain/)
+  assert.match(styles, /\.latex-details/)
+  assert.match(styles, /\.latex-code-block/)
+  assert.match(styles, /\.latex-table-booktabs/)
 })
