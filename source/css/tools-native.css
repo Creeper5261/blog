@@ -1198,9 +1198,18 @@ body:has(.tool-home) #to_comment {
 
 .latex-table-wrap > .table-wrap {
   width: 100%;
+  margin: 0;
   overflow-x: auto;
   overflow-y: hidden;
   border-radius: inherit;
+}
+
+/* Recovered LaTeX table fragments retain the theme's nested table wrapper.
+   The outer wrapper owns overflow; the nested wrapper must not reserve its
+   legacy bottom margin or render a second scrollbar track. */
+.latex-table-wrap > .table-wrap > .table-wrap {
+  margin: 0;
+  overflow: visible;
 }
 
 .latex-table-wrap table {
