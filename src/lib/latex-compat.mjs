@@ -1,5 +1,11 @@
 const summaryPattern = /<summary\b[^>]*>([\s\S]*?)<\/summary>/i
 
+const bracketedMathEnvironments = new Set(['matrix', 'pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix', 'smallmatrix', 'cases'])
+
+export function wrapMathEnvironment(name, source) {
+  return bracketedMathEnvironments.has(name) ? `\\begin{${name}}${source}\\end{${name}}` : source
+}
+
 export function splitHtmlDetails(source) {
   const segments = []
   let cursor = 0
