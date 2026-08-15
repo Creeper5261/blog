@@ -1898,6 +1898,21 @@ input[name="colors"] {
   background: color-mix(in srgb, var(--card-bg) 94%, transparent);
   box-shadow: 0 12px 30px color-mix(in srgb, var(--font-color) 10%, transparent);
 }
+/* Long rendered LaTeX articles use the available reading width instead of the
+   narrow default post column. Other articles keep the original layout. */
+#post:has(.latex-document-rendered) {
+  width: min(96vw, 1180px);
+  max-width: 1180px;
+}
+#post:has(.latex-document-rendered) #article-container {
+  width: 100%;
+  max-width: none;
+}
+@media (max-width: 900px) {
+  #post:has(.latex-document-rendered) {
+    width: calc(100vw - 1.25rem);
+  }
+}
 .latex-document-rendered .latex-preview-document {
   color: var(--font-color);
   font-family: "Noto Serif SC", "Songti SC", "Times New Roman", serif;
