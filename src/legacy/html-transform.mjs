@@ -47,7 +47,7 @@ const RUNTIME_SCRIPTS = [
 // document shell so navigating into a tool is identical to a hard reload.
 const RUNTIME_STYLES = [
   '/css/tools-native.css',
-  'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css'
+  '/vendor/vditor/dist/js/katex/katex.min.css'
 ]
 
 const SINGLE_SCRIPT_WITH_GITCALENDAR = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:GitCalendarInit|gitcalendar_injector_config)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
