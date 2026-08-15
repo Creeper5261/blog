@@ -913,6 +913,17 @@ if (page && input && preview && previewPane && loading && status && workbench) {
     }),
   })
 
+  const sourcePath = new URLSearchParams(window.location.search).get('source')
+  if (sourcePath && sourcePath.startsWith('/')) {
+    fetch(sourcePath)
+      .then((response) => response.ok ? response.text() : Promise.reject(new Error(`source ${response.status}`)))
+      .then((source) => {
+        setSource(source)
+        status.textContent = '已载入原生 LaTeX'
+      })
+      .catch(() => { status.textContent = '原生 LaTeX 载入失败' })
+  }
+
   editor.scrollDOM.addEventListener('scroll', () => {
     if (syncing || !blocks.length) return
     const line = editor.state.doc.lineAt(editor.lineBlockAtHeight(editor.scrollDOM.scrollTop).from).number

@@ -7,11 +7,11 @@
     "publishedRoutesUnchanged": true
   },
   "counts": {
-    "sourceFiles": 22,
-    "articles": 22,
+    "sourceFiles": 23,
+    "articles": 23,
     "mediaObjects": 27,
     "externalObjects": 75,
-    "resourceReferences": 105,
+    "resourceReferences": 107,
     "migratedStaticAssets": 27,
     "excludedStaticAssets": 1
   },
@@ -125,6 +125,11 @@
       "id": "article.f3c73b6fe6e28283",
       "source": "source/tools/index.md",
       "title": "百宝箱"
+    },
+    {
+      "id": "article.f869188a60a35c6a",
+      "source": "source/_posts/RMSNorm：起一个稳压器的作用.md",
+      "title": "RMSNorm：起一个稳压器的作用"
     }
   ],
   "resources": [
@@ -548,6 +553,20 @@
       "type": "cover",
       "value": "https://cdn.jsdelivr.net/gh/Creeper5261/picbed@main/img/cover/75509590_p1.webp",
       "target": "external.9e872f3ca23cb0cb"
+    },
+    {
+      "articleId": "article.f869188a60a35c6a",
+      "source": "source/_posts/RMSNorm：起一个稳压器的作用.md",
+      "index": 0,
+      "type": "internal-route",
+      "value": "/tools/latex/?source=/tex/ai-infra/RMSNorm-pilot.tex&embed=1"
+    },
+    {
+      "articleId": "article.f869188a60a35c6a",
+      "source": "source/_posts/RMSNorm：起一个稳压器的作用.md",
+      "index": 1,
+      "type": "internal-route",
+      "value": "/tex/ai-infra/RMSNorm-pilot.tex"
     },
     {
       "articleId": "article.81fe81d4caaaeb13",

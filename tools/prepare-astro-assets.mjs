@@ -13,7 +13,8 @@ const DEFAULT_ASSET_DIRS = [
   'js',
   'lib',
   'live2dw',
-  'temp_classify'
+  'temp_classify',
+  'tex'
 ]
 
 const EXCLUDED_EXTENSIONS = new Set(['.apk'])
