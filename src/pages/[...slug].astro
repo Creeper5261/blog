@@ -27,7 +27,14 @@ export async function getStaticPaths() {
 const legacyRoot = path.resolve('src', 'legacy', 'pages')
 const { outputPath } = Astro.props
 const html = await readFile(path.join(legacyRoot, outputPath), 'utf8')
-const rendered = applyPublicServices(html, getPublicServices())
+const fragmentPath = path.resolve('source', 'content', 'renders', 'RMSNorm.html')
+const renderedSource = html.includes('data-render-fragment="RMSNorm"')
+  ? html.replace(
+    /<div class="latex-document-rendered" data-render-fragment="RMSNorm"><\/div>/u,
+    `<div class="latex-document-rendered"><article class="latex-preview-document">${await readFile(fragmentPath, 'utf8')}</article></div>`
+  )
+  : html
+const rendered = applyPublicServices(renderedSource, getPublicServices())
 ---
 
 <Fragment set:html={rendered} />
