@@ -1073,24 +1073,6 @@ body:has(.tool-home) #to_comment {
   font-family: "Noto Serif SC", "Songti SC", "Times New Roman", serif;
   line-height: 1.85;
 }
-.latex-render-only .workspace-heading,
-.latex-render-only .latex-editor-actions,
-.latex-render-only .latex-source-pane,
-.latex-render-only .latex-resize-handle,
-.latex-reference-panel.is-render-only,
-.latex-render-only .reading-noscript {
-  display: none !important;
-}
-.latex-render-only .latex-main-column,
-.latex-render-only .latex-workbench,
-.latex-render-only .latex-preview-pane {
-  width: 100%;
-  max-width: none;
-}
-.latex-render-only .latex-workbench { display: block; }
-.latex-render-only .latex-preview-pane { min-height: 0; }
-.latex-render-only .latex-preview-document { min-height: 100vh; }
-
 .latex-preview-block {
   box-sizing: border-box;
   width: min(100%, 52rem);
