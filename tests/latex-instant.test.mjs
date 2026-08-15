@@ -5,7 +5,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { diffLatexBlocks, extractLatexMetadata, splitLatexBlocks } from '../src/lib/latex-instant.mjs'
-import { latexFontSizeClass, parseLatexTable, splitHtmlDetails } from '../src/lib/latex-compat.mjs'
+import { latexFontSizeClass, parseLatexTable, splitHtmlDetails, wrapMathEnvironment } from '../src/lib/latex-compat.mjs'
 import { buildToolManifestPayload } from '../tools/capabilities/manifests.mjs'
 
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -74,6 +74,8 @@ RMSNorm & $0.913$ \\
   ])
   assert.equal(parseLatexTable('左 & 右 \\\n下 & 上').rows.length, 2)
   assert.equal(latexFontSizeClass('Huge'), 'latex-size-huge-1')
+  assert.equal(wrapMathEnvironment('bmatrix', 'a & b \\\\ c & d'), '\\begin{bmatrix}a & b \\\\ c & d\\end{bmatrix}')
+  assert.equal(wrapMathEnvironment('equation', 'E=mc^2'), 'E=mc^2')
 })
 
 test('LaTeX splitter keeps details bodies together across blank lines', () => {
@@ -135,6 +137,7 @@ test('LaTeX tool exposes an incremental local preview instead of a compile actio
   assert.match(script, /completeBeginEnvironment/)
   assert.match(script, /insertMathPair/)
   assert.match(script, /katex\.renderToString/)
+  assert.match(script, /wrapMathEnvironment\(name, source\)/)
   assert.match(script, /更新 \$\{diff\.rendered\} 块/)
   assert.match(script, /setPointerCapture/)
   assert.match(script, /window\.innerWidth \* \.78/)

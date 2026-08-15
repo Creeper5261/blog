@@ -10,7 +10,7 @@ import { printRaw } from '@unified-latex/unified-latex-util-print-raw'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
-import { isSafeCssColor, latexFontSizeClass, parseLatexTable, splitHtmlDetails } from '../lib/latex-compat.mjs'
+import { isSafeCssColor, latexFontSizeClass, parseLatexTable, splitHtmlDetails, wrapMathEnvironment } from '../lib/latex-compat.mjs'
 import { diffLatexBlocks, extractLatexMetadata, splitLatexBlocks } from '../lib/latex-instant.mjs'
 
 const page = document.querySelector('.latex-editor-page')
@@ -504,6 +504,7 @@ function renderEnvironment(node, metadata) {
   const name = typeof node.env === 'string' ? node.env : node.env?.content || ''
   if (mathEnvironments.has(name) || node.type === 'mathenv') {
     let source = printRaw(node.content)
+    source = wrapMathEnvironment(name, source)
     if (/^align\*?$/.test(name)) source = `\\begin{aligned}${source}\\end{aligned}`
     if (/^gather\*?$/.test(name)) source = `\\begin{gathered}${source}\\end{gathered}`
     return mathElement(source, true)
