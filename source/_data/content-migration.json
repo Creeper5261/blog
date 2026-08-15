@@ -7,8 +7,8 @@
     "publishedRoutesUnchanged": true
   },
   "counts": {
-    "sourceFiles": 22,
-    "articles": 22,
+    "sourceFiles": 23,
+    "articles": 23,
     "mediaObjects": 27,
     "externalObjects": 75,
     "resourceReferences": 105,
@@ -125,6 +125,11 @@
       "id": "article.f3c73b6fe6e28283",
       "source": "source/tools/index.md",
       "title": "百宝箱"
+    },
+    {
+      "id": "article.f869188a60a35c6a",
+      "source": "source/_posts/RMSNorm：起一个稳压器的作用.md",
+      "title": "RMSNorm：起一个稳压器的作用"
     }
   ],
   "resources": [

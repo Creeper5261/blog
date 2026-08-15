@@ -1,0 +1,13 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import { applyPublicServices, getPublicServices } from '../../legacy/html-transform.mjs'
+import { injectCategoryCounts, listPublishedPosts } from '../../legacy/post-projection.mjs'
+
+const template = path.resolve('src', 'legacy', 'pages', 'categories', 'index.html')
+const html = await readFile(template, 'utf8')
+const rendered = applyPublicServices(injectCategoryCounts(html, await listPublishedPosts()), getPublicServices())
+---
+
+<Fragment set:html={rendered} />

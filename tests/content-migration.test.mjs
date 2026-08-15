@@ -11,8 +11,8 @@ test('content migration inventory is reproducible and complete', async () => {
   const result = await checkMigration()
   assert.equal(result.ok, true, result.errors?.join('\n'))
   assert.deepEqual(result.inventory.counts, {
-    sourceFiles: 22,
-    articles: 22,
+    sourceFiles: 23,
+    articles: 23,
     mediaObjects: 27,
     externalObjects: 75,
     resourceReferences: 105,
@@ -24,7 +24,7 @@ test('content migration inventory is reproducible and complete', async () => {
 test('migrated records use the Sx contract and retain archived status', async () => {
   const result = await migrate({ write: false })
   assert.equal(result.ok, true)
-  assert.equal(result.records.length, 124)
+  assert.equal(result.records.length, 125)
   assert.ok(result.records.every((record) => record.status === 'archived'))
   assert.ok(result.records.filter((record) => record.kind === 'article').every((record) => typeof record.body === 'string'))
   assert.ok(result.records.filter((record) => record.kind === 'external-embed').every((record) => record.url.startsWith('https://')))
@@ -41,7 +41,7 @@ test('migration writes structured roots and leaves source pages in place', async
   await access(path.join(root, 'external', 'resources'))
   const articleFiles = await readdir(path.join(root, 'content', 'articles'))
   const externalFiles = await readdir(path.join(root, 'external', 'resources'))
-  assert.equal(articleFiles.length, 22)
+  assert.equal(articleFiles.length, 23)
   assert.equal(externalFiles.length, 75)
   const inventory = JSON.parse(await readFile(path.join(root, 'source', '_data', 'content-migration.json'), 'utf8'))
   assert.equal(inventory.preservation.sourceMarkdownUnchanged, true)

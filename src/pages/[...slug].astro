@@ -27,7 +27,29 @@ export async function getStaticPaths() {
 const legacyRoot = path.resolve('src', 'legacy', 'pages')
 const { outputPath } = Astro.props
 const html = await readFile(path.join(legacyRoot, outputPath), 'utf8')
-const rendered = applyPublicServices(html, getPublicServices())
+const fragmentPath = path.resolve('source', 'content', 'renders', 'RMSNorm.html')
+const renderedFragment = await readFile(fragmentPath, 'utf8')
+const articleWordCount = (() => {
+  const plainText = renderedFragment
+    .replace(/<[^>]*>/gu, ' ')
+    .replace(/&(?:nbsp|amp|lt|gt|quot|#39);/gu, ' ')
+  const hanCharacters = plainText.match(/[\u4e00-\u9fff]/gu)?.length ?? 0
+  const latinWords = plainText.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/gu)?.length ?? 0
+  return hanCharacters + latinWords
+})()
+const renderedSource = html.includes('data-render-fragment="RMSNorm"')
+  ? html.replace(
+    /<div class="latex-document-rendered" data-render-fragment="RMSNorm"><\/div>/u,
+    `<div class="latex-document-rendered"><article class="latex-preview-document">${renderedFragment}</article></div>`
+  )
+  : html
+const rendered = applyPublicServices(
+  renderedSource.replace(
+    /(<span class="word-count">)0(<\/span>)/u,
+    `$1${articleWordCount.toLocaleString('zh-CN')}$2`
+  ),
+  getPublicServices()
+)
 ---
 
 <Fragment set:html={rendered} />

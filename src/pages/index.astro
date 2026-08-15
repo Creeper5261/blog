@@ -3,10 +3,11 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { applyPublicServices, getPublicServices } from '../legacy/html-transform.mjs'
+import { injectMissingPostCards, listPublishedPosts } from '../legacy/post-projection.mjs'
 
 const legacyHome = path.resolve('src', 'legacy', 'pages', 'index.html')
 const html = await readFile(legacyHome, 'utf8')
-const rendered = applyPublicServices(html, getPublicServices())
+const rendered = applyPublicServices(injectMissingPostCards(html, await listPublishedPosts()), getPublicServices())
 ---
 
 <Fragment set:html={rendered} />

@@ -13,7 +13,8 @@ const DEFAULT_ASSET_DIRS = [
   'js',
   'lib',
   'live2dw',
-  'temp_classify'
+  'temp_classify',
+  'tex'
 ]
 
 const EXCLUDED_EXTENSIONS = new Set(['.apk'])
@@ -55,6 +56,19 @@ async function copyVditorAssets(targetRoot) {
     targetDir: path.join(targetRoot, 'vendor', 'vditor', 'dist', 'js', 'katex', 'fonts'),
     skipped: [],
     relativeBase: 'vendor/vditor/dist/js/katex/fonts'
+  })
+}
+
+async function copyKaTeXAssets(targetRoot) {
+  const packageRoot = path.resolve('node_modules', 'katex', 'dist')
+  const targetDir = path.join(targetRoot, 'vendor', 'katex')
+  await mkdir(targetDir, { recursive: true })
+  await cp(path.join(packageRoot, 'katex.min.css'), path.join(targetDir, 'katex.min.css'))
+  await copyDir({
+    sourceDir: path.join(packageRoot, 'fonts'),
+    targetDir: path.join(targetDir, 'fonts'),
+    skipped: [],
+    relativeBase: 'vendor/katex/fonts'
   })
 }
 
@@ -153,6 +167,7 @@ export async function prepareAstroAssets({
   })
 
   await copyVditorAssets(targetRoot)
+  await copyKaTeXAssets(targetRoot)
 
   await copyDir({
     sourceDir: path.join(generatedRoot, 'site-data'),

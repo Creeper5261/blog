@@ -1,0 +1,24 @@
+---
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+
+import { applyPublicServices, getPublicServices } from '../../legacy/html-transform.mjs'
+import { injectMissingCategoryEntries, listPublishedPosts } from '../../legacy/post-projection.mjs'
+
+export async function getStaticPaths() {
+  const posts = await listPublishedPosts()
+  return [...new Set(posts.flatMap((post) => post.categories))]
+    .map((category) => ({ params: { category } }))
+}
+
+const { category } = Astro.params
+const posts = await listPublishedPosts()
+const template = path.resolve('src', 'legacy', 'pages', 'categories', category, 'index.html')
+const html = await readFile(template, 'utf8')
+const rendered = applyPublicServices(
+  injectMissingCategoryEntries(html, posts.filter((post) => post.categories.includes(category))),
+  getPublicServices()
+)
+---
+
+<Fragment set:html={rendered} />
