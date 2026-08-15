@@ -1898,19 +1898,6 @@ input[name="colors"] {
   background: color-mix(in srgb, var(--card-bg) 94%, transparent);
   box-shadow: 0 12px 30px color-mix(in srgb, var(--font-color) 10%, transparent);
 }
-.latex-document-embed.latex-rendered-article {
-  width: 100%;
-  margin: 1rem 0;
-}
-.latex-document-embed.latex-rendered-article iframe {
-  display: block;
-  width: 100%;
-  min-height: 78vh;
-  height: 1400px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--card-bg);
-}
 /* Long rendered LaTeX articles use the available reading width instead of the
    narrow default post column. Other articles keep the original layout. */
 #post:has(.latex-document-rendered) {

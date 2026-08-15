@@ -16,6 +16,4 @@ tags:
   - 'LLM'
 ---
 
-<div class="latex-document-embed latex-rendered-article">
-  <iframe src="/tools/latex/?source=/tex/ai-infra/RMSNorm-pilot.tex&embed=1&render-only=1" title="RMSNorm LaTeX 渲染结果" loading="eager"></iframe>
-</div>
+<div class="latex-document-rendered" data-render-fragment="RMSNorm"></div>
