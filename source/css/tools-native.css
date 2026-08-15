@@ -1246,59 +1246,6 @@ body:has(.tool-home) #to_comment {
   text-align: center;
 }
 
-/* The article shell also hosts pre-rendered KaTeX. Keep its layout contract
-   local to the shared shell so matrices, fractions and radicals retain their
-   vertical geometry without loading the interactive editor bundle. */
-.latex-document-rendered .katex {
-  font: normal 1.21em KaTeX_Main, "Times New Roman", serif;
-  line-height: 1.2;
-  text-indent: 0;
-  text-rendering: auto;
-}
-.latex-document-rendered .katex * { box-sizing: border-box; }
-.latex-document-rendered .katex .katex-mathml {
-  position: absolute;
-  clip: rect(1px, 1px, 1px, 1px);
-  padding: 0;
-  border: 0;
-  height: 1px;
-  width: 1px;
-  overflow: hidden;
-}
-.latex-document-rendered .katex .katex-html { display: inline-block; }
-.latex-document-rendered .katex-display {
-  display: block;
-  margin: 1em 0;
-  text-align: center;
-}
-.latex-document-rendered .katex-display > .katex { display: inline-block; text-align: initial; }
-.latex-document-rendered .katex .base { position: relative; white-space: nowrap; }
-.latex-document-rendered .katex .strut { display: inline-block; }
-.latex-document-rendered .katex .vlist-t { display: inline-table; table-layout: fixed; }
-.latex-document-rendered .katex .vlist-r { display: table-row; }
-.latex-document-rendered .katex .vlist {
-  display: table-cell;
-  vertical-align: bottom;
-  position: relative;
-}
-.latex-document-rendered .katex .vlist > span { display: block; height: 0; position: relative; }
-.latex-document-rendered .katex .vlist > span > span { display: inline-block; }
-.latex-document-rendered .katex .vlist-s { display: table-cell; vertical-align: bottom; width: 0; }
-.latex-document-rendered .katex .mord,
-.latex-document-rendered .katex .mop,
-.latex-document-rendered .katex .mbin,
-.latex-document-rendered .katex .mrel,
-.latex-document-rendered .katex .mopen,
-.latex-document-rendered .katex .mclose,
-.latex-document-rendered .katex .mpunct,
-.latex-document-rendered .katex .minner { display: inline-block; }
-.latex-document-rendered .katex .mspace { display: inline-block; }
-.latex-document-rendered .katex .mtable { display: inline-block; vertical-align: middle; text-align: center; }
-.latex-document-rendered .katex .arraycolsep { display: inline-block; }
-.latex-document-rendered .katex .fbox {
-  border: 0.04em solid currentColor;
-  padding: 0.2em;
-}
 
 .latex-unknown-command {
   color: color-mix(in srgb, var(--font-color) 58%, transparent);

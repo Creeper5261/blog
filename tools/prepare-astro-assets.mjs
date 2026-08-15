@@ -59,6 +59,19 @@ async function copyVditorAssets(targetRoot) {
   })
 }
 
+async function copyKaTeXAssets(targetRoot) {
+  const packageRoot = path.resolve('node_modules', 'katex', 'dist')
+  const targetDir = path.join(targetRoot, 'vendor', 'katex')
+  await mkdir(targetDir, { recursive: true })
+  await cp(path.join(packageRoot, 'katex.min.css'), path.join(targetDir, 'katex.min.css'))
+  await copyDir({
+    sourceDir: path.join(packageRoot, 'fonts'),
+    targetDir: path.join(targetDir, 'fonts'),
+    skipped: [],
+    relativeBase: 'vendor/katex/fonts'
+  })
+}
+
 async function writeVercelConfig(generatedRoot, targetRoot) {
   let release
   try { release = JSON.parse(await readFile(path.join(generatedRoot, 'site-data', 'release.json'), 'utf8')) } catch { return }
@@ -154,6 +167,7 @@ export async function prepareAstroAssets({
   })
 
   await copyVditorAssets(targetRoot)
+  await copyKaTeXAssets(targetRoot)
 
   await copyDir({
     sourceDir: path.join(generatedRoot, 'site-data'),
