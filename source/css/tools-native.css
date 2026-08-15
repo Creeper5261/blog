@@ -1190,14 +1190,22 @@ body:has(.tool-home) #to_comment {
 .latex-table-wrap {
   width: 100%;
   margin: 1rem 0;
-  overflow-x: auto;
+  overflow: visible;
   border: 1px solid color-mix(in srgb, var(--theme-color) 20%, transparent);
   border-radius: 10px;
   box-shadow: 0 8px 20px color-mix(in srgb, var(--theme-color) 9%, transparent);
 }
 
+.latex-table-wrap > .table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: inherit;
+}
+
 .latex-table-wrap table {
-  min-width: max-content;
+  width: max-content;
+  min-width: 100%;
   margin: 0;
 }
 
@@ -1287,6 +1295,10 @@ body:has(.tool-home) #to_comment {
 .latex-document-rendered .katex .mspace { display: inline-block; }
 .latex-document-rendered .katex .mtable { display: inline-block; vertical-align: middle; text-align: center; }
 .latex-document-rendered .katex .arraycolsep { display: inline-block; }
+.latex-document-rendered .katex .fbox {
+  border: 0.04em solid currentColor;
+  padding: 0.2em;
+}
 
 .latex-unknown-command {
   color: color-mix(in srgb, var(--font-color) 58%, transparent);
