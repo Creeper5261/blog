@@ -3,11 +3,102 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { applyPublicServices, getPublicServices } from '../legacy/html-transform.mjs'
-import { injectMissingPostCards, listPublishedPosts } from '../legacy/post-projection.mjs'
 
 const legacyHome = path.resolve('src', 'legacy', 'pages', 'index.html')
 const html = await readFile(legacyHome, 'utf8')
-const rendered = applyPublicServices(injectMissingPostCards(html, await listPublishedPosts()), getPublicServices())
+const rendered = applyPublicServices(html, getPublicServices())
 ---
 
 <Fragment set:html={rendered} />
+
+<script is:inline>
+  ;(() => {
+    const articlePath = '/2026/08/15/RMSNorm/'
+
+    const addRmsNormToCarousel = () => {
+      const wrapper = document.querySelector('#swiper_container .blog-slider__wrp')
+      if (!wrapper || wrapper.querySelector(`[data-post-path="${articlePath}"]`)) return
+
+      const slide = document.createElement('div')
+      slide.className = 'blog-slider__item swiper-slide'
+      slide.dataset.postPath = articlePath
+      slide.innerHTML = `
+        <a class="blog-slider__img" href="${articlePath}" aria-label="RMSNorm：起一个稳压器的作用">
+          <img width="48" height="48" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://cdn.jsdelivr.net/gh/Creeper5261/picbed@main/img/cover/75509590_p1.webp" alt="RMSNorm：起一个稳压器的作用" onerror="this.onerror=null;this.src='/img/404.jpg'">
+        </a>
+        <div class="blog-slider__content">
+          <span class="blog-slider__code">2026-08-15</span>
+          <a class="blog-slider__title" href="${articlePath}">RMSNorm：起一个稳压器的作用</a>
+          <div class="blog-slider__text">AI Infra 系列试点：RMSNorm 的原生 LaTeX 排版稿。</div>
+          <a class="blog-slider__button" href="${articlePath}">详情</a>
+        </div>`
+      wrapper.prepend(slide)
+    }
+
+    const addRmsNormToPostList = () => {
+      const postList = document.querySelector('#recent-posts')
+      if (!postList || postList.querySelector(`[data-home-card-path="${articlePath}"]`)) return
+
+      const nativeCards = [...postList.children].filter((node) => node.querySelector('.recent-post-content'))
+      const template = nativeCards[0]
+      if (!template) return
+
+      const card = template.cloneNode(true)
+      card.dataset.homeCardPath = articlePath
+      const setText = (selector, value) => {
+        const node = card.querySelector(selector)
+        if (node) node.textContent = value
+      }
+      const setLink = (selector, href, title) => {
+        const node = card.querySelector(selector)
+        if (!node) return
+        node.setAttribute('href', href)
+        if (title) node.setAttribute('title', title)
+      }
+
+      const title = 'RMSNorm：起一个稳压器的作用'
+      const description = 'AI Infra 系列试点：RMSNorm 的原生 LaTeX 排版稿。'
+      const image = card.querySelector('.article-cover')
+      if (image) {
+        image.setAttribute('data-lazy-src', 'https://cdn.jsdelivr.net/gh/Creeper5261/picbed@main/img/cover/75509590_p1.webp')
+        image.setAttribute('alt', title)
+      }
+      setLink('.article-title', articlePath, title)
+      setText('.article-title-link', title)
+      setLink('.article-content', articlePath, title)
+      setText('.article-content-text', description)
+      setLink('.article-meta__categories', '/categories/%E5%AD%A6%E4%B9%A0/')
+      setText('.article-meta__categories', '学习')
+      setLink('.article-meta__tags', '/tags/RMSNorm/')
+      setText('.article-meta__tags', 'RMSNorm')
+
+      const created = card.querySelector('.post-meta-date-created')
+      if (created) {
+        created.dateTime = '2026-08-15T12:00:00.000Z'
+        created.title = '发表于 2026-08-15 20:00:00'
+        created.textContent = '2026-08-15'
+      }
+      const updated = card.querySelector('.post-meta-date-updated')
+      if (updated) {
+        updated.dateTime = '2026-08-16T00:00:00.000Z'
+        updated.title = '更新于 2026-08-16 08:00:00'
+        updated.textContent = '2026-08-16'
+      }
+
+      template.before(card)
+      ;[card, ...nativeCards].forEach((nativeCard, index) => {
+        const content = nativeCard.querySelector('.recent-post-content')
+        if (!content) return
+        content.classList.toggle('left', index % 2 === 0)
+        content.classList.toggle('right', index % 2 === 1)
+      })
+    }
+
+    addRmsNormToCarousel()
+    addRmsNormToPostList()
+    document.addEventListener('pjax:complete', () => {
+      addRmsNormToCarousel()
+      addRmsNormToPostList()
+    })
+  })()
+</script>
