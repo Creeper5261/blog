@@ -15,7 +15,7 @@ test('content migration inventory is reproducible and complete', async () => {
     articles: 23,
     mediaObjects: 27,
     externalObjects: 75,
-    resourceReferences: 105,
+    resourceReferences: 106,
     migratedStaticAssets: 27,
     excludedStaticAssets: 1
   })

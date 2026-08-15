@@ -14,6 +14,7 @@ import { isSafeCssColor, latexFontSizeClass, parseLatexTable, splitHtmlDetails, 
 import { diffLatexBlocks, extractLatexMetadata, splitLatexBlocks } from '../lib/latex-instant.mjs'
 
 const page = document.querySelector('.latex-editor-page')
+const renderOnly = new URLSearchParams(window.location.search).get('render-only') === '1'
 const input = document.querySelector('#latex-input')
 const preview = document.querySelector('#latex-preview')
 const previewPane = document.querySelector('.latex-preview-pane')
@@ -36,6 +37,11 @@ const referencePanel = document.querySelector('#latex-reference-panel')
 const referenceCollapse = document.querySelector('#latex-reference-collapse')
 const referenceExpand = document.querySelector('#latex-reference-expand')
 const referenceResize = document.querySelector('#latex-reference-resize')
+
+if (renderOnly) {
+  page?.classList.add('latex-render-only')
+  referencePanel?.classList.add('is-render-only')
+}
 
 const parser = getParser({
   macros: {

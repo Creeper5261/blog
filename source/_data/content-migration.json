@@ -11,7 +11,7 @@
     "articles": 23,
     "mediaObjects": 27,
     "externalObjects": 75,
-    "resourceReferences": 105,
+    "resourceReferences": 106,
     "migratedStaticAssets": 27,
     "excludedStaticAssets": 1
   },
@@ -553,6 +553,13 @@
       "type": "cover",
       "value": "https://cdn.jsdelivr.net/gh/Creeper5261/picbed@main/img/cover/75509590_p1.webp",
       "target": "external.9e872f3ca23cb0cb"
+    },
+    {
+      "articleId": "article.f869188a60a35c6a",
+      "source": "source/_posts/RMSNorm：起一个稳压器的作用.md",
+      "index": 0,
+      "type": "internal-route",
+      "value": "/tools/latex/?source=/tex/ai-infra/RMSNorm-pilot.tex&embed=1&render-only=1"
     },
     {
       "articleId": "article.81fe81d4caaaeb13",
