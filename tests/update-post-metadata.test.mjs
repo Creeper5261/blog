@@ -2,6 +2,15 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import matter from 'gray-matter'
 import { updateMarkdownText } from '../tools/update-post-metadata.mjs'
+import { metadataHashFor } from '../tools/publish-latex.mjs'
+
+test('publication metadata hash covers every projection field', () => {
+  const base = { title: 'A', date: '2026-01-01', permalink: '/a/', description: 'd', cover: 'cover', comments: true, home: true, carousel: false, timeline: true, categories: ['学习'], tags: ['AI'] }
+  const hash = metadataHashFor(base, 'a')
+  for (const [field, value] of [['cover', 'cover-2'], ['comments', false], ['home', false], ['carousel', true], ['timeline', false], ['categories', ['工具']], ['tags', ['ML']]]) {
+    assert.notEqual(metadataHashFor({ ...base, [field]: value }, 'a'), hash, `${field} must affect metadata identity`)
+  }
+})
 
 test('updated metadata changes on real Markdown edits and remains stable afterward', () => {
   const original = matter.stringify('正文 A', { title: '普通文章', date: '2026-01-01', updated: '2026-01-01', permalink: '/普通文章/' })

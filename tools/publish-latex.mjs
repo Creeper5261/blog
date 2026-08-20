@@ -20,7 +20,9 @@ for (let i = 2; i < process.argv.length; i += 1) {
 const readYaml = async (file) => matter(`---\n${await fs.readFile(file, 'utf8')}\n---`).data
 const hash = (value) => crypto.createHash('sha256').update(value).digest('hex')
 const canonical = (value) => JSON.stringify(value, Object.keys(value).sort())
+export const metadataHashFor = (meta, id) => hash(canonical(Object.fromEntries(Object.entries({ ...meta, id, rendererIdentity: RENDERER_IDENTITY }).filter(([key]) => !['updated', 'renderFragment', 'renderSourceHash'].includes(key)))))
 const stableUpdated = async (file, fallback) => {
+  if (process.env.PUBLISH_UPDATED_AT) return process.env.PUBLISH_UPDATED_AT
   try {
     const status = await exec('git', ['status', '--short', '--', path.relative(root, file)], { cwd: root, windowsHide: true })
     if (status.stdout.trim()) return fallback
@@ -81,10 +83,19 @@ export function validatePublicationManifest(manifest) {
   }
   return true
 }
+export async function validatePublicationFiles(manifest, repositoryRoot = root) {
+  validatePublicationManifest(manifest)
+  for (const article of manifest.articles) {
+    for (const file of [article.source, article.yaml, `source/content/renders/${article.id}.html`]) {
+      if (!file || !await fs.stat(path.resolve(repositoryRoot, file)).catch(() => null)) throw new Error(`publication file missing: ${article.id}:${file || '<empty>'}`)
+    }
+  }
+  return true
+}
 async function publish(texFile, metaFile) {
   const source = await fs.readFile(texFile, 'utf8'); const sourceHash = hash(source); const meta = await readYaml(metaFile)
   const id = String(meta.id || path.basename(texFile, path.extname(texFile))).replace(/[^\p{L}\p{N}_-]+/gu, '-')
-  const metadataHash = hash(canonical({ title: meta.title, description: meta.description || '', categories: meta.categories || [], tags: meta.tags || [], permalink: meta.permalink || `/${id}/`, renderer: RENDERER_IDENTITY }))
+  const metadataHash = metadataHashFor(meta, id)
   const renderKey = hash(`${sourceHash}\0${metadataHash}\0${RENDERER_IDENTITY}`)
   let rendered = renderTex(source)
   let renderCache = false
@@ -110,8 +121,9 @@ async function publish(texFile, metaFile) {
   const updated = changed ? await stableUpdated(texFile, new Date().toISOString()) : (previous?.updated || existing.updated || meta.updated || meta.date)
   await fs.writeFile(postFile, postMarkdown({ ...meta, updated, sourceHash, metadataHash }, id, existing))
   manifest.articles = (manifest.articles || []).filter((article) => article.id !== id)
-  manifest.articles.push({ id, title: meta.title, date: existing.date || previous?.date || meta.date, updated, description: meta.description || '', permalink: existing.permalink || previous?.permalink || meta.permalink || `/${id}/`, cover: meta.cover || '', categories: meta.categories || [], tags: meta.tags || [], home: meta.home !== false, carousel: meta.carousel === true, timeline: meta.timeline !== false, source: path.relative(root, texFile).split(path.sep).join('/'), sourceHash, metadataHash, rendererIdentity: RENDERER_IDENTITY, renderKey, renderCache })
+  manifest.articles.push({ id, title: meta.title, date: existing.date || previous?.date || meta.date, updated, description: meta.description || '', permalink: existing.permalink || previous?.permalink || meta.permalink || `/${id}/`, cover: meta.cover || '', categories: meta.categories || [], tags: meta.tags || [], home: meta.home !== false, carousel: meta.carousel === true, timeline: meta.timeline !== false, source: path.relative(root, texFile).split(path.sep).join('/'), yaml: path.relative(root, metaFile).split(path.sep).join('/'), sourceHash, metadataHash, rendererIdentity: RENDERER_IDENTITY, renderKey, renderCache })
   validatePublicationManifest(manifest)
+  await validatePublicationFiles(manifest)
   manifest.articles.sort((a, b) => String(b.date).localeCompare(String(a.date))); await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
   console.log(`published ${id}: ${renderCache ? 'cache reused' : 'rendered'}; source ${sourceHash.slice(0, 12)}`)
 }
