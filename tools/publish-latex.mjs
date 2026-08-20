@@ -4,6 +4,7 @@ import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import matter from 'gray-matter'
 import katex from 'katex'
 import { promisify } from 'node:util'
@@ -21,6 +22,8 @@ const hash = (value) => crypto.createHash('sha256').update(value).digest('hex')
 const canonical = (value) => JSON.stringify(value, Object.keys(value).sort())
 const stableUpdated = async (file, fallback) => {
   try {
+    const status = await exec('git', ['status', '--short', '--', path.relative(root, file)], { cwd: root, windowsHide: true })
+    if (status.stdout.trim()) return fallback
     const { stdout } = await exec('git', ['log', '-1', '--format=%cI', '--', path.relative(root, file)], { cwd: root, windowsHide: true })
     return stdout.trim() || fallback
   } catch { return fallback }
@@ -66,6 +69,18 @@ const postMarkdown = (meta, id, existing = {}) => {
   lines.push('---', '', `<div class="latex-document-rendered" data-render-fragment="${id}"></div>`, '')
   return lines.join('\n')
 }
+export function validatePublicationManifest(manifest) {
+  const articles = manifest?.articles
+  if (!Array.isArray(articles)) throw new Error('latex publication manifest must contain an articles array')
+  const ids = new Set(); const permalinks = new Set()
+  for (const article of articles) {
+    if (!article.id || ids.has(article.id)) throw new Error(`duplicate or missing publication id: ${article.id || '<empty>'}`)
+    if (!article.permalink || permalinks.has(article.permalink)) throw new Error(`duplicate or missing publication permalink: ${article.permalink || '<empty>'}`)
+    if (!article.sourceHash || !article.metadataHash || !article.rendererIdentity || !article.renderKey) throw new Error(`publication identity incomplete: ${article.id}`)
+    ids.add(article.id); permalinks.add(article.permalink)
+  }
+  return true
+}
 async function publish(texFile, metaFile) {
   const source = await fs.readFile(texFile, 'utf8'); const sourceHash = hash(source); const meta = await readYaml(metaFile)
   const id = String(meta.id || path.basename(texFile, path.extname(texFile))).replace(/[^\p{L}\p{N}_-]+/gu, '-')
@@ -96,6 +111,7 @@ async function publish(texFile, metaFile) {
   await fs.writeFile(postFile, postMarkdown({ ...meta, updated, sourceHash, metadataHash }, id, existing))
   manifest.articles = (manifest.articles || []).filter((article) => article.id !== id)
   manifest.articles.push({ id, title: meta.title, date: existing.date || previous?.date || meta.date, updated, description: meta.description || '', permalink: existing.permalink || previous?.permalink || meta.permalink || `/${id}/`, cover: meta.cover || '', categories: meta.categories || [], tags: meta.tags || [], home: meta.home !== false, carousel: meta.carousel === true, timeline: meta.timeline !== false, source: path.relative(root, texFile).split(path.sep).join('/'), sourceHash, metadataHash, rendererIdentity: RENDERER_IDENTITY, renderKey, renderCache })
+  validatePublicationManifest(manifest)
   manifest.articles.sort((a, b) => String(b.date).localeCompare(String(a.date))); await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
   console.log(`published ${id}: ${renderCache ? 'cache reused' : 'rendered'}; source ${sourceHash.slice(0, 12)}`)
 }
@@ -108,4 +124,4 @@ async function main() {
     await publish(texFile, metaFile)
   }
 }
-main().catch((error) => { console.error(error.message); process.exitCode = 1 })
+if (import.meta.url === pathToFileURL(process.argv[1]).href) main().catch((error) => { console.error(error.message); process.exitCode = 1 })
