@@ -23,6 +23,26 @@ const expected = expectedManifest.articles.find((article) => article.id === id)
 if (!expected || expected.date !== '2026-08-15T12:00:00.000Z' || expected.permalink !== '/2026/08/15/RMSNorm/') throw new Error('expected RMSNorm identity is incomplete')
 assertManifestErrors()
 await assertIsolatedGitBuild()
+await assertGitUpdatedRegression()
+
+async function assertGitUpdatedRegression() {
+  const tempRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'latex-git-regression-'))
+  try {
+    execFileSync('git', ['init', '-q'], { cwd: tempRepo }); execFileSync('git', ['config', 'user.email', 'acceptance@example.invalid'], { cwd: tempRepo }); execFileSync('git', ['config', 'user.name', 'Acceptance'], { cwd: tempRepo })
+    await fs.mkdir(path.join(tempRepo, 'source/tex/ai-infra'), { recursive: true }); await fs.mkdir(path.join(tempRepo, 'source/_data'), { recursive: true })
+    await fs.copyFile(sourceTex, path.join(tempRepo, 'source/tex/ai-infra/RMSNorm-pilot.tex')); await fs.copyFile(sourceYaml, path.join(tempRepo, 'source/tex/ai-infra/RMSNorm-pilot.yaml'))
+    const invoke = () => execFileSync(process.execPath, [path.join(root, 'tools/publish-latex.mjs'), '--all', '--dir', 'source/tex'], { cwd: tempRepo, stdio: 'pipe', env: Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'PUBLISH_UPDATED_AT')) })
+    invoke(); execFileSync('git', ['add', '-f', '.'], { cwd: tempRepo }); execFileSync('git', ['commit', '-qm', 'tracked RMSNorm projection'], { cwd: tempRepo })
+    const first = JSON.parse(await fs.readFile(path.join(tempRepo, 'source/_data/latex-publications.json'), 'utf8')).articles[0]
+    await fs.appendFile(path.join(tempRepo, 'source/tex/ai-infra/RMSNorm-pilot.tex'), '\n% tracked content edit\n'); execFileSync('git', ['add', '-f', '.'], { cwd: tempRepo }); execFileSync('git', ['commit', '-qm', 'edit RMSNorm source'], { cwd: tempRepo }); invoke()
+    const second = JSON.parse(await fs.readFile(path.join(tempRepo, 'source/_data/latex-publications.json'), 'utf8')).articles[0]
+    const commitTime = execFileSync('git', ['log', '-1', '--format=%cI', '--', 'source/tex/ai-infra/RMSNorm-pilot.tex'], { cwd: tempRepo, encoding: 'utf8' }).trim()
+    if (second.updated !== commitTime || second.sourceHash === first.sourceHash || second.renderKey === first.renderKey || second.permalink !== expected.permalink) throw new Error('git updated/source identity regression failed')
+    await fs.writeFile(path.join(tempRepo, 'unrelated.txt'), 'unrelated\n'); execFileSync('git', ['add', 'unrelated.txt'], { cwd: tempRepo }); execFileSync('git', ['commit', '-qm', 'unrelated change'], { cwd: tempRepo }); invoke()
+    const third = JSON.parse(await fs.readFile(path.join(tempRepo, 'source/_data/latex-publications.json'), 'utf8')).articles[0]
+    if (third.updated !== second.updated || third.sourceHash !== second.sourceHash || third.renderKey !== second.renderKey) throw new Error('unrelated git commit drifted publication identity')
+  } finally { await fs.rm(tempRepo, { recursive: true, force: true }) }
+}
 
 async function assertIsolatedGitBuild() {
   const worktreeRoot = os.tmpdir()
