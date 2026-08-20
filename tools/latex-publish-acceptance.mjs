@@ -32,18 +32,18 @@ async function assertIsolatedGitBuild() {
     execFileSync('git', ['worktree', 'add', '--detach', worktree, 'HEAD'], { cwd: root, stdio: 'pipe' })
     const packageManager = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
     const install = (command, args) => execFileSync(command, args, { cwd: worktree, stdio: 'pipe', shell: process.platform === 'win32', env: { ...process.env, PUBLISH_UPDATED_AT: expected.updated } })
-    install(packageManager, ['install', '--offline', '--no-frozen-lockfile'])
+    const storePath = execFileSync(packageManager, ['store', 'path'], { cwd: root, shell: process.platform === 'win32', encoding: 'utf8' }).trim()
+    install(packageManager, ['install', '--config.frozen-lockfile=false', '--store-dir', storePath])
     await fs.copyFile(path.join(root, 'tools/publish-latex.mjs'), path.join(worktree, 'tools/publish-latex.mjs'))
     for (const file of [sourceTex, sourceYaml, expectedPost, expectedFragment]) await fs.rm(path.join(worktree, path.relative(root, file)), { force: true })
+    await fs.mkdir(path.join(worktree, 'source/tex/acceptance'), { recursive: true })
+    await fs.writeFile(path.join(worktree, 'source/tex/acceptance/sample.tex'), '## acceptance sample\n')
+    await fs.writeFile(path.join(worktree, 'source/tex/acceptance/sample.yaml'), "id: acceptance-sample\ntitle: 'Acceptance sample'\ndate: '2026-01-01'\npermalink: '/acceptance-sample/'\n")
     const manifestFile = path.join(worktree, 'source/_data/latex-publications.json')
     const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'))
     await fs.writeFile(manifestFile, `${JSON.stringify({ ...manifest, articles: manifest.articles.filter((article) => article.id !== id) }, null, 2)}\n`)
     const runCommand = (command, args, shell = false) => execFileSync(command, args, { cwd: worktree, stdio: 'pipe', shell, env: { ...process.env, PATH: `${path.join(root, 'node_modules', '.bin')};${process.env.PATH}`, NODE_PATH: path.join(root, 'node_modules'), PUBLISH_UPDATED_AT: expected.updated } })
-    const texFiles = (await fs.readdir(path.join(worktree, 'source/tex/ai-infra'))).filter((file) => file.endsWith('.tex'))
-    if (texFiles.length > 0) {
-      if (process.platform === 'win32') execFileSync(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', `${process.execPath.replace('Program Files', 'Progra~1')} ${path.join(worktree, 'tools/publish-latex.mjs')} --all --dir source/tex`], { cwd: worktree, stdio: 'pipe', env: { ...process.env, PATH: `${path.join(root, 'node_modules', '.bin')};${process.env.PATH}`, NODE_PATH: path.join(root, 'node_modules'), PUBLISH_UPDATED_AT: expected.updated } })
-      else runCommand(process.execPath, [path.join(worktree, 'tools/publish-latex.mjs'), '--all', '--dir', 'source/tex'])
-    }
+    runCommand(packageManager, ['run', 'publish:latex', '--', '--all', '--dir', 'source/tex'], true)
     try {
       runCommand(packageManager, ['run', 'legacy:build'], true)
       runCommand(packageManager, ['run', 'recovery:prepare-legacy-pages'], true)
