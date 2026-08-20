@@ -25,6 +25,7 @@
     "writer": "node tools/writer/server.mjs",
     "publish:latex": "node tools/publish-latex.mjs",
     "publish:latex:acceptance": "node tools/latex-publish-acceptance.mjs",
+    "update:post-metadata": "node tools/update-post-metadata.mjs",
     "publish:output": "node tools/publish-output.mjs",
     "backup:stats": "node tools/backup-stats.mjs",
     "visual:report": "node tools/visual-compare.mjs",

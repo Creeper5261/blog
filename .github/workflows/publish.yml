@@ -37,6 +37,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Refresh article projections from source files
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          pnpm run publish:latex -- --all
+          pnpm run update:post-metadata
+
+      - name: Rebuild retained Hexo compatibility pages
+        run: |
+          pnpm run legacy:build
+          pnpm run recovery:prepare-legacy-pages
+
       - name: Check source
         run: pnpm run check
 
