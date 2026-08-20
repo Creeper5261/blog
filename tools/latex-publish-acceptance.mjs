@@ -35,9 +35,9 @@ async function assertIsolatedGitBuild() {
     install(packageManager, ['install', '--config.frozen-lockfile=false', '--store-dir', storePath])
     await fs.copyFile(path.join(root, 'tools/publish-latex.mjs'), path.join(worktree, 'tools/publish-latex.mjs'))
     for (const file of [sourceTex, sourceYaml, expectedPost, expectedFragment]) await fs.rm(path.join(worktree, path.relative(root, file)), { force: true })
-    await fs.mkdir(path.join(worktree, 'source/tex/acceptance'), { recursive: true })
-    await fs.writeFile(path.join(worktree, 'source/tex/acceptance/sample.tex'), '## acceptance sample\n')
-    await fs.writeFile(path.join(worktree, 'source/tex/acceptance/sample.yaml'), "id: acceptance-sample\ntitle: 'Acceptance sample'\ndate: '2026-01-01'\npermalink: '/acceptance-sample/'\n")
+    await fs.mkdir(path.join(worktree, 'source/tex/ai-infra'), { recursive: true })
+    await copy(sourceTex, path.join(worktree, 'source/tex/ai-infra/RMSNorm-pilot.tex'))
+    await copy(sourceYaml, path.join(worktree, 'source/tex/ai-infra/RMSNorm-pilot.yaml'))
     const manifestFile = path.join(worktree, 'source/_data/latex-publications.json')
     const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'))
     await fs.writeFile(manifestFile, `${JSON.stringify({ ...manifest, articles: manifest.articles.filter((article) => article.id !== id) }, null, 2)}\n`)
@@ -48,15 +48,20 @@ async function assertIsolatedGitBuild() {
       runCommand(packageManager, ['run', 'recovery:prepare-legacy-pages'], true)
       runCommand(packageManager, ['run', 'build'], true)
     } catch (error) { throw new Error(`isolated legacy/Astro build failed: ${error.message}`) }
-    const baselineHome = await fs.readFile(path.join(worktree, 'dist/index.html'), 'utf8')
-    if (baselineHome.includes('/2026/08/15/RMSNorm/')) throw new Error('baseline unexpectedly exposes RMSNorm')
-    const currentHome = await fs.readFile(path.join(root, 'dist/index.html'), 'utf8')
-    if (!currentHome.includes('/2026/08/15/RMSNorm/')) throw new Error('current home misses RMSNorm permalink')
+    const currentHome = await fs.readFile(path.join(worktree, 'dist/index.html'), 'utf8')
+    if (!currentHome.includes('RMSNorm：起一个稳压器的作用') || !currentHome.includes('/2026/08/15/RMSNorm/')) throw new Error('home misses RMSNorm card/permalink')
+    if (!currentHome.includes('swiper') || !currentHome.includes('RMSNorm')) throw new Error('home misses RMSNorm carousel')
     for (const page of ['2026/08/15/RMSNorm/index.html', 'archives/2026/08/index.html', 'tags/RMSNorm/index.html', 'categories/学习/index.html']) {
-      if (!(await fs.stat(path.join(root, 'dist', page)).catch(() => null))) throw new Error(`current projection missing: ${page}`)
+      if (!(await fs.stat(path.join(worktree, 'dist', page)).catch(() => null))) throw new Error(`current projection missing: ${page}`)
+      const html = await fs.readFile(path.join(worktree, 'dist', page), 'utf8')
+      if (!html.includes('/2026/08/15/RMSNorm/')) throw new Error(`projection misses RMSNorm link: ${page}`)
     }
+    const post = await fs.readFile(path.join(worktree, 'dist/2026/08/15/RMSNorm/index.html'), 'utf8')
+    const postName = (await fs.readdir(path.join(worktree, 'source/_posts'))).find((name) => name.includes('RMSNorm') && name.endsWith('.md'))
+    const sourcePost = await fs.readFile(path.join(worktree, 'source/_posts', postName), 'utf8')
+    if (!post.includes('<link rel="canonical"') || !post.includes('/2026/08/15/RMSNorm/') || !sourcePost.includes('data-render-fragment="RMSNorm"') || !post.includes('latex-preview-document')) throw new Error('article render contract incomplete')
   } finally {
-    execFileSync('git', ['worktree', 'remove', '--force', worktree], { cwd: root, stdio: 'pipe' })
+    try { execFileSync('git', ['worktree', 'remove', '--force', worktree], { cwd: root, stdio: 'pipe' }) } catch { execFileSync('git', ['worktree', 'prune'], { cwd: root, stdio: 'pipe' }) }
     await fs.rm(worktree, { recursive: true, force: true })
   }
 }

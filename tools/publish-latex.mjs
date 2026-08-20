@@ -79,6 +79,7 @@ export function validatePublicationManifest(manifest) {
     if (!article.id || ids.has(article.id)) throw new Error(`duplicate or missing publication id: ${article.id || '<empty>'}`)
     if (!article.permalink || permalinks.has(article.permalink)) throw new Error(`duplicate or missing publication permalink: ${article.permalink || '<empty>'}`)
     if (!article.sourceHash || !article.metadataHash || !article.rendererIdentity || !article.renderKey) throw new Error(`publication identity incomplete: ${article.id}`)
+    if (article.renderCache !== true && article.renderCache !== false) throw new Error(`publication renderCache incomplete: ${article.id}`)
     ids.add(article.id); permalinks.add(article.permalink)
   }
   return true
@@ -92,12 +93,15 @@ export async function validatePublicationFiles(manifest, repositoryRoot = root) 
     const sourceText = await fs.readFile(path.resolve(repositoryRoot, article.source), 'utf8')
     const yamlText = await fs.readFile(path.resolve(repositoryRoot, article.yaml), 'utf8')
     const meta = matter(`---\n${yamlText}\n---`).data
+    if (meta.id !== article.id || meta.renderFragment !== `source/content/renders/${article.id}.html`) throw new Error(`publication render fragment mismatch: ${article.id}`)
     const sourceHash = hash(sourceText)
     const metadataHash = metadataHashFor(meta, article.id)
     const renderKey = hash(`${sourceHash}\0${metadataHash}\0${RENDERER_IDENTITY}`)
+    if (meta.renderSourceHash !== renderKey) throw new Error(`publication YAML render identity mismatch: ${article.id}`)
     if (article.sourceHash !== sourceHash || article.metadataHash !== metadataHash || article.rendererIdentity !== RENDERER_IDENTITY || article.renderKey !== renderKey) throw new Error(`publication identity mismatch: ${article.id}`)
     const render = await fs.readFile(path.resolve(repositoryRoot, `source/content/renders/${article.id}.html`), 'utf8')
     if (!render.trim()) throw new Error(`publication render empty: ${article.id}`)
+    if (article.renderCache && meta.renderFragment !== `source/content/renders/${article.id}.html`) throw new Error(`publication cache is not linked: ${article.id}`)
   }
   return true
 }
@@ -106,6 +110,11 @@ async function publish(texFile, metaFile) {
   const id = String(meta.id || path.basename(texFile, path.extname(texFile))).replace(/[^\p{L}\p{N}_-]+/gu, '-')
   const metadataHash = metadataHashFor(meta, id)
   const renderKey = hash(`${sourceHash}\0${metadataHash}\0${RENDERER_IDENTITY}`)
+  const yamlText = await fs.readFile(metaFile, 'utf8')
+  const syncedYaml = yamlText
+    .replace(/^renderFragment:.*$/mu, `renderFragment: 'source/content/renders/${id}.html'`)
+    .replace(/^renderSourceHash:.*$/mu, `renderSourceHash: '${renderKey}'`)
+  if (syncedYaml !== yamlText) await fs.writeFile(metaFile, syncedYaml)
   let rendered = renderTex(source)
   let renderCache = false
   if (meta.renderFragment && meta.renderSourceHash === renderKey) {
