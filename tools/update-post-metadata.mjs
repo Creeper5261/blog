@@ -14,9 +14,7 @@ const hash = (value) => crypto.createHash('sha256').update(value).digest('hex')
 const rendererIdentity = 'markdown-frontmatter-v1'
 
 async function changedPosts() {
-  const before = process.env.GITHUB_EVENT_BEFORE || process.env.GITHUB_BEFORE
-  if (!before || /^0+$/.test(before)) return []
-  const { stdout } = await run('git', ['diff', '--name-only', before, 'HEAD', '--', 'source/_posts'], { cwd: root, windowsHide: true })
+  const { stdout } = await run('git', ['ls-files', 'source/_posts/*.md'], { cwd: root, windowsHide: true })
   return stdout.split(/\r?\n/).filter((file) => file.endsWith('.md'))
 }
 
@@ -25,7 +23,7 @@ export function updateMarkdownText(original, updatedAt) {
   if (!parsed.data.date || !parsed.data.permalink || /data-render-fragment=/u.test(parsed.content)) return { changed: false, text: original, reason: 'latex-placeholder' }
   const bodyHash = hash(parsed.content)
   const metadataHash = hash(JSON.stringify({ title: parsed.data.title, description: parsed.data.description || '', categories: parsed.data.categories || [], tags: parsed.data.tags || [], permalink: parsed.data.permalink }, ['categories', 'description', 'permalink', 'tags', 'title']))
-  if (parsed.data.sourceHash === bodyHash && parsed.data.metadataHash === metadataHash && parsed.data.rendererIdentity === rendererIdentity) return { changed: false, text: original, bodyHash, metadataHash }
+  if (parsed.data.sourceHash === bodyHash && parsed.data.metadataHash === metadataHash && parsed.data.rendererIdentity === rendererIdentity && parsed.data.updated === updatedAt) return { changed: false, text: original, bodyHash, metadataHash }
   parsed.data.updated = updatedAt
   parsed.data.sourceHash = bodyHash
   parsed.data.metadataHash = metadataHash

@@ -101,6 +101,9 @@ export async function validatePublicationFiles(manifest, repositoryRoot = root) 
     if (article.sourceHash !== sourceHash || article.metadataHash !== metadataHash || article.rendererIdentity !== RENDERER_IDENTITY || article.renderKey !== renderKey) throw new Error(`publication identity mismatch: ${article.id}`)
     const render = await fs.readFile(path.resolve(repositoryRoot, `source/content/renders/${article.id}.html`), 'utf8')
     if (!render.trim()) throw new Error(`publication render empty: ${article.id}`)
+    const posts = await fs.readdir(path.resolve(repositoryRoot, 'source/_posts'))
+    const postFile = (await Promise.all(posts.filter((name) => name.endsWith('.md')).map(async (name) => ({ name, data: matter(await fs.readFile(path.resolve(repositoryRoot, 'source/_posts', name), 'utf8')).data })))).find(({ data }) => data.sourceHash === article.sourceHash)
+    if (!postFile || postFile.data.permalink !== article.permalink || !((await fs.readFile(path.resolve(repositoryRoot, 'source/_posts', postFile.name), 'utf8')).includes(`data-render-fragment="${article.id}"`))) throw new Error(`publication post contract mismatch: ${article.id}`)
     if (article.renderCache && meta.renderFragment !== `source/content/renders/${article.id}.html`) throw new Error(`publication cache is not linked: ${article.id}`)
   }
   return true
