@@ -89,6 +89,15 @@ export async function validatePublicationFiles(manifest, repositoryRoot = root) 
     for (const file of [article.source, article.yaml, `source/content/renders/${article.id}.html`]) {
       if (!file || !await fs.stat(path.resolve(repositoryRoot, file)).catch(() => null)) throw new Error(`publication file missing: ${article.id}:${file || '<empty>'}`)
     }
+    const sourceText = await fs.readFile(path.resolve(repositoryRoot, article.source), 'utf8')
+    const yamlText = await fs.readFile(path.resolve(repositoryRoot, article.yaml), 'utf8')
+    const meta = matter(`---\n${yamlText}\n---`).data
+    const sourceHash = hash(sourceText)
+    const metadataHash = metadataHashFor(meta, article.id)
+    const renderKey = hash(`${sourceHash}\0${metadataHash}\0${RENDERER_IDENTITY}`)
+    if (article.sourceHash !== sourceHash || article.metadataHash !== metadataHash || article.rendererIdentity !== RENDERER_IDENTITY || article.renderKey !== renderKey) throw new Error(`publication identity mismatch: ${article.id}`)
+    const render = await fs.readFile(path.resolve(repositoryRoot, `source/content/renders/${article.id}.html`), 'utf8')
+    if (!render.trim()) throw new Error(`publication render empty: ${article.id}`)
   }
   return true
 }

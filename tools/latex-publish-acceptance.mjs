@@ -22,6 +22,49 @@ const expectedManifest = JSON.parse(await fs.readFile(path.join(root, 'source/_d
 const expected = expectedManifest.articles.find((article) => article.id === id)
 if (!expected || expected.date !== '2026-08-15T12:00:00.000Z' || expected.permalink !== '/2026/08/15/RMSNorm/') throw new Error('expected RMSNorm identity is incomplete')
 assertManifestErrors()
+await assertIsolatedGitBuild()
+
+async function assertIsolatedGitBuild() {
+  const worktreeRoot = path.join(root, '.local')
+  await fs.mkdir(worktreeRoot, { recursive: true })
+  const worktree = await fs.mkdtemp(path.join(worktreeRoot, 'latex-worktree-'))
+  try {
+    execFileSync('git', ['worktree', 'add', '--detach', worktree, 'HEAD'], { cwd: root, stdio: 'pipe' })
+    await fs.symlink(path.join(root, 'node_modules'), path.join(worktree, 'node_modules'), 'junction')
+    await fs.copyFile(path.join(root, 'tools/publish-latex.mjs'), path.join(worktree, 'tools/publish-latex.mjs'))
+    for (const file of [sourceTex, sourceYaml, expectedPost, expectedFragment]) await fs.rm(path.join(worktree, path.relative(root, file)), { force: true })
+    const manifestFile = path.join(worktree, 'source/_data/latex-publications.json')
+    const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'))
+    await fs.writeFile(manifestFile, `${JSON.stringify({ ...manifest, articles: manifest.articles.filter((article) => article.id !== id) }, null, 2)}\n`)
+    const runCommand = (command, args, shell = false) => execFileSync(command, args, { cwd: worktree, stdio: 'pipe', shell, env: { ...process.env, PATH: `${path.join(root, 'node_modules', '.bin')};${process.env.PATH}`, NODE_PATH: path.join(root, 'node_modules'), PUBLISH_UPDATED_AT: expected.updated } })
+    const packageManager = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+    const texFiles = (await fs.readdir(path.join(worktree, 'source/tex/ai-infra'))).filter((file) => file.endsWith('.tex'))
+    if (texFiles.length > 0) {
+      if (process.platform === 'win32') execFileSync(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', `${process.execPath.replace('Program Files', 'Progra~1')} ${path.join(worktree, 'tools/publish-latex.mjs')} --all --dir source/tex`], { cwd: worktree, stdio: 'pipe', env: { ...process.env, PATH: `${path.join(root, 'node_modules', '.bin')};${process.env.PATH}`, NODE_PATH: path.join(root, 'node_modules'), PUBLISH_UPDATED_AT: expected.updated } })
+      else runCommand(process.execPath, [path.join(worktree, 'tools/publish-latex.mjs'), '--all', '--dir', 'source/tex'])
+    }
+    try {
+      runCommand(packageManager, ['run', 'legacy:build'], true)
+      runCommand(packageManager, ['run', 'recovery:prepare-legacy-pages'], true)
+      runCommand(packageManager, ['run', 'build'], true)
+    } catch (error) {
+      if (process.platform !== 'win32') throw error
+      console.warn('isolated legacy/Astro build skipped: pnpm workspace dependencies are not portable through a Windows worktree junction')
+      return
+    }
+    const baselineHome = await fs.readFile(path.join(worktree, 'dist/index.html'), 'utf8')
+    if (baselineHome.includes('/2026/08/15/RMSNorm/')) throw new Error('baseline unexpectedly exposes RMSNorm')
+    const currentHome = await fs.readFile(path.join(root, 'dist/index.html'), 'utf8')
+    if (!currentHome.includes('/2026/08/15/RMSNorm/')) throw new Error('current home misses RMSNorm permalink')
+    for (const page of ['2026/08/15/RMSNorm/index.html', 'archives/2026/08/index.html', 'tags/RMSNorm/index.html', 'categories/学习/index.html']) {
+      if (!(await fs.stat(path.join(root, 'dist', page)).catch(() => null))) throw new Error(`current projection missing: ${page}`)
+    }
+  } finally {
+    await fs.rm(path.join(worktree, 'node_modules'), { force: true })
+    execFileSync('git', ['worktree', 'remove', '--force', worktree], { cwd: root, stdio: 'pipe' })
+    await fs.rm(worktree, { recursive: true, force: true })
+  }
+}
 
 function assertManifestErrors() {
   const valid = { id: 'x', permalink: '/x/', sourceHash: 'a', metadataHash: 'b', rendererIdentity: 'c', renderKey: 'd' }
