@@ -5,6 +5,7 @@ import path from 'node:path'
 import { SITE_ROUTES } from '../../tools/site-data/routes.mjs'
 import { applyPublicServices, getPublicServices } from '../legacy/html-transform.mjs'
 import { listLegacyPages } from '../legacy/routes.mjs'
+import publications from '../../source/_data/latex-publications.json'
 
 export async function getStaticPaths() {
   const legacyRoot = path.resolve('src', 'legacy', 'pages')
@@ -27,27 +28,24 @@ export async function getStaticPaths() {
 const legacyRoot = path.resolve('src', 'legacy', 'pages')
 const { outputPath } = Astro.props
 const html = await readFile(path.join(legacyRoot, outputPath), 'utf8')
-const fragmentPath = path.resolve('source', 'content', 'renders', 'RMSNorm.html')
-const renderedFragment = await readFile(fragmentPath, 'utf8')
-const articleWordCount = (() => {
-  const plainText = renderedFragment
-    .replace(/<[^>]*>/gu, ' ')
-    .replace(/&(?:nbsp|amp|lt|gt|quot|#39);/gu, ' ')
-  const hanCharacters = plainText.match(/[\u4e00-\u9fff]/gu)?.length ?? 0
-  const latinWords = plainText.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/gu)?.length ?? 0
-  return hanCharacters + latinWords
-})()
-const renderedSource = html.includes('data-render-fragment="RMSNorm"')
-  ? html.replace(
-    /<div class="latex-document-rendered" data-render-fragment="RMSNorm"><\/div>/u,
-    `<div class="latex-document-rendered"><article class="latex-preview-document">${renderedFragment}</article></div>`
-  )
-  : html
+const fragmentMatch = html.match(/data-render-fragment="([^"]+)"/u)
+const publication = fragmentMatch ? (publications.articles || []).find((article) => article.id === fragmentMatch[1]) : null
+let renderedSource = html
+if (publication) {
+  try {
+    const renderedFragment = await readFile(path.resolve('source', 'content', 'renders', `${publication.id}.html`), 'utf8')
+    const articleWordCount = (() => {
+      const plainText = renderedFragment.replace(/<[^>]*>/gu, ' ').replace(/&(?:nbsp|amp|lt|gt|quot|#39);/gu, ' ')
+      return (plainText.match(/[\u4e00-\u9fff]/gu)?.length ?? 0) + (plainText.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/gu)?.length ?? 0)
+    })()
+    renderedSource = html.replace(
+      new RegExp(`<div class="latex-document-rendered" data-render-fragment="${publication.id}"><\\/div>`, 'u'),
+      `<div class="latex-document-rendered"><article class="latex-preview-document">${renderedFragment}</article></div>`
+    ).replace(/(<span class="word-count">)0(<\/span>)/u, `$1${articleWordCount.toLocaleString('zh-CN')}$2`)
+  } catch { /* missing fragment leaves the legacy placeholder visible */ }
+}
 const rendered = applyPublicServices(
-  renderedSource.replace(
-    /(<span class="word-count">)0(<\/span>)/u,
-    `$1${articleWordCount.toLocaleString('zh-CN')}$2`
-  ),
+  renderedSource,
   getPublicServices()
 )
 ---
