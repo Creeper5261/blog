@@ -25,8 +25,7 @@ assertManifestErrors()
 await assertIsolatedGitBuild()
 
 async function assertIsolatedGitBuild() {
-  const worktreeRoot = path.join(root, '.local')
-  await fs.mkdir(worktreeRoot, { recursive: true })
+  const worktreeRoot = os.tmpdir()
   const worktree = await fs.mkdtemp(path.join(worktreeRoot, 'latex-worktree-'))
   try {
     execFileSync('git', ['worktree', 'add', '--detach', worktree, 'HEAD'], { cwd: root, stdio: 'pipe' })
@@ -42,7 +41,7 @@ async function assertIsolatedGitBuild() {
     const manifestFile = path.join(worktree, 'source/_data/latex-publications.json')
     const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'))
     await fs.writeFile(manifestFile, `${JSON.stringify({ ...manifest, articles: manifest.articles.filter((article) => article.id !== id) }, null, 2)}\n`)
-    const runCommand = (command, args, shell = false) => execFileSync(command, args, { cwd: worktree, stdio: 'pipe', shell, env: { ...process.env, PATH: `${path.join(root, 'node_modules', '.bin')};${process.env.PATH}`, NODE_PATH: path.join(root, 'node_modules'), PUBLISH_UPDATED_AT: expected.updated } })
+    const runCommand = (command, args, shell = false) => execFileSync(command, args, { cwd: worktree, stdio: 'pipe', shell, env: { ...process.env, PUBLISH_UPDATED_AT: expected.updated } })
     runCommand(packageManager, ['run', 'publish:latex', '--', '--all', '--dir', 'source/tex'], true)
     try {
       runCommand(packageManager, ['run', 'legacy:build'], true)
@@ -57,7 +56,6 @@ async function assertIsolatedGitBuild() {
       if (!(await fs.stat(path.join(root, 'dist', page)).catch(() => null))) throw new Error(`current projection missing: ${page}`)
     }
   } finally {
-    await fs.rm(path.join(worktree, 'node_modules'), { recursive: true, force: true })
     execFileSync('git', ['worktree', 'remove', '--force', worktree], { cwd: root, stdio: 'pipe' })
     await fs.rm(worktree, { recursive: true, force: true })
   }
