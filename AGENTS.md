@@ -2,6 +2,14 @@
 
 This is DAT's recovered blog source. The default build path is now Astro, with the recovered Hexo + Butterfly site retained as the visual baseline and rollback path.
 
+## Collaboration Delegation
+
+- The primary/root agent is responsible for ideation, planning, task decomposition, coordination, directional decisions, result review, and reporting.
+- All work that requires actual operations, command execution, code or file changes, builds or tests, browser interaction, or reading substantial context must be delegated to a subagent.
+- Delegated implementation subagents must use `gpt-5.6-luna` with `reasoning_effort=low` by default.
+- Exceptions are allowed only when the user explicitly requests another model or reasoning level, or when a system capability limitation makes the default unavailable.
+- The primary/root agent may perform only minimal metadata-level, read-only coordination checks that do not require substantial context; it must not use those checks to take on implementation work itself.
+
 ## Repository Model
 
 - Keep source private in `git@github.com:Creeper5261/blog.git`.
