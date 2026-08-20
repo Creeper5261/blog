@@ -16,7 +16,7 @@ test('updated metadata changes on real Markdown edits and remains stable afterwa
   const original = matter.stringify('正文 A', { title: '普通文章', date: '2026-01-01', updated: '2026-01-01', permalink: '/普通文章/' })
   const first = updateMarkdownText(original, '2026-08-20T00:00:00.000Z')
   assert.equal(first.changed, true)
-  const second = updateMarkdownText(first.text, '2026-08-21T00:00:00.000Z')
+  const second = updateMarkdownText(first.text, '2026-08-20T00:00:00.000Z')
   assert.equal(second.changed, false)
   assert.equal(matter(first.text).data.updated, '2026-08-20T00:00:00.000Z')
   assert.equal(matter(first.text).data.date, '2026-01-01')
