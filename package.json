@@ -76,7 +76,7 @@
   },
   "devDependencies": {
     "ajv": "^8.20.0",
-    "astro": "^6.4.8",
+    "astro": "^7.2.4",
     "cheerio": "^1.0.0",
     "cherry-markdown": "0.11.3",
     "gray-matter": "^4.0.3",
