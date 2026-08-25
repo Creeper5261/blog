@@ -8,11 +8,11 @@ import { pathToFileURL } from 'node:url'
 import matter from 'gray-matter'
 import katex from 'katex'
 import { promisify } from 'node:util'
-import { parseLatexTable } from '../src/lib/latex-compat.mjs'
+import { parseLatexTable, splitHtmlDetails } from '../src/lib/latex-compat.mjs'
 
 const root = process.cwd()
 const exec = promisify(execFile)
-const RENDERER_IDENTITY = 'katex-0.18.2-latex-basic-v5'
+const RENDERER_IDENTITY = 'katex-0.18.2-latex-basic-v6'
 const args = new Map()
 for (let i = 2; i < process.argv.length; i += 1) {
   const value = process.argv[i]
@@ -58,8 +58,7 @@ const renderTable = (source) => {
   const rows = parsed.rows.map(({ cells, header }) => `<tr>${cells.map((cell) => `<${header ? 'th' : 'td'}>${renderText(cell)}</${header ? 'th' : 'td'}>`).join('')}</tr>`).join('')
   return `<div class="latex-table-wrap"><table class="latex-table${parsed.hasBooktabs ? ' latex-table-booktabs' : ''}"><tbody>${rows}</tbody></table></div>`
 }
-function renderTex(source) {
-  const body = source.replace(/[\s\S]*?\\begin\{document\}/, '').replace(/\\end\{document\}[\s\S]*/, '')
+function renderTexBody(body) {
   const out = []; let paragraph = []; let display = []; let displayEnv = null; let displayBracket = false; let tableEnv = null; let table = []
   const layoutControls = /^(?:\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge|centering|raggedright|raggedleft|noindent|smallskip|medskip|bigskip))$/u
   const flush = () => { if (paragraph.length) { out.push(`<p>${paragraph.join(' ')}</p>`); paragraph = [] } }
@@ -98,6 +97,14 @@ function renderTex(source) {
     paragraph.push(renderText(line))
   }
   flush(); flushDisplay(); return out.join('\n')
+}
+function renderTex(source) {
+  const body = source.replace(/[\s\S]*?\\begin\{document\}/, '').replace(/\\end\{document\}[\s\S]*/, '')
+  return splitHtmlDetails(body).map((segment) => {
+    if (segment.type !== 'details') return renderTexBody(segment.source)
+    const open = segment.open ? ' open' : ''
+    return `<details class="latex-details"${open}><summary>${renderText(segment.summary)}</summary><div class="latex-details-body">${renderTexBody(segment.source)}</div></details>`
+  }).join('\n')
 }
 const yamlValue = (value) => Array.isArray(value) ? value.map((item) => `  - '${String(item).replaceAll("'", "''")}'`).join('\n') : `'${String(value ?? '').replaceAll("'", "''")}'`
 const postMarkdown = (meta, id, existing = {}) => {
