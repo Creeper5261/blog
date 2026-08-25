@@ -5,8 +5,8 @@ updated: '2026-08-25T12:17:24+08:00'
 description: 'AI Infra 系列试点：RMSNorm 的原生 LaTeX 排版稿。'
 permalink: '/2026/08/15/RMSNorm/'
 sourceHash: 'f79b830ae99e38389b144277da2cab265acf3603191232ecd648cf288c3374bf'
-metadataHash: 'caaba5fdc53efd7fc36d802bf9d75f3ff3efaec77d6f0af350bb338cb2bc3c79'
-rendererIdentity: 'katex-0.18.2-latex-basic-v4'
+metadataHash: '6d2501e1c382ae8e004ce9bec8bdb96fd8910457b1b41c7f9d3f8d8f5584ad0b'
+rendererIdentity: 'katex-0.18.2-latex-basic-v5'
 comments: true
 mathjax: false
 toc: false

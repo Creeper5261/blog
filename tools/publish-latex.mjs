@@ -12,7 +12,7 @@ import { parseLatexTable } from '../src/lib/latex-compat.mjs'
 
 const root = process.cwd()
 const exec = promisify(execFile)
-const RENDERER_IDENTITY = 'katex-0.18.2-latex-basic-v4'
+const RENDERER_IDENTITY = 'katex-0.18.2-latex-basic-v5'
 const args = new Map()
 for (let i = 2; i < process.argv.length; i += 1) {
   const value = process.argv[i]
@@ -61,6 +61,7 @@ const renderTable = (source) => {
 function renderTex(source) {
   const body = source.replace(/[\s\S]*?\\begin\{document\}/, '').replace(/\\end\{document\}[\s\S]*/, '')
   const out = []; let paragraph = []; let display = []; let displayEnv = null; let displayBracket = false; let tableEnv = null; let table = []
+  const layoutControls = /^(?:\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge|centering|raggedright|raggedleft|noindent|smallskip|medskip|bigskip))$/u
   const flush = () => { if (paragraph.length) { out.push(`<p>${paragraph.join(' ')}</p>`); paragraph = [] } }
   const flushDisplay = () => { if (display.length) { out.push(`<div class="latex-display">${math(display.join('\n'), true)}</div>`); display = [] } }
   for (const raw of body.split(/\r?\n/)) {
@@ -89,6 +90,7 @@ function renderTex(source) {
       continue
     }
     if (line.startsWith('\\section')) { flush(); const heading = line.match(/^\\(section|subsection|subsubsection|paragraph)\*?\{(.+)\}$/); if (heading) { const level = { section: 2, subsection: 3, subsubsection: 4, paragraph: 5 }[heading[1]]; out.push(`<h${level}>${renderText(heading[2])}</h${level}>`) }; continue }
+    if (layoutControls.test(line)) continue
     if (line === '\\maketitle' || line.startsWith('\\begin{center}') || line.startsWith('\\end{center}')) continue
     if (line.startsWith('\\item ')) { out.push(`<li>${renderText(line.slice(6))}</li>`); continue }
     if (line.startsWith('\\begin{itemize}') || line.startsWith('\\begin{enumerate}')) { flush(); out.push('<ul>'); continue }
