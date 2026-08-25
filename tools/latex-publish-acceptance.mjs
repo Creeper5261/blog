@@ -101,7 +101,7 @@ try {
   const texBytes = await fs.readFile(sourceTex)
   const yamlData = matter(`---\n${await fs.readFile(sourceYaml, 'utf8')}\n---`).data
   const metadataHash = metadataHashFor(yamlData, id)
-  const renderKey = crypto.createHash('sha256').update(`${crypto.createHash('sha256').update(texBytes).digest('hex')}\0${metadataHash}\0katex-0.18.2-latex-basic-v2`).digest('hex')
+  const renderKey = crypto.createHash('sha256').update(`${crypto.createHash('sha256').update(texBytes).digest('hex')}\0${metadataHash}\0katex-0.18.2-latex-basic-v5`).digest('hex')
   const tempYaml = path.join(temp, 'source/tex/ai-infra/RMSNorm-pilot.yaml')
   await fs.writeFile(tempYaml, (await fs.readFile(tempYaml, 'utf8')).replace(/renderSourceHash:.*$/mu, `renderSourceHash: '${renderKey}'`))
   for (const file of (await fs.readdir(path.join(root, 'source/_posts'))).filter((file) => file.endsWith('.md') && !file.includes('RMSNorm'))) await copy(path.join(root, 'source/_posts', file), path.join(temp, 'source/_posts', file))

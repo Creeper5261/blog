@@ -52,6 +52,7 @@ const RUNTIME_STYLES = [
 
 const SINGLE_SCRIPT_WITH_GITCALENDAR = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:GitCalendarInit|gitcalendar_injector_config)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
 const SINGLE_SCRIPT_WITH_LEGACY_TWIKOO = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:twikoo\.init|twikoo@1\.6\.8)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
+const SINGLE_SCRIPT_WITH_LEGACY_GISCUS = /<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?(?:getGiscusTheme|document\.getElementById\(['"]giscus-wrap['"]\)|btf\.addGlobalFn\(['"]themeChange['"],\s*changeGiscusTheme)(?:(?!<\/script>)[\s\S])*?<\/script>/gi
 const LIST_MENU_GROUP = /<div class="menus_item">\s*<a class="site-page group[\s\S]*?<ul class="menus_item_child">[\s\S]*?<\/ul>\s*<\/div>/gi
 const TOOLS_MENU_CHILD = /<li>(<a\b[^>]*href=(['"])\/tools\/\2[^>]*>[\s\S]*?<span>\s*百宝箱\s*<\/span>[\s\S]*?<\/a>)<\/li>/i
 
@@ -135,6 +136,10 @@ function removeLegacyTwikoo(html) {
     .replace(SINGLE_SCRIPT_WITH_LEGACY_TWIKOO, '')
 }
 
+function removeLegacyGiscus(html) {
+  return html.replace(SINGLE_SCRIPT_WITH_LEGACY_GISCUS, '')
+}
+
 function removeLegacyWeatherBootstraps(html) {
   return html
     .replace(/<script\b[^>]*widget\.qweather\.net\/simple\/static\/js\/he-simple-common\.js[^>]*><\/script>/gi, '')
@@ -164,7 +169,7 @@ function promoteToolsMenu(html) {
 }
 
 function removeDeadRuntimeBootstraps(html) {
-  return promoteToolsMenu(repairLegacyReferences(removeLegacyWeatherBootstraps(removeLegacyTwikoo(removeDeadGitCalendar(html)))))
+  return promoteToolsMenu(repairLegacyReferences(removeLegacyWeatherBootstraps(removeLegacyGiscus(removeLegacyTwikoo(removeDeadGitCalendar(html))))))
 }
 
 export function sanitizeLegacyHtml(html) {

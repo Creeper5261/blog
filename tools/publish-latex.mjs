@@ -8,10 +8,11 @@ import { pathToFileURL } from 'node:url'
 import matter from 'gray-matter'
 import katex from 'katex'
 import { promisify } from 'node:util'
+import { parseLatexTable } from '../src/lib/latex-compat.mjs'
 
 const root = process.cwd()
 const exec = promisify(execFile)
-const RENDERER_IDENTITY = 'katex-0.18.2-latex-basic-v2'
+const RENDERER_IDENTITY = 'katex-0.18.2-latex-basic-v5'
 const args = new Map()
 for (let i = 2; i < process.argv.length; i += 1) {
   const value = process.argv[i]
@@ -42,19 +43,54 @@ const walk = async (directory) => {
 }
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))
 const math = (source, display = false) => { try { return katex.renderToString(source, { displayMode: display, throwOnError: false, strict: 'ignore', trust: false, output: 'htmlAndMathml' }) } catch { return `<code>${esc(source)}</code>` } }
-const renderText = (line) => esc(line).replace(/\\textbf\{([^{}]*)\}/g, '<strong>$1</strong>').replace(/\\textit\{([^{}]*)\}/g, '<em>$1</em>').replace(/\\emph\{([^{}]*)\}/g, '<em>$1</em>').replace(/\\\[([\s\S]*?)\\\]/g, (_, value) => math(value, true)).replace(/\$([^$]+)\$/g, (_, value) => math(value))
+const renderText = (line) => esc(line)
+  .replace(/\\textbf\{([^{}]*)\}/g, '<strong>$1</strong>')
+  .replace(/\\textit\{([^{}]*)\}/g, '<em>$1</em>')
+  .replace(/\\emph\{([^{}]*)\}/g, '<em>$1</em>')
+  .replace(/\\text\{([^{}]*)\}/g, '$1')
+  .replace(/\\texttt\{([^{}]*)\}/g, '<code>$1</code>')
+  .replace(/\\[,;!]/g, ' ')
+  .replace(/\\\[([\s\S]*?)\\\]/g, (_, value) => math(value, true))
+  .replace(/\$([^$]+)\$/g, (_, value) => math(value))
+const renderTable = (source) => {
+  const parsed = parseLatexTable(source)
+  if (!parsed.rows.length) return ''
+  const rows = parsed.rows.map(({ cells, header }) => `<tr>${cells.map((cell) => `<${header ? 'th' : 'td'}>${renderText(cell)}</${header ? 'th' : 'td'}>`).join('')}</tr>`).join('')
+  return `<div class="latex-table-wrap"><table class="latex-table${parsed.hasBooktabs ? ' latex-table-booktabs' : ''}"><tbody>${rows}</tbody></table></div>`
+}
 function renderTex(source) {
   const body = source.replace(/[\s\S]*?\\begin\{document\}/, '').replace(/\\end\{document\}[\s\S]*/, '')
-  const out = []; let paragraph = []; let display = []; let displayEnv = null
+  const out = []; let paragraph = []; let display = []; let displayEnv = null; let displayBracket = false; let tableEnv = null; let table = []
+  const layoutControls = /^(?:\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge|centering|raggedright|raggedleft|noindent|smallskip|medskip|bigskip))$/u
   const flush = () => { if (paragraph.length) { out.push(`<p>${paragraph.join(' ')}</p>`); paragraph = [] } }
   const flushDisplay = () => { if (display.length) { out.push(`<div class="latex-display">${math(display.join('\n'), true)}</div>`); display = [] } }
   for (const raw of body.split(/\r?\n/)) {
     const line = raw.trim()
     if (!line || line === '---') { flush(); continue }
-    if (displayEnv) { if (line.includes(`\\end{${displayEnv}}`)) { displayEnv = null; flushDisplay() } else display.push(line); continue }
+    if (tableEnv) { if (line.includes(`\\end{${tableEnv}}`)) { out.push(renderTable(table.join('\n'))); tableEnv = null; table = [] } else table.push(line); continue }
+    if (displayEnv || displayBracket) {
+      const endToken = displayBracket ? '\\]' : `\\end{${displayEnv}}`
+      if (line.includes(endToken)) {
+        const before = line.split(endToken)[0]
+        if (before) display.push(before)
+        if (displayEnv) display.push(`\\end{${displayEnv}}`)
+        displayEnv = null; displayBracket = false; flushDisplay()
+      } else display.push(line)
+      continue
+    }
+    const tableMatch = line.match(/^\\begin\{(tabular\*?|tabularx|longtable|array)\}/)
+    if (tableMatch) { flush(); tableEnv = tableMatch[1]; table = []; continue }
     const env = line.match(/^\\begin\{(equation\*?|align\*?|gather\*?|bmatrix|pmatrix|matrix|cases)\}/)
-    if (env) { flush(); displayEnv = env[1]; display = []; continue }
+    if (env) { flush(); displayEnv = env[1]; display = [`\\begin{${env[1]}}`]; continue }
+    if (line.startsWith('\\[')) {
+      flush()
+      const rest = line.slice(2)
+      if (rest.includes('\\]')) { display = [rest.split('\\]')[0]]; flushDisplay() }
+      else { displayBracket = true; display = rest ? [rest] : [] }
+      continue
+    }
     if (line.startsWith('\\section')) { flush(); const heading = line.match(/^\\(section|subsection|subsubsection|paragraph)\*?\{(.+)\}$/); if (heading) { const level = { section: 2, subsection: 3, subsubsection: 4, paragraph: 5 }[heading[1]]; out.push(`<h${level}>${renderText(heading[2])}</h${level}>`) }; continue }
+    if (layoutControls.test(line)) continue
     if (line === '\\maketitle' || line.startsWith('\\begin{center}') || line.startsWith('\\end{center}')) continue
     if (line.startsWith('\\item ')) { out.push(`<li>${renderText(line.slice(6))}</li>`); continue }
     if (line.startsWith('\\begin{itemize}') || line.startsWith('\\begin{enumerate}')) { flush(); out.push('<ul>'); continue }
