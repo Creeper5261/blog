@@ -4,7 +4,7 @@
       "id": "RMSNorm",
       "title": "RMSNorm：起一个稳压器的作用",
       "date": "2026-08-15T12:00:00.000Z",
-      "updated": "2026-08-25T04:15:58.553Z",
+      "updated": "2026-08-25T12:17:24+08:00",
       "description": "AI Infra 系列试点：RMSNorm 的原生 LaTeX 排版稿。",
       "permalink": "/2026/08/15/RMSNorm/",
       "cover": "https://cdn.jsdelivr.net/gh/Creeper5261/picbed@main/img/cover/75509590_p1.webp",
@@ -23,9 +23,9 @@
       "source": "source/tex/ai-infra/RMSNorm-pilot.tex",
       "yaml": "source/tex/ai-infra/RMSNorm-pilot.yaml",
       "sourceHash": "f79b830ae99e38389b144277da2cab265acf3603191232ecd648cf288c3374bf",
-      "metadataHash": "51c6f6ca1b73257f5f3e0a79cf1cea8503ef940d64d815520bfb77d411f7319d",
-      "rendererIdentity": "katex-0.18.2-latex-basic-v2",
-      "renderKey": "436015087c7f5ed9534679ce6fcf5e41f85169674b43f57e25e25ee24691e7e0",
+      "metadataHash": "caaba5fdc53efd7fc36d802bf9d75f3ff3efaec77d6f0af350bb338cb2bc3c79",
+      "rendererIdentity": "katex-0.18.2-latex-basic-v4",
+      "renderKey": "9b1d44695f3b51cad9064e16434d1267b6a838ef0f49af22d3b960974718ccc3",
       "renderCache": true
     }
   ]
