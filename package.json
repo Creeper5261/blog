@@ -78,7 +78,7 @@
     "ajv": "^8.20.0",
     "astro": "^6.4.8",
     "cheerio": "^1.0.0",
-    "cherry-markdown": "0.11.3",
+    "cherry-markdown": "0.11.10",
     "gray-matter": "^4.0.3",
     "remark-mdx": "^3.1.1",
     "remark-parse": "^11.0.0",
