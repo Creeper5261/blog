@@ -7,6 +7,37 @@ import {
   sanitizeLegacyScript
 } from '../src/legacy/html-transform.mjs'
 
+test('shared shell removes obsolete statistics and duplicate jQuery without changing consumers', () => {
+  const html = `<head><link rel="preconnect" href="//busuanzi.ibruce.info"/></head><body>
+    <span id="busuanzi_value_site_uv"></span>
+    <script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <script defer src="https://npm.elemecdn.com/jquery@latest/dist/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/3.6.3/jquery.min.js"></script>
+    <script src="/js/rightmenu.js"></script></body>`
+  for (const transform of [sanitizeLegacyHtml, applyPublicServices]) {
+    const result = transform(html)
+    assert.doesNotMatch(result, /busuanzi\.ibruce\.info|jquery@latest/)
+    assert.match(result, /id="busuanzi_value_site_uv"/)
+    assert.equal((result.match(/jquery\.min\.js/g) || []).length, 1)
+    assert.ok(result.indexOf('jquery.min.js') < result.indexOf('/js/rightmenu.js'))
+    assert.equal(transform(result), result)
+  }
+  const single = '<script defer src="https://npm.elemecdn.com/jquery@latest/dist/jquery.min.js"></script>'
+  assert.match(sanitizeLegacyHtml(single), /jquery@latest/)
+})
+
+test('initial loader waits for DOM readiness rather than decorative resources', () => {
+  const result = sanitizeLegacyHtml(`<script>
+    window.addEventListener('load',()=> { preloader.endLoading() })
+    document.addEventListener('pjax:send', () => { preloader.initLoading() })
+    document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+  </script>`)
+  assert.match(result, /DOMContentLoaded/)
+  assert.doesNotMatch(result, /window.addEventListener\('load'/)
+  assert.match(result, /pjax:send/)
+  assert.match(result, /pjax:complete/)
+})
+
 test('sanitizeLegacyHtml replaces browser service values with placeholders', () => {
   const html = `
     <script>

@@ -152,6 +152,22 @@ function repairLegacyReferences(html) {
     .replace(/href=(["'])\/movies\/\1/gi, 'href=$1/movie/$1')
 }
 
+function removeSupersededResources(html) {
+  let result = html
+    // The article is usable at DOM readiness; decorations must not hold the overlay.
+    .replace(/window\.addEventListener\('load',\s*\(\)\s*=>\s*\{\s*preloader\.endLoading\(\)\s*\}\)/g, "document.addEventListener('DOMContentLoaded', () => { preloader.endLoading() }, { once: true })")
+    // Keep the legacy counter IDs: stats-runtime owns these DOM targets now.
+    .replace(/<script\b[^>]*\bsrc=(["'])(?:https?:)?\/\/busuanzi\.ibruce\.info\/[^"']*\1[^>]*>\s*<\/script>/gi, '')
+    .replace(/<link\b[^>]*\bhref=(["'])(?:https?:)?\/\/busuanzi\.ibruce\.info\/?\1[^>]*>/gi, '')
+
+  // Preserve the synchronous, pinned copy before the right-menu consumers.
+  // Removing both copies or deferring this one changes the legacy load order.
+  if (/<script\b[^>]*src=["']https:\/\/cdn\.staticfile\.org\/jquery\/3\.6\.3\/jquery\.min\.js["']/i.test(result)) {
+    result = result.replace(/<script\b[^>]*src=(["'])https:\/\/npm\.elemecdn\.com\/jquery@latest\/dist\/jquery\.min\.js\1[^>]*>\s*<\/script>/gi, '')
+  }
+  return result
+}
+
 function promoteToolsMenu(html) {
   return html.replace(LIST_MENU_GROUP, (group) => {
     const match = group.match(TOOLS_MENU_CHILD)
@@ -169,7 +185,7 @@ function promoteToolsMenu(html) {
 }
 
 function removeDeadRuntimeBootstraps(html) {
-  return promoteToolsMenu(repairLegacyReferences(removeLegacyWeatherBootstraps(removeLegacyGiscus(removeLegacyTwikoo(removeDeadGitCalendar(html))))))
+  return removeSupersededResources(promoteToolsMenu(repairLegacyReferences(removeLegacyWeatherBootstraps(removeLegacyGiscus(removeLegacyTwikoo(removeDeadGitCalendar(html)))))))
 }
 
 export function sanitizeLegacyHtml(html) {
