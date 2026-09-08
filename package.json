@@ -71,7 +71,7 @@
     "katex": "0.18.2",
     "mammoth": "1.12.0",
     "pdf-lib": "1.17.1",
-    "pdfjs-dist": "6.2.108",
+    "pdfjs-dist": "6.3.289",
     "vditor": "3.11.2"
   },
   "devDependencies": {
