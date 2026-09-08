@@ -585,11 +585,25 @@ if (localStorage.getItem("reset_2") == undefined) {
   }
   
   // 切换状态，窗口已创建则控制窗口显示和隐藏，没窗口则创建窗口
-  function toggleWinbox() {
+  async function toggleWinbox() {
+    if (window.datWinboxLoading) return;
+    if (typeof WinBox === 'undefined') {
+      window.datWinboxLoading = true;
+      const button = document.getElementById('meihua-button');
+      button?.setAttribute('aria-busy', 'true');
+      try {
+        await window.datLoadScript('https://cdn.jsdelivr.net/npm/winbox@0.2.82/dist/winbox.bundle.min.js');
+      } catch (error) {
+        window.alert(error.message);
+        return;
+      } finally {
+        window.datWinboxLoading = false;
+        button?.removeAttribute('aria-busy');
+      }
+    }
     if (document.querySelector("#meihuaBox")) {
       winbox.toggleClass("hide");
     } else {
       createWinbox();
     };
   }
-  

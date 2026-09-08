@@ -1,28 +1,38 @@
-window.addEventListener('load', () => {
+;(function () {
+function bindSearch () {
+  if (window.datSearchBound) return
+  let searchReady
+  let isOpen = false
   const $searchMask = document.getElementById('search-mask')
   const $searchDialog = document.querySelector('#algolia-search .search-dialog')
+  if (!$searchMask || !$searchDialog) return
+  window.datSearchBound = true
 
-  const openSearch = () => {
+  const openSearch = async () => {
+    isOpen = true
     const bodyStyle = document.body.style
     bodyStyle.width = '100%'
     bodyStyle.overflow = 'hidden'
     btf.animateIn($searchMask, 'to_show 0.5s')
     btf.animateIn($searchDialog, 'titleScale 0.5s')
-    setTimeout(() => { document.querySelector('#algolia-search .ais-SearchBox-input').focus() }, 100)
-
-    // shortcut: ESC
-    document.addEventListener('keydown', function f (event) {
-      if (event.code === 'Escape') {
-        closeSearch()
-        document.removeEventListener('keydown', f)
-      }
-    })
+    const input = document.getElementById('algolia-search-input')
+    if (!searchReady) input.textContent = '正在加载搜索…'
 
     fixSafariHeight()
     window.addEventListener('resize', fixSafariHeight)
+    try {
+      searchReady ||= initializeSearch().catch(error => { searchReady = null; throw error })
+      await searchReady
+      if (isOpen) document.querySelector('#algolia-search .ais-SearchBox-input')?.focus()
+    } catch (error) {
+      input.textContent = error.message === 'Algolia setting is invalid!'
+        ? '本站尚未配置搜索服务。'
+        : '搜索加载失败，请关闭后重试。'
+    }
   }
 
   const closeSearch = () => {
+    isOpen = false
     const bodyStyle = document.body.style
     bodyStyle.width = ''
     bodyStyle.overflow = ''
@@ -39,10 +49,13 @@ window.addEventListener('load', () => {
   }
 
   const searchClickFn = () => {
-    document.querySelector('#search-button > .search').addEventListener('click', openSearch)
+    document.querySelector('#search-button > .search')?.addEventListener('click', openSearch)
   }
 
   const searchFnOnce = () => {
+    document.addEventListener('keydown', event => {
+      if (event.code === 'Escape' && isOpen) closeSearch()
+    })
     $searchMask.addEventListener('click', closeSearch)
     document.querySelector('#algolia-search .search-close-button').addEventListener('click', closeSearch)
   }
@@ -74,11 +87,15 @@ window.addEventListener('load', () => {
     return matchContent
   }
 
+  async function initializeSearch () {
   const algolia = GLOBAL_CONFIG.algolia
   const isAlgoliaValid = algolia.appId && algolia.apiKey && algolia.indexName
   if (!isAlgoliaValid) {
-    return console.error('Algolia setting is invalid!')
+    throw new Error('Algolia setting is invalid!')
   }
+  await window.datLoadScript('https://cdnjs.cloudflare.com/ajax/libs/algoliasearch/4.17.0/algoliasearch-lite.umd.min.js')
+  await window.datLoadScript('https://cdnjs.cloudflare.com/ajax/libs/instantsearch.js/4.55.0/instantsearch.production.min.js')
+  document.getElementById('algolia-search-input').textContent = ''
 
   const search = instantsearch({
     indexName: algolia.indexName,
@@ -162,6 +179,10 @@ window.addEventListener('load', () => {
   search.addWidgets([configure, searchBox, hits, stats, powerBy, pagination]) // add the widgets to the instantsearch instance
 
   search.start()
+  window.pjax && search.on('render', () => {
+    window.pjax.refresh(document.getElementById('algolia-hits'))
+  })
+  }
 
   searchClickFn()
   searchFnOnce()
@@ -171,7 +192,7 @@ window.addEventListener('load', () => {
     searchClickFn()
   })
 
-  window.pjax && search.on('render', () => {
-    window.pjax.refresh(document.getElementById('algolia-hits'))
-  })
-})
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindSearch, { once: true })
+else bindSearch()
+})();

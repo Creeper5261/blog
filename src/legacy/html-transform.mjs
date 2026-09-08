@@ -36,6 +36,7 @@ const SERVER_ONLY_SERVICES = new Set([
 ])
 
 const RUNTIME_SCRIPTS = [
+  '/js/optional-resources.js',
   '/js/github-calendar.js',
   '/js/comments-runtime.js',
   '/js/stats-runtime.js',
@@ -159,6 +160,15 @@ function removeSupersededResources(html) {
     // Keep the legacy counter IDs: stats-runtime owns these DOM targets now.
     .replace(/<script\b[^>]*\bsrc=(["'])(?:https?:)?\/\/busuanzi\.ibruce\.info\/[^"']*\1[^>]*>\s*<\/script>/gi, '')
     .replace(/<link\b[^>]*\bhref=(["'])(?:https?:)?\/\/busuanzi\.ibruce\.info\/?\1[^>]*>/gi, '')
+    .replace(/<script\b[^>]*src=(["'])https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/(?:algoliasearch\/4\.17\.0\/algoliasearch-lite\.umd\.min\.js|instantsearch\.js\/4\.55\.0\/instantsearch\.production\.min\.js)\1[^>]*>\s*<\/script>/gi, '')
+    .replace(/<script\b[^>]*src=(["'])https:\/\/cdn\.jsdelivr\.net\/npm\/winbox@0\.2\.82\/dist\/winbox\.bundle\.min\.js\1[^>]*>\s*<\/script>/gi, '')
+
+  let searchSeen = false
+  result = result.replace(/<script\b[^>]*src=(["'])\/js\/search\/algolia\.js\1[^>]*>\s*<\/script>/gi, () => {
+    if (searchSeen) return ''
+    searchSeen = true
+    return '<script defer src="/js/search/algolia.js"></script>'
+  })
 
   // Preserve the synchronous, pinned copy before the right-menu consumers.
   // Removing both copies or deferring this one changes the legacy load order.
