@@ -7,8 +7,8 @@
     "publishedRoutesUnchanged": true
   },
   "counts": {
-    "sourceFiles": 24,
-    "articles": 24,
+    "sourceFiles": 25,
+    "articles": 25,
     "mediaObjects": 27,
     "externalObjects": 75,
     "resourceReferences": 105,
@@ -30,6 +30,11 @@
       "id": "article.133152a0f65e1425",
       "source": "source/_posts/MD-基本使用.md",
       "title": "MD 基本使用"
+    },
+    {
+      "id": "article.1f406c6f2901c6e6",
+      "source": "source/_posts/bigram.md",
+      "title": "Bigram LM：从 Embedding 到第一个语言模型"
     },
     {
       "id": "article.266d5221212da77b",

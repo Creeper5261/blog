@@ -1,0 +1,539 @@
+---
+title: Bigram LM：从 Embedding 到第一个语言模型
+date: '2026-09-09T18:00:00+08:00'
+updated: '2026-09-09T15:25:37.329Z'
+description: >-
+  从 Tokenizer 继续往前，手写一个只看当前 token 的 Bigram 语言模型，弄清
+  Embedding、Linear、训练与生成是怎样接起来的。
+permalink: /2026/09/09/bigram/
+comments: true
+mathjax: true
+toc: true
+home: true
+carousel: true
+timeline: true
+categories:
+  - 学习
+tags:
+  - Transformer
+  - Tokenizer
+  - Bigram LM
+  - Language Model
+sourceHash: 8f161d3e65f673cc450289f56a02391593a17a10b14bc2a373294d326e9e8106
+metadataHash: 1d1f034ae3d30841abe841035c406416162e2fae96b75fd9f646982f014aac76
+rendererIdentity: markdown-frontmatter-v1
+---
+
+Tokenizer 写完以后，文本已经能变成 token ID，下一步就该把这些编号送进模型了。本来想接着写 Transformer，不过一碰到 Embedding，又有几个问题需要弄明白：查表取出来的向量为什么能训练？后面接一个 Linear，怎么就得到了预测结果？算出 loss 以后，`backward()` 和优化器分别做了什么？
+
+如果这时把 Attention 也加进来，出了问题还真不好判断是哪一步没接上。所以先写一个小一点的语言模型，只根据当前 token 预测下一个 token，也就是 Bigram LM。模型由一个 Embedding 和一个 Linear 组成，先用它把训练、保存和生成跑一遍，再看它还缺些什么。
+
+这次继续使用上一篇训练好的 tokenizer。它负责把 EWT 文本切成 token，Bigram 则学习这些 token 之间的相邻关系。刚开始只拿一条句子反复训练，后来扩大到 10000 条文本：loss 确实降下来了，生成的内容也逐渐像英语，但始终说不成一段连贯的话。这些结果正好把后面学习上下文和 Attention 的问题带了出来。
+
+# 一、先把一句话变成训练样本
+
+## 当前 token 是输入，下一个 token 是答案
+
+语言模型要预测下一个 token，训练时就得给它准备好“输入是什么、答案是什么”。假设一句话经过 tokenizer 编码后得到下面这串 ID：
+
+```python
+ids = [17, 82, 31, 9]
+```
+
+其中 17 的下一个是 82，82 的下一个是 31，31 的下一个是 9。把同一串 ID 错开一个位置，就能得到输入和目标：
+
+```python
+input_ids = ids[:-1]   # [17, 82, 31]
+target_ids = ids[1:]   # [82, 31, 9]
+```
+
+这样一条文本就拆成了三个训练样本：
+
+```text
+输入    正确答案
+17  →   82
+82  →   31
+31  →    9
+```
+
+最后的 9 没有后继，所以不作为输入；开头的 17 没有前一个 token，所以不放进目标列表。代码里的两个列表按位置对应，`input_ids[0]` 的答案就是 `target_ids[0]`。
+
+一次把三个输入都送进模型，只是同时计算三个样本。预测 31 时，模型拿到的输入仍然只有 82，它不会因为 17 也在这个 batch 里，就顺便看见 17。这一点会直接影响后面的训练结果。
+
+## 一批数据会经过哪些步骤
+
+沿着刚才的三个样本，先把整个训练过程接起来。假设词表有 1108 个 token，Embedding 维度设为 16：
+
+```text
+input_ids = [17, 82, 31]          target_ids = [82, 31, 9]
+          │                                  │
+          ↓                                  │
+Embedding：分别取出第 17、82、31 行             │
+          │                                  │
+          ↓                                  │
+hidden：3 个向量，每个向量有 16 个数           │
+          │                                  │
+          ↓                                  │
+Linear：每个向量算出 1108 个候选分数           │
+          │                                  │
+          ↓                                  ↓
+logits：3 行，每行 1108 个数 ───────→ cross_entropy
+                                             │
+                                             ↓
+                                      loss：一个数
+                                             │
+                                             ↓
+                                  backward：计算参数梯度
+                                             │
+                                             ↓
+                                  step：根据梯度更新参数
+```
+
+第一行 logits 对应输入 17，交叉熵就检查这一行里目标 82 的预测情况；第二行对应输入 82，检查目标 31；第三行同理。把三个样本的损失取平均，就得到了这一批的 loss。
+
+这里还缺两个具体的操作：怎样从 ID 取出向量，怎样从向量算出词表分数。先从 Embedding 写起。
+
+# 二、Embedding 和 Linear 怎样接起来
+
+## Embedding：给每个 token 一行可以训练的数字
+
+Token ID 只是编号。17 和 18 挨在一起，并不表示它们对应的文本有什么关系。Embedding 给词表中的每个 token 准备一行浮点数，输入哪个 ID，就取出哪一行。
+
+```python
+class TokenEmbedding(nn.Module):
+    def __init__(self, vocab_size, d_model):
+        super().__init__()
+        self.weight = nn.Parameter(
+            torch.randn(vocab_size, d_model) * 0.2
+        )
+
+    def forward(self, token_ids):
+        return self.weight[token_ids]
+```
+
+例如 `vocab_size=1108`、`d_model=16`，`weight` 就是一张 1108 行、16 列的表。输入 `[17, 82, 31]`，取出的便是第 17、82、31 行，得到一个形状为 `[3, 16]` 的张量。
+
+这里每一行最初都填着随机数。随着训练进行，同一个 token 对应的这行数字会不断调整，去配合后面的预测任务。`nn.Parameter` 把这张表注册成模型参数，`model.parameters()` 能找到它，优化器也就能更新它。
+
+## 用一次求和，看梯度怎样回到表里
+
+在接语言模型之前，可以先把表缩小到 3 行、每行 4 个数，只取 ID 为 2 的那一行：
+
+```python
+embedding = TokenEmbedding(3, 4)
+token_ids = torch.tensor([[2]])
+x = embedding(token_ids)
+
+loss = x.sum()
+loss.backward()
+```
+
+这里临时用求和当作 loss。取出的四个数中，任意一个增加一点，求和结果都会增加同样的量，所以这四个位置的梯度都是 1。反向传播沿着索引操作回到参数表，结果是：
+
+```text
+embedding.weight.grad
+
+[[0, 0, 0, 0],
+ [0, 0, 0, 0],
+ [1, 1, 1, 1]]
+```
+
+只有编号 2 对应的行被用到了，因此这一轮只有它收到梯度。前两行没有参与这次求和，梯度为 0。对于刚才 `[17, 82, 31]` 的例子，梯度也会回到对应的三行；如果一个 ID 在 batch 中重复出现，对应行会累加这些位置的梯度。
+
+有了梯度，就能手动做一次更新：
+
+```python
+with torch.no_grad():
+    embedding.weight -= learning_rate * embedding.weight.grad
+```
+
+比如学习率是 0.1，这次被取出的四个数就各减去 0.1。`backward()` 负责算梯度，这段减法才真正改变了参数；之后换成 SGD，更新操作就由 `optimizer.step()` 完成。
+
+## Linear：把向量变成词表分数
+
+Embedding 输出的是 16 个数，但词表里有 1108 个候选 token，模型需要给每个候选都算一个分数。于是再接一层 Linear，把最后一维从 16 变成 1108。
+
+```python
+class ScratchLinear(nn.Module):
+    def __init__(self, in_features, out_features):
+        super().__init__()
+        self.weight = nn.Parameter(
+            torch.randn(out_features, in_features) * 0.02
+        )
+
+    def forward(self, x):
+        return x @ self.weight.T
+```
+
+这个版本没有 bias。每个输出位置都有一组 16 维权重，和输入向量逐项相乘再求和，就得到这个位置的分数。对 1108 组权重都做一遍，输出便有了 1108 个数，称为 logits。
+
+用更小的数字看一次会更直观。假设输入向量是 `[1, 2]`，三个候选对应的权重分别是 `[1, 0]`、`[0, 1]`、`[-1, 1]`：
+
+```text
+输入向量：[1, 2]
+
+候选 0：[ 1, 0] → 1 ×  1 + 2 × 0 = 1
+候选 1：[ 0, 1] → 1 ×  0 + 2 × 1 = 2
+候选 2：[-1, 1] → 1 × -1 + 2 × 1 = 1
+
+logits：[1, 2, 1]
+```
+
+此时模型给候选 1 的分数最高。这些分数还不是概率，它们可以为负，也不要求加起来等于 1。训练时直接把 logits 交给交叉熵；生成时再通过 softmax 转成概率，用来抽取下一个 token。
+
+## 两个模块组成 BigramLM
+
+把 Embedding 和 Linear 顺次接上，模型本身就写完了：
+
+```python
+class BigramLM(nn.Module):
+    def __init__(self, vocab_size, d_model):
+        super().__init__()
+        self.embedding = TokenEmbedding(vocab_size, d_model)
+        self.linear = ScratchLinear(d_model, vocab_size)
+
+    def forward(self, token_ids):
+        hidden = self.embedding(token_ids)
+        logits = self.linear(hidden)
+        return logits
+```
+
+对于开头的三个样本，形状依次是：
+
+```text
+input_ids：[3]
+hidden：   [3, 16]
+logits：   [3, 1108]
+```
+
+每一行都独立完成“取向量、算分数”这两步。模型里没有把不同行的信息混在一起的操作，所以它始终只根据当前 token 预测。
+
+# 三、先用一条句子，把训练跑通
+
+## 从预测分数算出 loss
+
+模型产生 logits 后，`F.cross_entropy(logits, target_ids)` 负责把它和正确答案放到一起计算。目标是 ID 列表 `[82, 31, 9]`，不需要手动改成 one-hot，也不需要提前对 logits 做 softmax。
+
+交叉熵关心的是正确答案分到了多少概率：目标 token 的概率越低，损失越大。训练就通过反向传播调整 Embedding 和 Linear，让这批样本的目标 token 得到更合适的分数。
+
+```python
+optimizer.zero_grad()
+
+logits = model(input_ids)
+loss = F.cross_entropy(logits, target_ids)
+
+loss.backward()
+optimizer.step()
+```
+
+这几行里，`zero_grad()` 清掉上一轮留下的梯度，`model()` 和交叉熵完成本轮计算，`backward()` 将梯度传回两张参数表，`step()` 再执行更新。下一轮重新 forward 时，用到的就是更新后的参数。
+
+前面的求和例子只有 Embedding，这里则多经过了一层 Linear 和交叉熵。梯度依然沿着实际计算的路径往回走，最后分别落到 `embedding.weight` 和 `linear.weight` 上。
+
+## 初始 loss 为什么在 7 左右
+
+第一次运行，loss 是 `7.009...`。乍看不太知道这个数算大还是小，但可以结合词表大小估一下。
+
+词表共有 1108 个 token，模型刚初始化时，各个候选的概率比较接近。平均分下来，正确答案大约只有 `1/1108` 的概率。交叉熵取这个概率的负自然对数，结果约为 7.01，和实际输出基本一致。
+
+所以这个初始值是有来由的：模型还没学到什么，相当于在一千多个候选里平均分配概率。训练之后，如果正确答案逐渐得到更高的概率，loss 就应该往下降。
+
+## 故意反复训练同一条文本
+
+先只取 EWT 训练集第一条文本，反复训练它拆出来的 Bigram，Embedding 维度设为 16，优化器用 SGD。这时样本很少，可以观察模型能不能把这条句子的局部关系学进去。
+
+| step | loss |
+|---:|---:|
+| 0 | 7.0089 |
+| 500 | 5.6726 |
+| 1000 | 1.6299 |
+| 1500 | 0.2655 |
+| 3000 | 0.1926 |
+| 9900 | 0.1796 |
+
+从 7 降到 0.18 左右，说明参数确实在更新，预测也在改善。不过，同一句话反复训练这么多次，为什么还没降到 0？
+
+假设文本里有两处相邻关系，一处是 `the → cat`，另一处是 `the → dog`。对这个模型而言，两次输入都是 `the`，取出的 Embedding 相同，经过 Linear 得到的分数也相同。它没有位置或前文信息可以用来区分这两个样本。
+
+如果两种后继各出现一次，模型把一半概率给 cat、一半给 dog，就已经符合这两个样本的分布。可对每个单独样本来说，正确答案仍然只有一半概率，交叉熵约为 0.693。模型能够记住一个 token 后面各种答案的比例，却没办法在相同输入下分别猜中不同答案。
+
+这也解释了为什么单句过拟合不一定能得到零损失。接下来把语料扩大，同一个 token 对应多种后继的情况只会更多。
+
+# 四、扩大到 10000 条文本以后
+
+## 每条句子单独配对，再合成数据集
+
+单句实验跑通后，训练文本换成 tokenizer 使用过的那批 EWT 语料：
+
+```python
+texts = get_raw_texts("train")[:10000]
+
+all_input_ids = []
+all_target_ids = []
+
+for text in texts:
+    ids = encode(text, merge_rules, vocab)
+    if len(ids) < 2:
+        continue
+
+    all_input_ids.extend(ids[:-1])
+    all_target_ids.extend(ids[1:])
+```
+
+每条句子内部先错开一位配对，再把得到的样本放进总列表。这样句尾就不会和下一句的开头配成一对。例如 `[17, 82]` 和 `[31, 9]` 两条文本，只产生 `17 → 82`、`31 → 9`，不会额外产生 `82 → 31`。
+
+这次 10000 条文本最终得到 292201 对样本。把两个列表转成整数张量，用 `TensorDataset` 按位置配在一起，再交给 `DataLoader` 分批取出：
+
+```python
+train_dataset = TensorDataset(input_ids, target_ids)
+train_loader = DataLoader(
+    train_dataset,
+    batch_size=4096,
+    shuffle=True,
+    pin_memory=torch.cuda.is_available(),
+)
+```
+
+每个 batch 最多取 4096 对输入和答案。`shuffle=True` 打乱的是样本对的顺序，输入和它的目标仍然在一起。由于这里的每一对都是独立样本，打乱顺序不会破坏模型需要的上下文。
+
+## 增大维度，换用 Adam 和 GPU
+
+数据量增加后，Embedding 维度从最初的 16 逐步调到 256，优化器换成 Adam，学习率设为 0.01。训练设备根据 CUDA 是否可用选择：模型移到 GPU 时，每一批输入和目标也要一起移过去。
+
+```python
+model = BigramLM(vocab_size, d_model).to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+# 每个 batch 开始时
+batch_input_ids = batch_input_ids.to(device)
+batch_target_ids = batch_target_ids.to(device)
+```
+
+实际完成的这次训练使用以下配置：
+
+| 项目 | 配置 |
+|---|---|
+| 语料 | EWT train 前 10000 条文本 |
+| 样本数 | 292201 对 Bigram |
+| 词表大小 | 1108 |
+| Embedding 维度 | 256 |
+| batch size | 4096 |
+| 优化器 | Adam，学习率 0.01 |
+| epoch | 20 |
+| 设备 | NVIDIA GeForce RTX 4060 Laptop GPU |
+
+一个 epoch 会遍历一遍全部样本。日志里的 epoch loss 按每批实际样本数加权：先将 batch 的平均 loss 乘以样本数，累加后再除以总样本数。这样最后一个不足 4096 对的 batch，也只占它应有的比例。
+
+## loss 降下来了，但越来越慢
+
+20 轮训练的部分结果如下：
+
+| epoch | loss |
+|---:|---:|
+| 1 | 5.1688 |
+| 2 | 4.3509 |
+| 5 | 4.1854 |
+| 10 | 4.1295 |
+| 15 | 4.1124 |
+| 20 | 4.1050 |
+
+前几轮下降很快，后面每轮只能再挤下一点。另一次把上限设成 200 轮的训练，在第 41 轮降到了 4.0902，随后手动停止。两次都停留在 `4.xx`，继续训练的改善已经慢了下来。
+
+这时就会想：是不是维度还不够大，或者 epoch 还不够多？要回答这个问题，得先知道，只看一个 token 的模型，在这批数据上最多能学到什么。
+
+# 五、为什么 loss 会停在 4.xx
+
+## 先求出这批数据上的 Bigram 下限
+
+前面 `the → cat` 和 `the → dog` 的例子，可以推广到整个训练集。对每个当前 token，统计它后面各种 token 分别出现了几次，就得到一张经验转移表。
+
+把“当前 token 是 i，下一个是 j”的次数记为 $n_{ij}$，以 i 为输入的样本数记为 $n_i$，全部样本数记为 $N$：
+
+$$
+n_i = \sum_j n_{ij}, \qquad N = \sum_i n_i
+$$
+
+如果每一行概率都能自由设置，平均交叉熵在预测概率等于经验频率时取得下限：
+
+$$
+P^*(j\mid i)=\frac{n_{ij}}{n_i}
+$$
+
+比如某个 token 后面接 A 有 3 次、接 B 有 1 次，就分别给它们 75% 和 25% 的概率。把每一对的出现次数作为权重，代回平均交叉熵，得到：
+
+$$
+L_{\min}
+=-\frac{1}{N}\sum_{i,j:n_{ij}>0}
+ n_{ij}\log\frac{n_{ij}}{n_i}
+=\widehat H(T_{\mathrm{next}}\mid T_{\mathrm{current}})
+$$
+
+右边是这批训练样本的经验条件熵，可以理解为：知道当前 token 以后，下一个 token 还剩多少不确定性。
+
+像 `the` 这样的输入，后面可以接 `company`、`first`、`United`、`same`、`new` 等不同片段。Bigram 没有拿到前文，只能给这些候选分配概率。即使每个比例都学对了，对某个具体样本而言，正确答案的概率通常也达不到 1，平均 loss 因此会留下一个下限。
+
+## 把理论下限实际算出来
+
+实验中的 `4.1050` 是训练得到的数值，要知道它离下限还有多远，可以直接用刚才构造的样本对统计一次：
+
+```python
+from collections import Counter
+import math
+
+pair_counts = Counter(zip(all_input_ids, all_target_ids))
+current_counts = Counter(all_input_ids)
+total = len(all_input_ids)
+
+oracle_loss = 0.0
+for (current_id, target_id), count in pair_counts.items():
+    probability = count / current_counts[current_id]
+    oracle_loss -= (count / total) * math.log(probability)
+
+print("bigram oracle loss:", oracle_loss)
+```
+
+这里的 `oracle_loss` 就是上面的经验条件熵。它直接使用样本频率，不需要训练 Embedding 或 Linear。词表大小相同的两批文本，后继分布也可能不同，所以 1108 个 token 本身并不能决定下限是多少。
+
+目前的记录还没有这次统计的输出，因此还不能把 4.10 当成已经达到的理论下限。比较时，可以先固定训练好的参数，在同一批样本上重新评估平均交叉熵，再和 `oracle_loss` 对照；训练日志是边更新参数边累计的 loss，两者含义有一点区别。
+
+如果差距很小，说明这个模型已经接近只看一个 token 能做到的结果；如果差距仍然明显，就还要检查模型容量和优化情况。
+
+## Embedding 加 Linear 还有一个低秩约束
+
+前面的下限允许每个当前 token 都有一行独立设置的概率。我们写的模型则要先经过 256 维 Embedding，再通过同一张 Linear 权重表算分数，它能表示的分数矩阵还有额外约束。
+
+设词表大小为 $V$，Embedding 维度为 $d$。两张参数表的形状都是 $V\times d$：
+
+$$
+E\in\mathbb R^{V\times d},\qquad
+W\in\mathbb R^{V\times d}
+$$
+
+把每个 token 输入一次，得到的所有 logits 按行排在一起，就是：
+
+$$
+Z=EW^T,\qquad
+Z\in\mathbb R^{V\times V},\qquad
+\operatorname{rank}(Z)\le d
+$$
+
+这次 `V=1108`、`d=256`，所以完整的分数表虽然有 1108 行、1108 列，却必须由两个 256 维的参数表相乘得到，秩最多为 256。这个约束作用在 logits 矩阵上，经过 softmax 后的概率矩阵不能直接套用同一个秩上界。
+
+因此，当前模型未必能精确表示那张经验转移表，它能达到的 loss 可能高于条件熵下限。增大 `d_model` 可以放宽这个约束，而增加训练轮数是在现有参数空间里继续优化，两者处理的是不同问题。
+
+实验里把维度从 16 增加到 64、再增加到 256，loss 仍然落在 `4.xx`。这个现象值得和 oracle 结果一起看，单凭小数点前都是 4，还不能判断容量带来的差距到底有多大。不过无论维度怎样增加，输入仍然只有一个 token，这部分信息限制一直存在。
+
+# 六、让模型自己接着往下写
+
+## 保存参数，再加载回来
+
+训练结束后，把模型参数保存到 checkpoint：
+
+```python
+torch.save(model.state_dict(), "checkpoints/bigram.pt")
+```
+
+推理时先加载原来的 tokenizer，取得同一个 `vocab_size`，再用训练时的 `d_model=256` 创建 `BigramLM`，通过 `load_state_dict()` 把保存的参数装进去。词表也要保持相同，否则同一个 ID 就会对应不同的文本。
+
+模型切到 `eval()`，生成时用 `torch.no_grad()` 执行 forward。这里需要的是预测结果，不再执行反向传播和参数更新。
+
+## 每次挑最高分，会走进固定的环
+
+最开始选下一个 token，用的是最直接的办法：
+
+```python
+next_id = logits.argmax(dim=-1).item()
+```
+
+单句过拟合模型曾经走出这样一条路径：
+
+```text
+an → Ġb → ord → er → . → - → Z → am → an → ...
+```
+
+其中 `Ġb + ord + er` 拼回去是 ` border`，`Z + am + an` 拼回去是 `Zaman`。它确实学到了一些训练句子中的连续片段，但走到 `an` 后，又重复了刚才的路线。
+
+原因在于，每个当前 token 都会产生同一组分数，贪心选择也就总是走向同一个后继。词表里的 token 数量有限，持续生成而不停止，迟早会再次遇到某个已经出现过的 token；从那里开始，后面的路线也完全相同，于是形成循环。
+
+## 按概率采样，给其他后继一个机会
+
+后来把最高分选择换成概率采样：
+
+```python
+probs = torch.softmax(logits, dim=-1)
+next_id = torch.multinomial(probs, num_samples=1).item()
+```
+
+`softmax` 把分数转成概率，`multinomial` 按这些概率抽一个 token。概率高的更容易被抽中，但同一个输入再次出现时，也可能选到另一条后继，不再被固定在唯一的路线里。
+
+单句模型的一次采样中，出现过这样的片段：
+
+```text
+ĠAmerican → Ġfor → ces → Ġk → ill → ed → ĠSh → ai → k → h
+→ ĠA → b → d → ull → ah → Ġal → - → Z → am
+```
+
+这些 BPE 片段拼在一起，就能认出 `American forces killed Shaikh Abdullah al-Zam`，最后的人名还没有拼完。生成时模型每次只抽一个 token，一个完整单词有时需要连续几次预测才能拼出来。
+
+## 扩大语料后，生成了什么
+
+换成 10000 条 EWT 文本训练后，以 `the` 开始的一次输出是：
+
+```text
+therehen i know however, I'm news believe we would be filing couple of the multips; "ness you take your person ul and decis partns, please let member oftichelow Tished the trillion more money. popy 1991 together than ways Kar the American faul Qaeda an invited withouthailable intervention to do ins as gam
+```
+
+里面已经能看见 `i know`、`we would be`、`more money` 这样的局部搭配，也有正常的标点。但再往后读，词和词之间很快就接不上了，还会拼出 `oftichelow` 这样的片段。
+
+采样解决了固定下一跳的问题，却没有让模型记住已经生成的内容。无论前面写了多少，下一次预测时真正输入模型的仍然只有最后一个 token。于是某一步接得上，并不意味着整句话都接得上。
+
+## 在终端里逐字输出
+
+`bigram_infer.py` 现在从命令行读取起始文本：
+
+```text
+输入首个字符: the
+```
+
+提示语写的是“字符”，实际输入可以是一段文本。Tokenizer 编码后，程序取最后一个 token 作为生成起点：
+
+```python
+current_id = ids[-1]
+```
+
+之后就重复下面这几步，当前代码生成 100 个新 token：
+
+```text
+current_id
+    ↓
+model → logits → softmax → 采样 next_id
+                               │
+              ┌────────────────┴───────────────┐
+              ↓                                ↓
+      id_to_token 查回片段              current_id = next_id
+              ↓                                │
+      detokenize 恢复空格                      └→ 下一轮
+              ↓
+          输出到终端
+```
+
+程序先原样打印输入，再把新生成的片段逐个接在后面。`detokenize([next_token])` 会把 `Ġ` 还原成空格，因此终端里直接看到连续文本，不会把带标记的 Python 列表打出来。
+
+为了看清生成过程，输出时还给每个字符加了 0.05 秒的延迟。模型一次预测的仍然是一个 token，只是在显示时把这个 token 拆成字符，做成打字机效果。
+
+# 七、下一步，得让模型看到前文
+
+跑到这里，很容易想到再加一层：现在只有 Embedding 和 Linear，如果中间放一个大一点的前馈网络，生成会不会更好？
+
+它可以增强对当前输入的变换能力，但同样一个 `the`，查出来的向量还是一样。即使后面接很多层网络，模型也无法从这个相同的输入中分辨它来自哪段前文：
+
+```text
+in the ...
+after the ...
+```
+
+现在这两处 `the` 会得到相同的预测分布。如果希望它们根据各自的前文接出不同的内容，就需要把 `in`、`after`，以及更前面的 token 一起纳入计算。
+
+这就是接下来要引入上下文的原因。让当前位置能读取前面各位置的信息，同一个 token 在不同句子里才会形成不同的表示，再由这个表示去预测下一个 token。Attention 是后面准备尝试的做法。
+
+Bigram 先把文本到预测、loss 到参数更新、checkpoint 到连续生成这条流程跑通了。接着往 Transformer 走时，就可以把注意力放在一个更具体的问题上：前面那些 token，究竟怎样影响当前位置的表示？
