@@ -2,10 +2,10 @@ id: RMSNorm
 title: 'RMSNorm：起一个稳压器的作用'
 date: '2026-08-15T12:00:00.000Z'
 updated: '2026-08-15T12:00:00.000Z'
-description: 'AI Infra 系列试点：RMSNorm 的原生 LaTeX 排版稿。'
+description: 'RMSNorm 如何调整向量的尺度，以及它在 Transformer 中的作用。'
 permalink: '/2026/08/15/RMSNorm/'
 renderFragment: 'source/content/renders/RMSNorm.html'
-renderSourceHash: 'dd1c4999f14913023c2925f9e8657e17020c63cd80a398d991d52d1d854f7875'
+renderSourceHash: 'f2d278a9cbde43fda5c892d5033a7801518d631fd452df06171d141b1209df5a'
 cover: 'https://cdn.jsdelivr.net/gh/Creeper5261/picbed@main/img/cover/75509590_p1.webp'
 comments: true
 home: true
@@ -14,7 +14,6 @@ timeline: true
 categories:
   - 学习
 tags:
-  - AI Infra
   - Transformer
   - RMSNorm
   - LLM
