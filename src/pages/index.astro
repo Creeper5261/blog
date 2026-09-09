@@ -3,18 +3,39 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { applyPublicServices, getPublicServices } from '../legacy/html-transform.mjs'
+import { listPublishedPosts } from '../legacy/post-projection.mjs'
 import publications from '../../source/_data/latex-publications.json'
 
 const legacyHome = path.resolve('src', 'legacy', 'pages', 'index.html')
 const html = await readFile(legacyHome, 'utf8')
 const rendered = applyPublicServices(html, getPublicServices())
+const isEnabled = (value) => value === true || value === 'true'
+const posts = await listPublishedPosts()
+const normalArticles = posts
+  .filter((post) => isEnabled(post.home) || isEnabled(post.carousel))
+  .map((post) => ({
+    title: post.title,
+    date: post.date,
+    updated: post.updated,
+    description: post.description || '',
+    permalink: post.route,
+    cover: post.cover || 'https://cdn.jsdelivr.net/gh/Creeper5261/picbed@main/img/cover/75509590_p1.webp',
+    categories: post.categories,
+    tags: post.tags,
+    home: isEnabled(post.home),
+    carousel: isEnabled(post.carousel)
+  }))
+const articleByPath = new Map()
+for (const article of [...normalArticles, ...(publications.articles || [])]) articleByPath.set(article.permalink, article)
+const homepageArticles = [...articleByPath.values()]
+  .sort((left, right) => String(right.date).localeCompare(String(left.date)))
 ---
 
 <Fragment set:html={rendered} />
 
-<script define:vars={{ publications }}>
+<script define:vars={{ homepageArticles }}>
   ;(() => {
-    const articles = publications.articles || []
+    const articles = homepageArticles
     const addToCarousel = (article) => {
       if (!article.carousel) return
       const articlePath = article.permalink

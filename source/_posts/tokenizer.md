@@ -1,12 +1,15 @@
 ---
 title: Tokenizer：从零手写一个 BPE 分词器
 date: '2026-09-09T16:44:50+08:00'
-updated: '2026-09-09T11:39:59.616Z'
+updated: '2026-09-09T19:40:40+08:00'
 description: 为了弄清 Transformer 的输入是怎么来的，先把 Tokenizer 单独拿出来学一遍：从原始文本开始，手写一个 BPE 分词器。
 permalink: /2026/09/09/tokenizer/
 comments: true
 mathjax: false
 toc: true
+home: true
+carousel: true
+timeline: true
 categories:
   - 学习
 tags:
