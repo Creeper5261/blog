@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "pulseId": "pulse.github-repositories",
-  "fetchedAt": "2026-11-10T09:44:11.932Z",
-  "expiresAt": "2026-11-11T09:44:11.932Z",
+  "fetchedAt": "2026-11-11T09:19:24.406Z",
+  "expiresAt": "2026-11-12T09:19:24.406Z",
   "query": "stars:>10000 language:javascript",
   "sortBasis": {
     "field": "stars",
@@ -15,7 +15,7 @@
       "url": "https://github.com/affaan-m/ECC",
       "source": "github",
       "summary": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond.",
-      "score": 300425
+      "score": 300976
     },
     {
       "id": "github:react/react",
@@ -23,7 +23,7 @@
       "url": "https://github.com/react/react",
       "source": "github",
       "summary": "The library for web and native user interfaces.",
-      "score": 252473
+      "score": 252543
     },
     {
       "id": "github:trekhleb/javascript-algorithms",
@@ -31,7 +31,7 @@
       "url": "https://github.com/trekhleb/javascript-algorithms",
       "source": "github",
       "summary": "📝 Algorithms and data structures implemented in JavaScript with explanations and links to further readings",
-      "score": 196724
+      "score": 196728
     },
     {
       "id": "github:DietrichGebert/ponytail",
@@ -39,7 +39,7 @@
       "url": "https://github.com/DietrichGebert/ponytail",
       "source": "github",
       "summary": "Makes your AI agent think like the laziest senior dev in the room. The best code is the code you never wrote.",
-      "score": 188024
+      "score": 188657
     },
     {
       "id": "github:CyC2018/CS-Notes",
@@ -47,7 +47,7 @@
       "url": "https://github.com/CyC2018/CS-Notes",
       "source": "github",
       "summary": ":books: 技术面试必备基础知识、Leetcode、计算机操作系统、计算机网络、系统设计",
-      "score": 186470
+      "score": 186481
     }
   ]
 }
